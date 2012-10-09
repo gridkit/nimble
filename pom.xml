@@ -16,7 +16,11 @@
     <properties>
         <nanocloud.version>0.7.6-SNAPSHOT</nanocloud.version>
         <sigar-lib.version>0.1-SNAPSHOT</sigar-lib.version>
+        
         <btrace.version>2.0-SNAPSHOT</btrace.version>
+        
+        <commons-math3.version>3.0</commons-math3.version>
+        <guava.version>12.0.1<guava.version>
     </properties>
 
     <scm>

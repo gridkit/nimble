@@ -1,0 +1,25 @@
+<configuration>
+    <property name="pattern" value="%-30(%d{HH:mm:ss.SSS} [%thread]) %-5level %-24logger{12} - %msg%n" />
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.out</target>
+		<encoder>
+			<pattern>${pattern}</pattern>
+		</encoder>
+	</appender>
+	
+	<appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+	    <target>System.err</target> 
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="ThreadPoolAgent" level="info" additivity="false">
+        <appender-ref ref="STDERR"/>
+    </logger>
+
+	<root level="info">
+		<appender-ref ref="STDOUT"/>
+	</root>
+</configuration>
