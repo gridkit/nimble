@@ -15,8 +15,7 @@
 	<dependencies>
         <dependency>
             <groupId>net.java.btrace</groupId>
-            <artifactId>core</artifactId>
-            <version>${btrace.version}</version>
+            <artifactId>core-api</artifactId>
         </dependency>
 	</dependencies>
 

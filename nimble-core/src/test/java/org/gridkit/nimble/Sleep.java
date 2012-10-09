@@ -2,6 +2,7 @@ package org.gridkit.nimble;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.CancellationException;
 
 import org.gridkit.nimble.platform.Director;
 import org.gridkit.nimble.platform.Play;
@@ -18,14 +19,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 
 public class Sleep {
-    @Test
+    @Test(expected = CancellationException.class)
     public void testInproc() throws Exception {
         RemoteAgent agent = new ThreadPoolAgent();
                 
         test(agent);
     }
     
-    @Test
+    @Test(expected = CancellationException.class)
     public void testLocal() throws Exception {
         LocalAgentFactory localFactory = new LocalAgentFactory();
         

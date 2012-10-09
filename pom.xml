@@ -17,10 +17,15 @@
         <nanocloud.version>0.7.6-SNAPSHOT</nanocloud.version>
         <sigar-lib.version>0.1-SNAPSHOT</sigar-lib.version>
         
+        <tools-jar.version>1.6</tools-jar.version>
         <btrace.version>2.0-SNAPSHOT</btrace.version>
         
-        <commons-math3.version>3.0</commons-math3.version>
-        <guava.version>12.0.1<guava.version>
+        <commons-math.version>3.0</commons-math.version>
+        <guava.version>12.0.1</guava.version>
+        <slf4j.version>1.6.6</slf4j.version>
+        
+        <logback.version>1.0.6</logback.version>
+        <junit.version>4.10</junit.version>
     </properties>
 
     <scm>
@@ -31,6 +36,7 @@
 
     <modules>
         <module>nimble-btrace</module>
+        <module>nimble-core</module>
     </modules>
     
     <repositories>
@@ -62,4 +68,70 @@
             </plugin>
         </plugins>
     </build>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>telecontrol-ssh</artifactId>
+                <version>${nanocloud.version}</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>${commons-math.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>sigar-lib</artifactId>
+                <version>${sigar-lib.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+    
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>com.sun</groupId>
+                <artifactId>tools</artifactId>
+                <version>${tools-jar.version}</version>
+                <scope>system</scope>
+                <systemPath>${java.home}/../lib/tools.jar</systemPath>
+            </dependency>
+            
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>core-api</artifactId>
+                <version>${btrace.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
