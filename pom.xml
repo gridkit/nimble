@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.gridkit.lab</groupId>
+        <artifactId>grid-lab-parent</artifactId>
+        <version>0.10</version>        
+    </parent>
+
+    <artifactId>nimble-parent</artifactId>
+    <version>0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>${project.groupId}::${project.artifactId}</name>
+
+    <properties>
+        <nanocloud.version>0.7.6-SNAPSHOT</nanocloud.version>
+        <sigar-lib.version>0.1-SNAPSHOT</sigar-lib.version>
+        <btrace.version>2.0-SNAPSHOT</btrace.version>
+    </properties>
+
+    <scm>
+        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</connection>
+        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</developerConnection>
+        <url>http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</url>
+    </scm>
+
+    <modules>
+        <module>nimble-btrace</module>
+    </modules>
+    
+    <repositories>
+        <!-- GridKit maven2 repository -->
+        <!-- required to fetch parent POM -->
+        <repository>
+            <id>gridkit-releases</id>
+            <name>gridkit-repo.googlecode.com</name>
+            <url>http://gridkit.googlecode.com/svn/repo/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <remoteTagging>false</remoteTagging>
+                    <suppressCommitBeforeTag>true</suppressCommitBeforeTag>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
