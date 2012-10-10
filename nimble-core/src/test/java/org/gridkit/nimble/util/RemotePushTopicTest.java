@@ -79,11 +79,20 @@ public class RemotePushTopicTest {
     }
 
     public static class PrintSubscriber implements PushTopic.Subscriber<String>, Remote {
-        @Override
-        public void push(Collection<String> msgs) {
-        	System.out.println(msgs);
-//            for (String msg : msgs) {
-//            }
+        
+    	int total = 0;
+    	
+    	@Override
+        public synchronized void push(Collection<String> msgs) {
+    		if (msgs.size() < 8) {
+    			System.out.println("Got " + msgs);
+    		}
+    		else {
+    			System.out.println("Got " + msgs.size());
+    			
+    		}
+    		total += msgs.size();
+    		System.out.println("Total gets " + total);
         }
     }
     
@@ -108,11 +117,12 @@ public class RemotePushTopicTest {
 	            }
 	            topic.sync();
 	            List<String> pack = new ArrayList<String>();
-	            for (int i = 0; i != 16 << 10; ++i) {
+	            for (int i = 0; i != 1 << 10; ++i) {
 	            	pack.add(String.valueOf(i));
 	            }
 	            topic.publish(pack);
 	            topic.sync();
+	            Thread.sleep(10000);
         	}
         	catch(Exception e) {
         		e.printStackTrace();

@@ -17,7 +17,7 @@ public class PrettyPrinter extends TablePrinter {
                 
                 String cell = c < row.size() ? toString(value) : "";
                 
-                boolean number = value instanceof Double || value instanceof Float;
+                boolean number = value instanceof Number;
                 
                 if (number) {
                     stream.printf("%" + lens.get(c) + "s | ", cell);
