@@ -18,7 +18,7 @@ public class Pivot {
 	}
 	
 	
-	public Level getRoot() {
+	public Level root() {
 		return getLevel(0);
 	}
 
@@ -28,7 +28,7 @@ public class Pivot {
 
 	
 	public Level level(String name) {
-		return getRoot().level(name);
+		return root().level(name);
 	}
 	
 	
@@ -64,7 +64,9 @@ public class Pivot {
 		}
 		
 		public Level group(Object key) {
-			return group(Extractors.field(key));
+			Level group = group(Extractors.field(key));
+			group.calcConstant(key);
+			return group;
 		}
 
 		public Level group(Extractor extractor) {
@@ -97,6 +99,11 @@ public class Pivot {
 		public Level calcFrequency(Object key) {
 			Aggregator agg = PivotHelper.createFrequencyAggregator(Extractors.field(key));
 			aggregators.put(key, agg);
+			return this;
+		}
+
+		public Level calcConstant(Object key) {
+			aggregators.put(key, PivotHelper.createConstantAggregator(Extractors.field(key)));
 			return this;
 		}
 		

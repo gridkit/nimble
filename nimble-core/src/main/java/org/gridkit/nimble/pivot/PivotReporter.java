@@ -16,7 +16,7 @@ public class PivotReporter implements SampleAccumulator {
 	private Map<RowPath, LevelSummary> data = new HashMap<RowPath, PivotReporter.LevelSummary>(); 
 	
 	public PivotReporter(Pivot pivot) {
-		this(translate(pivot.getRoot()));
+		this(translate(pivot.root()));
 	}
 	
 	private static LevelInfo translate(Pivot.Level level) {
@@ -48,9 +48,11 @@ public class PivotReporter implements SampleAccumulator {
 		}
 		else {
 			List<RowPath> paths = new ArrayList<RowPath>();
-			for(LevelSummary lss: ls.sublevels.values()) {
-				if (lss.aggregations != null) {
-					paths.add(lss.path);
+			if (ls.sublevels != null) {
+				for(LevelSummary lss: ls.sublevels.values()) {
+					if (lss.aggregations != null) {
+						paths.add(lss.path);
+					}
 				}
 			}
 			if (ls.subgroups != null) {
@@ -94,17 +96,21 @@ public class PivotReporter implements SampleAccumulator {
 	private void processSample(LevelSummary summary, SingleSampleReader reader) {
 		if (summary.info.filter.match(reader)) {
 			processAggregations(summary, reader);
-			processGroups(summary, reader);
-			summary.ensureSublevels(this);
-			for(LevelSummary sublevel: summary.sublevels.values()) {
-				processSample(sublevel, reader);
+			if (summary.isGroupping()) {
+				processGroups(summary, reader);
 			}
+			else {
+				summary.ensureSublevels(this);
+				for(LevelSummary sublevel: summary.sublevels.values()) {
+					processSample(sublevel, reader);
+				}
+			}				
 		}		
 	}
 	
 	private void processGroups(LevelSummary summary, SingleSampleReader reader) {
-		Pivot.Extractor groupBy = summary.info.groupBy;
-		if (groupBy != null) {
+		if (summary.subgroups != null) {
+			Pivot.Extractor groupBy = summary.info.groupBy;
 			Object group = groupBy.extract(reader);
 			LevelSummary subgroup = summary.subgroups.get(group);
 			if (subgroup == null) {
@@ -163,6 +169,10 @@ public class PivotReporter implements SampleAccumulator {
 		public LevelSummary(LevelSummary parent, Object groupId) {
 			this.info = parent.info;
 			this.path = parent.path.g(groupId);
+		}
+		
+		private boolean isGroupping() {
+			return subgroups != null;
 		}
 		
 		private void ensureSublevels(PivotReporter parent) {

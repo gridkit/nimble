@@ -62,7 +62,7 @@ class EquivalenceAggregation implements Aggregation<Object> {
 
 		@Override
 		public String toString() {
-			return "N/A";
+			return "--";
 		}
 	}
 }

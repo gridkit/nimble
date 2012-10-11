@@ -21,6 +21,10 @@ class PivotHelper {
 		return null;
 	}
 
+	public static Pivot.Aggregator createConstantAggregator(final Extractor extractor) {
+		return new ConstantAggregator(extractor);
+	}
+
 	public static DisplayFunction displayField(Object key) {
 		return new SimpleDisplayFunction(key.toString(), Extractors.field(key));
 	}
@@ -33,6 +37,20 @@ class PivotHelper {
 		return new DisplayDistributionFunction(Extractors.field(key), params);
 	}
 		
+	private static final class ConstantAggregator implements Pivot.Aggregator, Serializable {
+
+		private final Extractor extractor;
+
+		private ConstantAggregator(Extractor extractor) {
+			this.extractor = extractor;
+		}
+
+		@Override
+		public Aggregation<?> newAggregation() {
+			return new EquivalenceAggregation(extractor);
+		}
+	}
+
 	private static class GaussianAggregator implements Pivot.Aggregator, Serializable {
 
 		private static final long serialVersionUID = 20121010L;
