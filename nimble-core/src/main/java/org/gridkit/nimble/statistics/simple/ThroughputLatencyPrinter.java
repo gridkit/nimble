@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-import org.gridkit.nimble.print.LinePrinter.Contetx;
+import org.gridkit.nimble.print.LinePrinter.Context;
 import org.gridkit.nimble.statistics.StatsOps;
 import org.gridkit.nimble.statistics.ThroughputSummary;
 
@@ -27,7 +27,7 @@ public class ThroughputLatencyPrinter extends AbstractSimpleStatsLinePrinter {
     }
 
     @Override
-    protected void print(Map<String, StatisticalSummary> aggregates, Contetx context) {
+    protected void print(Map<String, StatisticalSummary> aggregates, Context context) {
         StatisticalSummary ltStats = getLatency(aggregates, TimeUnit.MILLISECONDS);
         ThroughputSummary thStats = getThroughput(aggregates, 1.0);
         

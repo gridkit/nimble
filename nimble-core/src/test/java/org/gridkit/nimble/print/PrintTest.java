@@ -18,7 +18,7 @@ public class PrintTest {
     private void print(PrintStream stream, TablePrinter printer) {
         printer.print(stream, new LinePrinter() {
             @Override
-            public void print(Contetx context) {
+            public void print(Context context) {
                 context.cell("a", 1);
                 context.cell("b", 1.0);
                 context.newline();

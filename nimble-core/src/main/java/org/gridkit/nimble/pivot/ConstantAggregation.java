@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.gridkit.nimble.metering.SampleReader;
 
-class EquivalenceAggregation implements Aggregation<Object> {
+class ConstantAggregation implements Aggregation<Object> {
 
 	private static Object NO_VALUE = new NoValue();
 	
@@ -12,7 +12,7 @@ class EquivalenceAggregation implements Aggregation<Object> {
 	private Object value;
 	private boolean notSet; 
 	
-	public EquivalenceAggregation(Pivot.Extractor extractor) {
+	public ConstantAggregation(Pivot.Extractor extractor) {
 		this.extractor = extractor;
 		this.value = null;
 		this.notSet = true;

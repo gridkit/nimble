@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-import org.gridkit.nimble.print.LinePrinter.Contetx;
+import org.gridkit.nimble.print.LinePrinter.Context;
 import org.gridkit.nimble.statistics.StatsOps;
 import org.gridkit.nimble.statistics.simple.AbstractSimpleStatsLinePrinter;
 
@@ -17,7 +17,7 @@ public class NetInterfacePrinter extends AbstractSimpleStatsLinePrinter {
     }
 
     @Override
-    protected void print(Map<String, StatisticalSummary> aggregates, Contetx context) {
+    protected void print(Map<String, StatisticalSummary> aggregates, Context context) {
         for (Map.Entry<String, Map<String, StatisticalSummary>> entry : unmark(aggregates).entrySet()) {
             context.cell("Interface", entry.getKey());
             

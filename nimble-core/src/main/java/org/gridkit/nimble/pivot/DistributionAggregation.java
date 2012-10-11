@@ -6,13 +6,13 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.statistics.StatsOps;
 
-public class GaussianAggregation implements Aggregation<StatisticalSummary> {
+public class DistributionAggregation implements Aggregation<StatisticalSummary> {
 
 	private final Pivot.Extractor extractor;
 	private StatisticalSummary baseStats;
 	private SummaryStatistics runningStats;
 	
-	public GaussianAggregation(Pivot.Extractor extractor) {
+	public DistributionAggregation(Pivot.Extractor extractor) {
 		this.extractor = extractor;
 	}
 	
@@ -22,11 +22,17 @@ public class GaussianAggregation implements Aggregation<StatisticalSummary> {
 	}
 
 	private void add(Object extract) {
-		if (runningStats == null) {
-			runningStats = new SummaryStatistics();
+		if (extract instanceof Number) {
+			if (runningStats == null) {
+				runningStats = new SummaryStatistics();
+			}
+			double v = ((Number)extract).doubleValue();
+			runningStats.addValue(v);
 		}
-		double v = ((Number)extract).doubleValue();
-		runningStats.addValue(v);
+		else if (extract instanceof StatisticalSummary) {
+			StatisticalSummary ss = (StatisticalSummary) extract;
+			merge(ss);
+		}
 	}
 
 	@Override

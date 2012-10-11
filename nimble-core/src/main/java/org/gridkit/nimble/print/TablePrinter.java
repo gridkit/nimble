@@ -45,7 +45,7 @@ public abstract class TablePrinter {
         print(stream, table);
     }
     
-    private class TablePrinterContetx implements LinePrinter.Contetx {
+    private class TablePrinterContetx implements LinePrinter.Context {
         private Set<String> columns = newColumnsSet();
         private List<Map<String,Object>> data = new ArrayList<Map<String,Object>>();
         

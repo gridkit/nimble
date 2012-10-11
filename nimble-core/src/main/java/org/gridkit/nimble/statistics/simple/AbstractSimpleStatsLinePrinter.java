@@ -7,7 +7,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.gridkit.nimble.print.LinePrinter;
-import org.gridkit.nimble.print.LinePrinter.Contetx;
+import org.gridkit.nimble.print.LinePrinter.Context;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -19,10 +19,10 @@ public abstract class AbstractSimpleStatsLinePrinter implements SimpleStatsTable
     
     protected abstract String getSamplerName();
         
-    protected abstract void print(Map<String, StatisticalSummary> aggregates, LinePrinter.Contetx context);
+    protected abstract void print(Map<String, StatisticalSummary> aggregates, LinePrinter.Context context);
     
     @Override
-    public void print(SimpleStats stats, LinePrinter.Contetx context) {
+    public void print(SimpleStats stats, LinePrinter.Context context) {
         Map<String, Map<String, StatisticalSummary>> values = filter(stats);
         
         for (Map.Entry<String, Map<String, StatisticalSummary>> entry : values.entrySet()) {
@@ -34,12 +34,12 @@ public abstract class AbstractSimpleStatsLinePrinter implements SimpleStatsTable
         }
     }
     
-    private static class InternalLinePrinterContext implements LinePrinter.Contetx {
+    private static class InternalLinePrinterContext implements LinePrinter.Context {
         private String value;
-        private LinePrinter.Contetx context;
+        private LinePrinter.Context context;
         private boolean firstPrint = true;
 
-        public InternalLinePrinterContext(String value, Contetx context) {
+        public InternalLinePrinterContext(String value, Context context) {
             this.value = value;
             this.context = context;
         }

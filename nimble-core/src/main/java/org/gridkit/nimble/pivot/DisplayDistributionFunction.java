@@ -6,9 +6,9 @@ import org.gridkit.nimble.metering.SampleReader;
 class DisplayDistributionFunction implements DisplayFunction {
 
 	private final Pivot.Extractor extractor;
-	private final GenericStats.StatAppraisal[] appraisals;
+	private final CommonStats.StatAppraisal[] appraisals;
 	
-	DisplayDistributionFunction(Pivot.Extractor extractor, GenericStats.StatAppraisal... stats) {
+	DisplayDistributionFunction(Pivot.Extractor extractor, CommonStats.StatAppraisal... stats) {
 		this.extractor = extractor;
 		this.appraisals = stats;
 	}
@@ -18,7 +18,7 @@ class DisplayDistributionFunction implements DisplayFunction {
 		Object x = extractor.extract(row);
 		if (x instanceof StatisticalSummary) {
 			StatisticalSummary ss = (StatisticalSummary) x;
-			for(GenericStats.StatAppraisal m: appraisals) {
+			for(CommonStats.StatAppraisal m: appraisals) {
 				printer.addCell(m.toString(), m.extract(ss));
 			}
 		}

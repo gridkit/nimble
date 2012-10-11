@@ -1,9 +1,9 @@
 package org.gridkit.nimble.print;
 
 public interface LinePrinter {
-    void print(Contetx context);
+    void print(Context context);
     
-    public interface Contetx {
+    public interface Context {
         void newline();
         
         void cell(String name, Object object);

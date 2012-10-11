@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.gridkit.nimble.print.LinePrinter;
-import org.gridkit.nimble.print.LinePrinter.Contetx;
+import org.gridkit.nimble.print.LinePrinter.Context;
 import org.gridkit.nimble.print.TablePrinter;
 
 public class SimpleStatsTablePrinter { 
     public interface SimpleStatsLinePrinter {
-        public void print(SimpleStats stats, LinePrinter.Contetx context);
+        public void print(SimpleStats stats, LinePrinter.Context context);
     }
         
     private List<SimpleStatsLinePrinter> statsPrinters = new ArrayList<SimpleStatsLinePrinter>();
@@ -32,7 +32,7 @@ public class SimpleStatsTablePrinter {
         }
 
         @Override
-        public void print(Contetx context) {
+        public void print(Context context) {
             InternalLinePrinterContext internalContetx = new InternalLinePrinterContext(context);
             
             for (SimpleStatsLinePrinter statsPrinter : statsPrinters) {
@@ -41,11 +41,11 @@ public class SimpleStatsTablePrinter {
         }
     }
     
-    private class InternalLinePrinterContext implements LinePrinter.Contetx {
-        private LinePrinter.Contetx context;
+    private class InternalLinePrinterContext implements LinePrinter.Context {
+        private LinePrinter.Context context;
         private boolean firstPrint = true;
         
-        public InternalLinePrinterContext(Contetx context) {
+        public InternalLinePrinterContext(Context context) {
             this.context = context;
         }
 

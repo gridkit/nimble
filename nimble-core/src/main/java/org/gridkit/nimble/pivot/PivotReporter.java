@@ -130,7 +130,7 @@ public class PivotReporter implements SampleAccumulator {
 		if (summary.info.captureStatics) {
 			for(Object key: reader.keySet()) {
 				if (!summary.aggregations.containsKey(key)) {
-					EquivalenceAggregation agg = new EquivalenceAggregation(Extractors.field(key));
+					ConstantAggregation agg = new ConstantAggregation(Extractors.field(key));
 					agg.addSamples(reader);
 					summary.aggregations.put(key, agg);
 				}

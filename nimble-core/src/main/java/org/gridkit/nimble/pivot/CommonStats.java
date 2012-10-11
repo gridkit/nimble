@@ -2,7 +2,7 @@ package org.gridkit.nimble.pivot;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 
-public class GenericStats {
+public class CommonStats {
 
 	
 	public static final StatAppraisal[] GENERIC_STATS = StatAppraisal.values();
@@ -21,36 +21,66 @@ public class GenericStats {
 			public Object extract(StatisticalSummary summary) {
 				return summary.getN();
 			}
+			
+			@Override
+			public String toString() {
+				return "Count";
+			}
 		},
 		MEAN() {
 			@Override
 			public Object extract(StatisticalSummary summary) {
 				return summary.getMean();
+			}
+
+			@Override
+			public String toString() {
+				return "Mean";
 			}			
 		},
 		STD_DEV() {
 			@Override
 			public Object extract(StatisticalSummary summary) {
 				return summary.getStandardDeviation();
-			}			
+			}
+			
+			@Override
+			public String toString() {
+				return "SDev";
+			}						
 		},
 		MIN() {
 			@Override
 			public Object extract(StatisticalSummary summary) {
 				return summary.getMin();
-			}			
+			}
+			
+			@Override
+			public String toString() {
+				return "Min";
+			}									
 		},
 		MAX() {
 			@Override
 			public Object extract(StatisticalSummary summary) {
 				return summary.getMax();
-			}			
+			}
+			
+			@Override
+			public String toString() {
+				return "Max";
+			}												
 		},
 		TOTAL() {
 			@Override
 			public Object extract(StatisticalSummary summary) {
 				return summary.getSum();
-			}			
+			}
+			
+			@Override
+			public String toString() {
+				return "Total";
+			}															
 		}
 		
 		;

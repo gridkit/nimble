@@ -3,7 +3,7 @@ package org.gridkit.nimble.sensor;
 import java.util.Map;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-import org.gridkit.nimble.print.LinePrinter.Contetx;
+import org.gridkit.nimble.print.LinePrinter.Context;
 import org.gridkit.nimble.statistics.simple.AbstractSimpleStatsLinePrinter;
 
 public class SysCpuPrinter extends AbstractSimpleStatsLinePrinter {
@@ -13,7 +13,7 @@ public class SysCpuPrinter extends AbstractSimpleStatsLinePrinter {
     }
 
     @Override
-    protected void print(Map<String, StatisticalSummary> aggregates, Contetx context) {
+    protected void print(Map<String, StatisticalSummary> aggregates, Context context) {
         StatisticalSummary usr     = aggregates.get(SysCpuReporter.USR);
         StatisticalSummary sys     = aggregates.get(SysCpuReporter.SYS);
         StatisticalSummary nice    = aggregates.get(SysCpuReporter.NICE);

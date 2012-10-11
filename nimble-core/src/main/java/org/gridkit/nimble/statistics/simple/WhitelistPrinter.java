@@ -1,7 +1,7 @@
 package org.gridkit.nimble.statistics.simple;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-import org.gridkit.nimble.print.LinePrinter.Contetx;
+import org.gridkit.nimble.print.LinePrinter.Context;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -10,7 +10,7 @@ public class WhitelistPrinter implements SimpleStatsTablePrinter.SimpleStatsLine
     private Predicate<String> valuePredicate = Predicates.alwaysTrue();
     
     @Override
-    public void print(SimpleStats stats, Contetx context) {
+    public void print(SimpleStats stats, Context context) {
         for (String valStats : stats.getValStatsNames()) {
             if (valuePredicate.apply(valStats)) {
                 StatisticalSummary aggr = stats.getValStats(valStats);

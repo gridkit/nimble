@@ -25,15 +25,19 @@ class PivotHelper {
 		return new ConstantAggregator(extractor);
 	}
 
+	public static Pivot.Aggregator createStaticValue(final Object value) {
+		return new StaticValue(value);
+	}
+
 	public static DisplayFunction displayField(Object key) {
 		return new SimpleDisplayFunction(key.toString(), Extractors.field(key));
 	}
 
 	public static DisplayFunction displayDistributionStats(Object key) {
-		return new DisplayDistributionFunction(Extractors.field(key), GenericStats.GENERIC_STATS);
+		return new DisplayDistributionFunction(Extractors.field(key), CommonStats.GENERIC_STATS);
 	}
 
-	public static DisplayFunction displayDistributionStats(Object key, GenericStats.StatAppraisal... params) {
+	public static DisplayFunction displayDistributionStats(Object key, CommonStats.StatAppraisal... params) {
 		return new DisplayDistributionFunction(Extractors.field(key), params);
 	}
 		
@@ -47,10 +51,24 @@ class PivotHelper {
 
 		@Override
 		public Aggregation<?> newAggregation() {
-			return new EquivalenceAggregation(extractor);
+			return new ConstantAggregation(extractor);
 		}
 	}
 
+	private static final class StaticValue implements Pivot.Aggregator, Serializable {
+		
+		private final Object value;
+
+		public StaticValue(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public Aggregation<?> newAggregation() {
+			return new StaticAggregation<Object>(value);
+		}
+	}
+	
 	private static class GaussianAggregator implements Pivot.Aggregator, Serializable {
 
 		private static final long serialVersionUID = 20121010L;
@@ -63,7 +81,7 @@ class PivotHelper {
 		
 		@Override
 		public Aggregation<?> newAggregation() {
-			return new GaussianAggregation(extractor);
+			return new DistributionAggregation(extractor);
 		}
 		
 	}

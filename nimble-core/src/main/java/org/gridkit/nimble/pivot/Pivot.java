@@ -84,26 +84,35 @@ public class Pivot {
 			return this;
 		}
 
-		public Level calcGausian(Object key) {
+		public Level calcDistribution(Object key) {
 			Aggregator agg = PivotHelper.createGaussianAggregator(Extractors.field(key));
-			aggregators.put(key, agg);
+			addAggregator(key, agg);
 			return this;
+		}
+
+		private Aggregator addAggregator(Object key, Aggregator agg) {
+			return aggregators.put(key, agg);
 		}
 
 		public Level calcBuckets(Object key) {
 			Aggregator agg = PivotHelper.createDiscretHistogramAggregator(Extractors.field(key));
-			aggregators.put(key, agg);
+			addAggregator(key, agg);
 			return this;
 		}
 
 		public Level calcFrequency(Object key) {
 			Aggregator agg = PivotHelper.createFrequencyAggregator(Extractors.field(key));
-			aggregators.put(key, agg);
+			addAggregator(key, agg);
 			return this;
 		}
 
 		public Level calcConstant(Object key) {
 			aggregators.put(key, PivotHelper.createConstantAggregator(Extractors.field(key)));
+			return this;
+		}
+
+		public Level setConstant(Object key, Object value) {
+			aggregators.put(key, PivotHelper.createStaticValue(value));
 			return this;
 		}
 		
@@ -113,8 +122,14 @@ public class Pivot {
 			return this;
 		}
 
-		public Level displayStats(Object key) {
+		public Level displayDistribution(Object key) {
 			DisplayFunction df = PivotHelper.displayDistributionStats(key);
+			addDisplayFunction(df);
+			return this;
+		}
+
+		public Level displayDistribution(Object key, CommonStats.StatAppraisal... measures) {
+			DisplayFunction df = PivotHelper.displayDistributionStats(key, measures);
 			addDisplayFunction(df);
 			return this;
 		}
@@ -183,10 +198,10 @@ public class Pivot {
 		public boolean isVisible() {
 			return visible;
 		}
-	}
-	
-	public class FilterBuilder {
-		
+
+		public boolean isPivoted() {
+			return pivoted;
+		}
 	}
 	
 	public interface Filter extends Serializable {
