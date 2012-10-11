@@ -21,13 +21,17 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 	}
 	
 	public RowPath parent() {
-		return parent;
+		return parent instanceof Root ? null : parent;
 	}
 	
 	/**
 	 * @return context level ID
 	 */
-	public abstract int getLevelId();
+	public abstract int l();
+
+	public Object g() {
+		throw new UnsupportedOperationException();
+	}
 	
 	public boolean isLevel() {
 		return getClass() == Level.class;
@@ -173,7 +177,7 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 
 		@Override
-		public int getLevelId() {
+		public int l() {
 			throw new UnsupportedOperationException();
 		}
 
@@ -215,7 +219,7 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 
 		@Override
-		public int getLevelId() {
+		public int l() {
 			return levelId;
 		}
 
@@ -253,8 +257,13 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 
 		@Override
-		public int getLevelId() {
-			return parent.getLevelId();
+		public int l() {
+			return parent.l();
+		}
+		
+		@Override
+		public Object g() {
+			return key;
 		}
 
 		@Override

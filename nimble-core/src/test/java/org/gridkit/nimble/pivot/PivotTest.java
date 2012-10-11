@@ -4,7 +4,10 @@ import org.gridkit.nimble.metering.ArraySampleManager;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.print.PrettyPrinter;
 import org.junit.Test;
+
+import com.sun.tools.internal.ws.processor.model.Message;
 
 public class PivotTest {
 
@@ -16,7 +19,9 @@ public class PivotTest {
 			.level("XXX")
 				.filter(Measure.NAME, "XXX")
 				.level("Stats")
+				    .show()
 					.calcGausian(Measure.MEASURE)
+					.display(Measure.NAME)
 					.displayStats(Measure.MEASURE);
 			 
 		
@@ -42,8 +47,13 @@ public class PivotTest {
 		
 		reporter.listChildren(RowPath.root()).get(0);
 		
+		PrettyPrinter pp = new PrettyPrinter();
 		
-			
+		PivotPrinter printer = new PivotPrinter(pv, reporter);
+		
+		pp.print(System.out, printer);
+		
+		System.out.println("Done");
 		
 	}
 	

@@ -53,8 +53,10 @@ public class PivotReporter implements SampleAccumulator {
 					paths.add(lss.path);
 				}
 			}
-			for(LevelSummary lss: ls.subgroups.values()) {
-				paths.add(lss.path);
+			if (ls.subgroups != null) {
+				for(LevelSummary lss: ls.subgroups.values()) {
+					paths.add(lss.path);
+				}
 			}
 			return paths;
 		}

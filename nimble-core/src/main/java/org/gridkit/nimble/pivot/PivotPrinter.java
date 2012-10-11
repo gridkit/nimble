@@ -1,6 +1,14 @@
 package org.gridkit.nimble.pivot;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.pivot.DisplayFunction.CellPrinter;
 import org.gridkit.nimble.print.LinePrinter;
+
+import com.sun.tools.jdi.LinkedHashMap;
 
 public class PivotPrinter implements LinePrinter {
 	
@@ -21,11 +29,11 @@ public class PivotPrinter implements LinePrinter {
 	@Override
 	public void print(Contetx context) {
 		for(RowPath path: reporter.listChildren(RowPath.root())) {
-			printLine("", context, path);
+			printLine("", new HorizontalRow("", context), path);
 		}
 	}
 	
-	private void printLine(String linePrefix, Contetx context, RowPath path) {
+	private void printLine(String linePrefix, PrintContext context, RowPath path) {
 		if (path.isLevel()) {
 			printHLevel(linePrefix, context, path);
 		}
@@ -34,28 +42,81 @@ public class PivotPrinter implements LinePrinter {
 		}		
 	}
 
-	private void printHLevel(String linePrefix, Contetx context, RowPath path) {
-		int id = path.getLevelId();
+	private void printHLevel(String linePrefix, PrintContext context, RowPath path) {
+		int id = path.l();
 		Pivot.Level level = pivot.getLevel(id);
 		String pref = combine(linePrefix, level.getName());
-//		for(Level)
+		if (level.isVisible()) {
+			if (idHeader != null) {
+				context.addCell(idHeader, pref);
+			}
+			RowSampleReader reader = createRowReader(path);
+			for(DisplayFunction df: level.getAllDisplayFunction()) {
+				df.getDisplayValue(context, reader);
+			}
+			context.newline();
+		}
+		for(RowPath subpath: reporter.listChildren(path)) {
+			printLine(pref, context, subpath);
+		}
 	}
 	
-	private void printHGroup(String linePrefix, Contetx context, RowPath path) {
-		// TODO Auto-generated method stub
-		
+	private void printHGroup(String linePrefix, PrintContext context, RowPath path) {
+		int id = path.l();
+		Pivot.Level level = pivot.getLevel(id);
+		String pref = combine(linePrefix, String.valueOf(path.g()));
+		if (level.isVisible()) {
+			if (idHeader != null) {
+				context.addCell(idHeader, pref);
+			}
+			RowSampleReader reader = createRowReader(path);
+			for(DisplayFunction df: level.getAllDisplayFunction()) {
+				df.getDisplayValue(context, reader);
+			}
+			context.newline();
+		}
+		for(RowPath subpath: reporter.listChildren(path)) {
+			printLine(pref, context, subpath);
+		}
+	}
+
+	private RowSampleReader createRowReader(RowPath path) {
+		Map<Object, Object> row = new LinkedHashMap();
+		loadRow(path, row);
+		return new RowSampleReader(row);
+	}
+	
+	private void loadRow(RowPath path, Map<Object, Object> row) {
+		if (path != null) {
+			loadRow(path.parent(), row);
+			Map<Object, Object> level = reporter.getRowData(path);
+			if (level != null) {
+				row.putAll(level);
+			}
+		}
 	}
 
 	private String combine(String l, String r) {
-		if (l.length() > 0 && r.length() > 0) {
+		if (notBlank(l) && notBlank(r)) {
 			return l + "." + r;
 		}
+		else if (notBlank(l)){
+			return l;
+		}
 		else {
-			return null;
+			return r;
 		}
 	}
+
+	private boolean notBlank(String l) {
+		return l != null && l.length() > 0;
+	}
 	
-	private class HorizontalRow implements Contetx {
+	private interface PrintContext extends Contetx, CellPrinter {
+		
+	}
+	
+	private class HorizontalRow implements PrintContext {
 
 		private String cellPrefix;
 		private Contetx context;
@@ -71,8 +132,37 @@ public class PivotPrinter implements LinePrinter {
 		}
 		
 		@Override
+		public void addCell(String caption, Object value) {
+			cell(caption, value);			
+		}
+
+		@Override
 		public void newline() {
 			context.newline();
+		}
+	}
+	
+	private static class RowSampleReader implements SampleReader {
+		
+		private final Map<Object, Object> row;
+		
+		public RowSampleReader(Map<Object, Object> row) {
+			this.row = row;
+		}
+
+		@Override
+		public boolean next() {
+			return false;
+		}
+
+		@Override
+		public List<Object> keySet() {
+			return new ArrayList<Object>(row.keySet());
+		}
+
+		@Override
+		public Object get(Object key) {
+			return row.get(key);
 		}
 	}
 }

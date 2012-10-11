@@ -34,14 +34,17 @@ public class Pivot {
 	
 	public class Level {
 		
+		private Level parent;
 		private int levelId = levels.size();
 		private String name;
 		private boolean pivoted;
+		private boolean visible;
 		private boolean captureStatics;
 		private List<Filter> levelFilters = new ArrayList<Pivot.Filter>();
 		private Extractor groupBy;
 		private List<Level> sublevels = new ArrayList<Level>();
 		private Map<Object, Aggregator> aggregators = new LinkedHashMap<Object, Pivot.Aggregator>();
+		private List<DisplayFunction> displayFunctions = new ArrayList<DisplayFunction>();
 		private List<Object> displayOrder = new ArrayList<Object>();
 		
 		{
@@ -50,6 +53,7 @@ public class Pivot {
 		
 		public Level level(String name) {
 			Level sublevel = new Level();
+			sublevel.parent = parent;			
 			sublevel.name = name;
 			sublevel.pivoted = this.pivoted;
 			
@@ -109,6 +113,7 @@ public class Pivot {
 		}
 		
 		private void addDisplayFunction(DisplayFunction df) {
+			displayFunctions.add(df);
 			displayOrder.add(df);
 		}
 		
@@ -116,6 +121,11 @@ public class Pivot {
 			Level level = level("");
 			level.pivoted = true;
 			return level;
+		}
+
+		public Level show() {
+			visible = true;
+			return this;
 		}
 		
 		public int getId() {
@@ -142,12 +152,29 @@ public class Pivot {
 			return Collections.unmodifiableMap(aggregators);
 		}
 		
+		public List<DisplayFunction> getAllDisplayFunction() {
+			List<DisplayFunction> functions = new ArrayList<DisplayFunction>();
+			collectDisplayFunctions(functions);
+			return functions;
+		}
+		
+		private void collectDisplayFunctions(List<DisplayFunction> functions) {
+			if (parent != null) {
+				parent.collectDisplayFunctions(functions);
+			}
+			functions.addAll(displayFunctions);
+		}
+
 		public List<Object> getDisplayOrder() {
 			return Collections.unmodifiableList(displayOrder);
 		}
 		
 		public boolean shouldCaptureStatics() {
 			return captureStatics;
+		}
+		
+		public boolean isVisible() {
+			return visible;
 		}
 	}
 	
