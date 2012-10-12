@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.gridkit.lab</groupId>
         <artifactId>nimble-parent</artifactId>
-        <version>0.1-SNAPSHOT</version>      
+        <version>0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>        
     </parent>
     
@@ -13,21 +13,26 @@
     <name>${project.groupId}::${project.artifactId}</name>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-math3</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>nimble-btrace</artifactId>
+        </dependency>
 
 		<dependency>
 		    <groupId>org.gridkit.lab</groupId>
 		    <artifactId>sigar-lib</artifactId>
 		</dependency>
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        
         <dependency>
             <groupId>org.gridkit.lab</groupId>
             <artifactId>telecontrol-ssh</artifactId>
@@ -47,6 +52,21 @@
         <dependency>
             <groupId>com.sun</groupId>
             <artifactId>tools</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>btrace-agent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>ext-default</artifactId>
         </dependency>
 
 		<dependency>

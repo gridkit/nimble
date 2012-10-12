@@ -73,6 +73,18 @@
         <dependencies>
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
+                <artifactId>nimble-btrace</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>nimble-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
                 <artifactId>telecontrol-ssh</artifactId>
                 <version>${nanocloud.version}</version>
             </dependency>
@@ -131,6 +143,42 @@
                 <groupId>net.java.btrace</groupId>
                 <artifactId>core-api</artifactId>
                 <version>${btrace.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>client</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>btrace-agent</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>ext-default</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
