@@ -2,25 +2,25 @@ package org.gridkit.nimble.pivot;
 
 import java.io.Serializable;
 
-abstract class RowPath implements Comparable<RowPath>, Serializable {
+abstract class LevelPath implements Comparable<LevelPath>, Serializable {
 
 	private static final long serialVersionUID = 20120423L;
 
-	public static RowPath root() {
+	public static LevelPath root() {
 		return new Root();
 	}
 
-	protected RowPath parent;
+	protected LevelPath parent;
 
-	public RowPath l(int i) {
+	public LevelPath l(int i) {
 		return new Level(this, i);
 	}
 
-	public RowPath g(Object key) {
+	public LevelPath g(Object key) {
 		return new Group(this, key);
 	}
 	
-	public RowPath parent() {
+	public LevelPath parent() {
 		return parent instanceof Root ? null : parent;
 	}
 	
@@ -41,12 +41,12 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		return getClass() == Group.class;
 	}
 	
-	public RowPath append(RowPath path) {
+	public LevelPath append(LevelPath path) {
 		if (path instanceof Root) {
 			return this;
 		}
 		else {
-			RowPath base = append(path.parent);
+			LevelPath base = append(path.parent);
 			if (path instanceof Level) {
 				return base.l(((Level)path).levelId);
 			}
@@ -56,9 +56,9 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 	}
 	
-	public boolean startsWith(RowPath path) {
-		RowPath[] self = flatten();
-		RowPath[] other = path.flatten();
+	public boolean startsWith(LevelPath path) {
+		LevelPath[] self = flatten();
+		LevelPath[] other = path.flatten();
 		if (other.length <= self.length) {
 			for(int i = 0; i != other.length; ++i) {
 				if (self[i].compare(other[i]) != 0) {
@@ -72,21 +72,21 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 	}
 	
-	public RowPath subpath(int from) {
+	public LevelPath subpath(int from) {
 		return subpath(from, length() - from);
 	}
 	
-	public RowPath subpath(int from, int len) {
-		RowPath[] self = flatten();
+	public LevelPath subpath(int from, int len) {
+		LevelPath[] self = flatten();
 		if (from >= self.length) {
 			throw new IndexOutOfBoundsException("Index " + from + " is out of [0, " + self.length + ")");
 		}
 		if (from + len > self.length) {
 			throw new IndexOutOfBoundsException("Index " + (from + len) + " is out of [0, " + self.length + "]");
 		}
-		RowPath p = root();
+		LevelPath p = root();
 		for(int i = from; i != from + len; ++i) {
-			RowPath n = self[i];
+			LevelPath n = self[i];
 			if (n instanceof Level) {
 				p = p.l(((Level)n).levelId);
 			}
@@ -98,9 +98,9 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 	}
 	
 	@Override
-	public int compareTo(RowPath o) {
-		RowPath[] a = flatten();
-		RowPath[] b = o.flatten();
+	public int compareTo(LevelPath o) {
+		LevelPath[] a = flatten();
+		LevelPath[] b = o.flatten();
 		int n = 0;
 		while(true) {
 			if (n >= a.length || n >= b.length) {
@@ -125,24 +125,24 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof RowPath)) {
+		if (!(obj instanceof LevelPath)) {
 			return false;
 		}
 		else {
-			return compareTo((RowPath)obj) == 0;
+			return compareTo((LevelPath)obj) == 0;
 		}
 	}
 
-	protected abstract int compare(RowPath matcher);
+	protected abstract int compare(LevelPath matcher);
 	
 	protected abstract int nodeHash();
 	
 	protected abstract void append(StringBuilder buffer);
 	
-	private RowPath[] flatten() {
+	private LevelPath[] flatten() {
 		int len = length();
-		RowPath[] fp = new RowPath[len];
-		RowPath p = this;
+		LevelPath[] fp = new LevelPath[len];
+		LevelPath p = this;
 		int n = 1;
 		while(!(p instanceof Root)) {
 			fp[fp.length - n] = p;
@@ -154,7 +154,7 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 	
 	public int length() {
 		int n = 0;
-		RowPath p = parent;
+		LevelPath p = parent;
 		while(p != null) {
 			p = p.parent;
 			++n; 
@@ -168,7 +168,7 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		return buffer.toString();
 	}
 
-	protected static class Root extends RowPath {
+	protected static class Root extends LevelPath {
 		
 		private static final long serialVersionUID = 20120423L;
 
@@ -192,7 +192,7 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 
 		@Override
-		protected int compare(RowPath that) {
+		protected int compare(LevelPath that) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -207,13 +207,13 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 	}
 	
-	static class Level extends RowPath {
+	static class Level extends LevelPath {
 
 		private static final long serialVersionUID = 20120423L;
 		
 		private int levelId;
 		
-		public Level(RowPath pofPath, int i) {
+		public Level(LevelPath pofPath, int i) {
 			this.parent = pofPath;
 			levelId = i;
 		}
@@ -229,7 +229,7 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 
 		@Override
-		protected int compare(RowPath that) {
+		protected int compare(LevelPath that) {
 			if (that instanceof Group) {
 				return -1;
 			}
@@ -245,13 +245,13 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 		}
 	}
 	
-	static class Group extends RowPath {
+	static class Group extends LevelPath {
 
 		private static final long serialVersionUID = 20120423L;
 		
 		private Object key;
 
-		public Group(RowPath pofPath, Object key) {
+		public Group(LevelPath pofPath, Object key) {
 			this.parent = pofPath;
 			this.key = key;
 		}
@@ -266,8 +266,9 @@ abstract class RowPath implements Comparable<RowPath>, Serializable {
 			return key;
 		}
 
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
-		protected int compare(RowPath that) {
+		protected int compare(LevelPath that) {
 			if (that instanceof Level) {
 				return 1;
 			}

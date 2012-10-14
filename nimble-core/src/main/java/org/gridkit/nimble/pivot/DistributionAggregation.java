@@ -47,9 +47,6 @@ public class DistributionAggregation implements Aggregation<StatisticalSummary> 
 	}
 	
 	private void merge(StatisticalSummary aggregate) {
-		if (baseStats != null && aggregate != null) {
-			baseStats = StatsOps.combine(baseStats, aggregate);
-		}
 		if (baseStats != null && runningStats != null) {
 			baseStats = StatsOps.combine(baseStats, runningStats);
 			runningStats = null;
@@ -57,6 +54,13 @@ public class DistributionAggregation implements Aggregation<StatisticalSummary> 
 		if (runningStats != null) {
 			baseStats = runningStats;
 		}		
+		if (baseStats != null && aggregate != null) {
+			baseStats = StatsOps.combine(baseStats, aggregate);
+		}
+		else if (aggregate != null){
+			baseStats = aggregate;
+		}
+		
 	}
 
 	private StatisticalSummary emptyStats() {

@@ -2,7 +2,6 @@ package org.gridkit.nimble.pivot;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
 
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.pivot.Pivot.Extractor;
@@ -31,6 +30,8 @@ public class Filters {
 
 	static abstract class ExtractorFilter implements Pivot.Filter {
 		
+		private static final long serialVersionUID = 20121014L;
+
 		protected final Pivot.Extractor extractor;
 
 		protected ExtractorFilter(Extractor extractor) {
@@ -48,6 +49,8 @@ public class Filters {
 	
 	public static class EqualsFilter extends ExtractorFilter {
 
+		private static final long serialVersionUID = 20121014L;
+		
 		protected Object value;
 		
 		public EqualsFilter(Extractor extractor, Object value) {
@@ -71,6 +74,8 @@ public class Filters {
 
 	public static class AndFilter implements Pivot.Filter, Serializable {
 
+		private static final long serialVersionUID = 20121014L;
+		
 		private final Pivot.Filter[] filters;
 		
 		public AndFilter(Filter[] filters) {

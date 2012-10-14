@@ -4,6 +4,8 @@ import java.util.List;
 
 public interface SampleReader {
 
+	public boolean isReady();
+	
 	public boolean next();
 	
 	public List<Object> keySet();

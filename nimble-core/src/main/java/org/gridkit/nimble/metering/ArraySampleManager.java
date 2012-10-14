@@ -37,6 +37,10 @@ public class ArraySampleManager implements SampleReader {
 		}
 	}
 	
+	public boolean isReady() {
+		return nextSample != null;
+	}
+	
 	@Override
 	public boolean next() {
 		Sample s = sampleQueue.poll();

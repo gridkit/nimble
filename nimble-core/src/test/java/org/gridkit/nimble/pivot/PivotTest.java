@@ -19,8 +19,10 @@ public class PivotTest {
 					.level("Stats")
 					    .show()
 						.calcDistribution(Measure.MEASURE)
+						.calcFrequency("A", 1)
 						.display(Measure.NAME)
 						.displayDistribution(Measure.MEASURE)
+						.displayThroughput("A")
 							.pivot()
 								.level("A=0")
 								.filter("A", 0)
@@ -29,17 +31,21 @@ public class PivotTest {
 									.displayDistribution(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT);
 			 
 		
-		ArraySampleManager asm = new ArraySampleManager(100);
+		ArraySampleManager asm1 = new ArraySampleManager(100);
+		ArraySampleManager asm2 = new ArraySampleManager(100);
 		
 		SampleSchema ss = ArraySampleManager.newScheme();
-		asm.adopt(ss);
+		ss.declareDynamic(Measure.TIMESTAMP, double.class);
 		
 		SampleSchema ss1 = ss.createDerivedScheme();
-		ss1.setStatic(Measure.NAME, "XYZ");
+		asm1.adopt(ss1);
+//		ss1.setStatic(Measure.NAME, "XYZ");
+		ss1.setStatic(Measure.NAME, "ABC");
 		ss1.declareDynamic(Measure.MEASURE, double.class);
 		ss1.declareDynamic("A", String.class);
 
 		SampleSchema ss2 = ss.createDerivedScheme();
+		asm2.adopt(ss2);
 		ss2.setStatic(Measure.NAME, "ABC");
 		ss2.declareDynamic(Measure.MEASURE, double.class);
 		ss2.declareDynamic("A", String.class);
@@ -50,19 +56,29 @@ public class PivotTest {
 			sf1.newSample()
 				.setMeasure(10 + i)
 				.set("A", i % 3)
+				.set(Measure.TIMESTAMP, i)
 				.submit();
 			sf2.newSample()
 				.setMeasure(8 + i)
 				.set("A", i % 2)
+				.set(Measure.TIMESTAMP, i)
 				.submit();
 		}
 
-		PivotReporter reporter = new PivotReporter(pv);
+		DistributedPivotReporter reporter = new DistributedPivotReporter(pv);
 		
-		asm.next();
-		reporter.accumulate(asm);
+		SampleAccumulator sub1 = reporter.createSlaveReporter();
+		SampleAccumulator sub2 = reporter.createSlaveReporter();
 		
-		reporter.listChildren(RowPath.root()).get(0);
+		asm1.next();
+		sub1.accumulate(asm1);
+		sub1.flush();
+
+		asm2.next();
+		sub2.accumulate(asm2);
+		sub2.flush();
+		
+		reporter.listChildren(LevelPath.root()).get(0);
 		
 		PrettyPrinter pp = new PrettyPrinter();
 		

@@ -94,14 +94,14 @@ public class Pivot {
 			return aggregators.put(key, agg);
 		}
 
-		public Level calcBuckets(Object key) {
-			Aggregator agg = PivotHelper.createDiscretHistogramAggregator(Extractors.field(key));
+		public Level calcFrequency(Object key) {
+			Aggregator agg = PivotHelper.createFrequencyAggregator(Extractors.field(key));
 			addAggregator(key, agg);
 			return this;
 		}
 
-		public Level calcFrequency(Object key) {
-			Aggregator agg = PivotHelper.createFrequencyAggregator(Extractors.field(key));
+		public Level calcFrequency(Object key, double weight) {
+			Aggregator agg = PivotHelper.createFrequencyAggregator(Extractors.constant(weight));
 			addAggregator(key, agg);
 			return this;
 		}
@@ -128,6 +128,12 @@ public class Pivot {
 			return this;
 		}
 
+		public Level displayThroughput(Object key) {
+			DisplayFunction df = PivotHelper.displayFrequency(key);
+			addDisplayFunction(df);
+			return this;			
+		}
+		
 		public Level displayDistribution(Object key, CommonStats.StatAppraisal... measures) {
 			DisplayFunction df = PivotHelper.displayDistributionStats(key, measures);
 			addDisplayFunction(df);

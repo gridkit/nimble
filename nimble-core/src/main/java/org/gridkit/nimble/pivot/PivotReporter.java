@@ -12,8 +12,8 @@ import org.gridkit.nimble.metering.SampleReader;
 
 public class PivotReporter implements SampleAccumulator {
 
-	private LevelSummary summary;
-	private Map<RowPath, LevelSummary> data = new HashMap<RowPath, PivotReporter.LevelSummary>(); 
+	protected LevelSummary summary;
+	protected Map<LevelPath, LevelSummary> data = new HashMap<LevelPath, PivotReporter.LevelSummary>(); 
 	
 	public PivotReporter(Pivot pivot) {
 		this(translate(pivot.root()));
@@ -38,7 +38,7 @@ public class PivotReporter implements SampleAccumulator {
 		data.put(summary.path, summary);		
 	}
 	
-	public List<RowPath> listChildren(RowPath path) {
+	public List<LevelPath> listChildren(LevelPath path) {
 		if (path.length() == 0) {
 			return Collections.singletonList(summary.path);
 		}
@@ -47,7 +47,7 @@ public class PivotReporter implements SampleAccumulator {
 			return Collections.emptyList();
 		}
 		else {
-			List<RowPath> paths = new ArrayList<RowPath>();
+			List<LevelPath> paths = new ArrayList<LevelPath>();
 			if (ls.sublevels != null) {
 				for(LevelSummary lss: ls.sublevels.values()) {
 					if (lss.aggregations != null) {
@@ -64,7 +64,7 @@ public class PivotReporter implements SampleAccumulator {
 		}
 	}
 	
-	public Map<Object, Object> getRowData(RowPath path) {
+	public Map<Object, Object> getRowData(LevelPath path) {
 		LevelSummary ls = data.get(path);
 		if (ls != null && ls.aggregations != null) {
 			return ls.getData();
@@ -114,12 +114,18 @@ public class PivotReporter implements SampleAccumulator {
 			Object group = groupBy.extract(reader);
 			LevelSummary subgroup = summary.subgroups.get(group);
 			if (subgroup == null) {
-				subgroup = new LevelSummary(summary, group);
-				data.put(subgroup.path, subgroup);
-				summary.subgroups.put(group, subgroup);
+				subgroup = createSubGroup(summary, group);
 			}
 			processSample(subgroup, reader);
 		}	
+	}
+
+	protected LevelSummary createSubGroup(LevelSummary summary, Object group) {
+		LevelSummary subgroup;
+		subgroup = new LevelSummary(summary, group);
+		data.put(subgroup.path, subgroup);
+		summary.subgroups.put(group, subgroup);
+		return subgroup;
 	}
 
 	private void processAggregations(LevelSummary summary, SingleSampleReader reader) {
@@ -138,7 +144,7 @@ public class PivotReporter implements SampleAccumulator {
 		}
 	}
 
-	private static class LevelInfo implements Serializable {
+	protected static class LevelInfo implements Serializable {
 		
 		private static final long serialVersionUID = 20121010L;
 		
@@ -150,17 +156,17 @@ public class PivotReporter implements SampleAccumulator {
 		private Map<Object, Pivot.Aggregator> aggregators;
 	}
 	
-	private static class LevelSummary {
+	protected static class LevelSummary {
 
-		private LevelInfo info;
-		private RowPath path;
-		private Map<Object, Aggregation<?>> aggregations;
-		private Map<Object, LevelSummary> sublevels;
-		private Map<Object, LevelSummary> subgroups;
+		LevelInfo info;
+		LevelPath path;
+		Map<Object, Aggregation<Object>> aggregations;
+		Map<Object, LevelSummary> sublevels;
+		Map<Object, LevelSummary> subgroups;
 		
 		public LevelSummary(LevelSummary parent, LevelInfo level) {
 			this.info = level;
-			this.path = parent == null ? RowPath.root().l(level.levelId) : parent.path.l(level.levelId);
+			this.path = parent == null ? LevelPath.root().l(level.levelId) : parent.path.l(level.levelId);
 			aggregations = null;
 			sublevels = null;
 			subgroups = info.groupBy == null ? null : new HashMap<Object, LevelSummary>();
@@ -171,11 +177,11 @@ public class PivotReporter implements SampleAccumulator {
 			this.path = parent.path.g(groupId);
 		}
 		
-		private boolean isGroupping() {
+		boolean isGroupping() {
 			return subgroups != null;
 		}
 		
-		private void ensureSublevels(PivotReporter parent) {
+		void ensureSublevels(PivotReporter parent) {
 			if (sublevels == null) {
 				sublevels = new LinkedHashMap<Object, LevelSummary>();
 				
@@ -188,11 +194,12 @@ public class PivotReporter implements SampleAccumulator {
 			}
 		}
 		
-		private void ensureAggregations() {
+		@SuppressWarnings("unchecked")
+		void ensureAggregations() {
 			if (aggregations == null) {
-				aggregations = new LinkedHashMap<Object, Aggregation<?>>();
+				aggregations = new LinkedHashMap<Object, Aggregation<Object>>();
 				for(Object key: info.aggregators.keySet()) {
-					aggregations.put(key, info.aggregators.get(key).newAggregation());
+					aggregations.put(key, (Aggregation<Object>)info.aggregators.get(key).newAggregation());
 				}
 			}
 		}
@@ -212,6 +219,11 @@ public class PivotReporter implements SampleAccumulator {
 
 		public SingleSampleReader(SampleReader reader) {
 			this.reader = reader;
+		}
+
+		@Override
+		public boolean isReady() {
+			return true;
 		}
 
 		public boolean next() {

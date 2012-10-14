@@ -29,13 +29,13 @@ public class PivotPrinter implements LinePrinter {
 	@Override
 	public void print(Context context) {
 		context = new NormalRow("", context, true);
-		for(RowPath path: reporter.listChildren(RowPath.root())) {
+		for(LevelPath path: reporter.listChildren(LevelPath.root())) {
 			printHLine("", new NormalRow("", context), path);
 		}
 		context.newline();
 	}
 	
-	private void printHLine(String linePrefix, PrintContext context, RowPath path) {
+	private void printHLine(String linePrefix, PrintContext context, LevelPath path) {
 		if (path.isLevel()) {
 			printHLevel(linePrefix, context, path);
 		}
@@ -44,7 +44,7 @@ public class PivotPrinter implements LinePrinter {
 		}		
 	}
 	
-	private void printVLine(String linePrefix, PrintContext context, RowPath path) {
+	private void printVLine(String linePrefix, PrintContext context, LevelPath path) {
 		if (path.isLevel()) {
 			printVLevel(linePrefix, context, path);
 		}
@@ -53,7 +53,7 @@ public class PivotPrinter implements LinePrinter {
 		}				
 	}
 
-	private void printHLevel(String linePrefix, PrintContext context, RowPath path) {
+	private void printHLevel(String linePrefix, PrintContext context, LevelPath path) {
 		int id = path.l();
 		Pivot.Level level = pivot.getLevel(id);
 		if (level.isPivoted()) {
@@ -71,13 +71,13 @@ public class PivotPrinter implements LinePrinter {
 					df.getDisplayValue(context, reader);
 				}
 			}
-			for(RowPath subpath: reporter.listChildren(path)) {
+			for(LevelPath subpath: reporter.listChildren(path)) {
 				printHLine(pref, context, subpath);
 			}
 		}
 	}
 	
-	private void printHGroup(String linePrefix, PrintContext context, RowPath path) {
+	private void printHGroup(String linePrefix, PrintContext context, LevelPath path) {
 		int id = path.l();
 		Pivot.Level level = pivot.getLevel(id);
 		String pref = combine(linePrefix, String.valueOf(path.g()));
@@ -91,12 +91,12 @@ public class PivotPrinter implements LinePrinter {
 				df.getDisplayValue(context, reader);
 			}
 		}
-		for(RowPath subpath: reporter.listChildren(path)) {
+		for(LevelPath subpath: reporter.listChildren(path)) {
 			printHLine(pref, context, subpath);
 		}
 	}
 
-	private void printVLevel(String linePrefix, PrintContext context,	RowPath path) {
+	private void printVLevel(String linePrefix, PrintContext context,	LevelPath path) {
 		Pivot.Level level = pivot.getLevel(path.l());
 		String name = level.getName();
 		name = name == null ? "" : name;
@@ -111,7 +111,7 @@ public class PivotPrinter implements LinePrinter {
 				}
 				else {
 					Pivot.Level sub = (Level) obj;
-					for(RowPath subpath: reporter.listChildren(path)) {
+					for(LevelPath subpath: reporter.listChildren(path)) {
 						if (subpath.l() == sub.getId()) {
 							printVLine(linePrefix, ctx, subpath);
 						}
@@ -120,13 +120,13 @@ public class PivotPrinter implements LinePrinter {
 			}
 		}
 		else {
-			for(RowPath subpath: reporter.listChildren(path)) {
+			for(LevelPath subpath: reporter.listChildren(path)) {
 				printVLine(linePrefix, ctx, subpath);
 			}
 		}
 	}
 
-	private void printVGroup(String linePrefix, PrintContext context,	RowPath path) {
+	private void printVGroup(String linePrefix, PrintContext context,	LevelPath path) {
 		int id = path.l();
 		Pivot.Level level = pivot.getLevel(id);
 		String group = String.valueOf(path.g());
@@ -137,18 +137,18 @@ public class PivotPrinter implements LinePrinter {
 				df.getDisplayValue(ctx, reader);
 			}
 		}
-		for(RowPath subpath: reporter.listChildren(path)) {
+		for(LevelPath subpath: reporter.listChildren(path)) {
 			printVLine(linePrefix, ctx, subpath);
 		}
 	}
 	
-	private RowSampleReader createRowReader(RowPath path) {
+	private RowSampleReader createRowReader(LevelPath path) {
 		Map<Object, Object> row = new LinkedHashMap<Object, Object>();
 		loadRow(path, row);
 		return new RowSampleReader(row);
 	}
 	
-	private void loadRow(RowPath path, Map<Object, Object> row) {
+	private void loadRow(LevelPath path, Map<Object, Object> row) {
 		if (path != null) {
 			loadRow(path.parent(), row);
 			Map<Object, Object> level = reporter.getRowData(path);
@@ -248,6 +248,13 @@ public class PivotPrinter implements LinePrinter {
 		public RowSampleReader(Map<Object, Object> row) {
 			this.row = row;
 		}
+
+		@Override
+		public boolean isReady() {
+			return true;
+		}
+
+
 
 		@Override
 		public boolean next() {
