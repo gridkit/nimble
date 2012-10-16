@@ -6,20 +6,28 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
+import org.gridkit.nimble.orchestration.Deployable.DeploymentArtifact;
+import org.gridkit.nimble.orchestration.Deployable.DepolymentContext;
+import org.gridkit.nimble.orchestration.Deployable.EnvironmentContext;
+import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeSet;
 
 public class ScenarioBuilder {
 
 	public static final String START = "START"; 
 	
-	private Map<String, CheckPointAction> namedCheckpoints = new HashMap<String, CheckPointAction>();
+	private Map<String, CheckpointAction> namedCheckpoints = new HashMap<String, CheckpointAction>();
 	
 	private IdentityHashMap<Object, Bean> beans = new IdentityHashMap<Object, ScenarioBuilder.Bean>();
 	private IdentityHashMap<Object, Bean> stubs = new IdentityHashMap<Object, ScenarioBuilder.Bean>();
@@ -36,12 +44,16 @@ public class ScenarioBuilder {
 	}
 	
 	void start() {
-		CheckPointAction start = new CheckPointAction(START);
+		CheckpointAction start = new CheckpointAction(START);
 		tracker = new NaturalDependencyTracker(start);
 	}
 	
+	public <V> V deploy(String pattern, V bean) {
+		return deploy(new PatternSelector(pattern), bean);
+	}
+	
 	@SuppressWarnings("unchecked")
-	public <V> V deploy(V bean) {
+	private <V> V deploy(TargetSelector scope, V bean) {
 		if (beans.containsKey(bean)) {
 			throw new IllegalArgumentException("Bean [" + bean + "] is already deployed");
 		}
@@ -51,6 +63,7 @@ public class ScenarioBuilder {
 		else {
 			Bean beanMeta = newBeanInfo(bean.getClass().getInterfaces());
 			beanMeta.reference = bean;
+			beanMeta.scope = scope;
 			beans.put(bean, beanMeta);
 			addDeployAction(beanMeta, bean);
 			return (V) beanMeta.proxy;
@@ -68,30 +81,30 @@ public class ScenarioBuilder {
 	
 	public void natural() {	
 		if (order != Order.NATURAL) {
-			CheckPointAction sync = makeSync();
+			CheckpointAction sync = makeSync();
 			tracker = new NaturalDependencyTracker(sync);
 		}		
 	}
 	
 	public void sequential() {		
 		if (order != Order.SEQUENTIAL) {
-			CheckPointAction sync = makeSync();
+			CheckpointAction sync = makeSync();
 			tracker = new SequentialTracker(sync);
 		}		
 	}
 	
 	public void sync() {
-		CheckPointAction sync = makeSync();
+		CheckpointAction sync = makeSync();
 		restartTracker(sync);
 	}
 
 	public void checkpoint(String name) {
-		CheckPointAction sync = makeCheckpoint(name);
+		CheckpointAction sync = makeCheckpoint(name);
 		restartTracker(sync);		
 	}
 	
 	public void from(String name) {
-		CheckPointAction cp = namedCheckpoints.get(name);
+		CheckpointAction cp = namedCheckpoints.get(name);
 		if (cp == null) {
 			throw new IllegalArgumentException("Checkpoint (" + name + ") is not defined");
 		}
@@ -104,16 +117,20 @@ public class ScenarioBuilder {
 	}
 	
 	public void join(String name) {
-		CheckPointAction cp = namedCheckpoints.get(name);
+		CheckpointAction cp = namedCheckpoints.get(name);
 		if (cp == null) {
 			throw new IllegalArgumentException("Checkpoint (" + name + ") is not defined");
 		}
-		CheckPointAction sync = makeSync();
+		CheckpointAction sync = makeSync();
 		cp.addDependency(sync);
 		from(name);
 	}
 	
-	private void restartTracker(CheckPointAction sync) {
+	public Scenario getScenario() {
+		return new GraphScenario(exportGraph());
+	}
+
+	private void restartTracker(CheckpointAction sync) {
 		if (order == Order.NATURAL) {
 			tracker = new NaturalDependencyTracker(sync);			
 		}
@@ -122,8 +139,8 @@ public class ScenarioBuilder {
 		}
 	}
 	
-	private CheckPointAction makeSync() {
-		CheckPointAction sync = new CheckPointAction();
+	private CheckpointAction makeSync() {
+		CheckpointAction sync = new CheckpointAction();
 		for(Action action: run) {
 			sync.addDependency(action);
 		}
@@ -131,8 +148,8 @@ public class ScenarioBuilder {
 		return sync;
 	}
 	
-	private CheckPointAction makeCheckpoint(String name) {
-		CheckPointAction sync = new CheckPointAction(name);
+	private CheckpointAction makeCheckpoint(String name) {
+		CheckpointAction sync = new CheckpointAction(name);
 		for(Action action: run) {
 			sync.addDependency(action);
 		}
@@ -140,19 +157,12 @@ public class ScenarioBuilder {
 		return sync;		
 	}
 	
-	public void open(String scenarioName) {
-		
-	}
-	
-	public void close(String scenarioName) {
-	}
-	
-	public Scenario getScenario() {
-		return new PrintScenario();
+	void debug_simulate() {
+		new PrintScenario().play(null);
 	}
 	
 	private Object newProxy(Bean beanMeta) {
-		Stub stub = new Stub(beanMeta);
+		Stub stub = new Stub(beanMeta, new BeanScope());
 		return Proxy.newProxyInstance(Stub.class.getClassLoader(), beanMeta.interfaces, stub);
 	}
 
@@ -173,9 +183,9 @@ public class ScenarioBuilder {
 		beanInfo.deployAction = action;
 	}
 	
-	private void addCallAction(Bean beanInfo, Method method, Object[] args, Bean deployTo) {
+	private void addCallAction(Bean beanInfo, Scope scope, Method method, Object[] args, Bean deployTo) {
 		Object[] refinedArgs = args == null ? new Object[0] : refine(args);
-		CallAction action = new CallAction(beanInfo, method, refinedArgs, deployTo);
+		CallAction action = new CallAction(beanInfo, scope, method, refinedArgs, deployTo);
 		addAction(action);
 		if (deployTo != null) {
 			deployTo.deployAction = action;
@@ -200,18 +210,114 @@ public class ScenarioBuilder {
 		tracker.actionAdded(action, true);
 	}
 	
-	private static class Bean implements Serializable {
+	private TargetSelector getBeanScope(Bean bean) {
+		if (bean.scope != null) {
+			return bean.scope;
+		}
+		else {
+			return deriveScope(bean);
+		}
+	}
+	
+	private TargetSelector deriveScope(Bean bean) {
+		throw new UnsupportedOperationException();
+	}
+
+	private List<GraphScenario.Action> exportGraph() {
+		
+		List<GraphScenario.Action> script = new ArrayList<GraphScenario.Action>();
+		for(Action action: actionList) {
+			script.add(export(script, action));
+		}
+		
+		return script;
+	}
+	
+	private ScriptAction export(List<GraphScenario.Action> list, Action action) {
+		
+		if (action instanceof DeployAction) {
+			DeployAction da = (DeployAction) action;
+			DeployExecutor exec = new DeployExecutor(new BeanRef(da.bean.id), da.deployable);
+			
+			ScriptAction sa = new ScriptAction(list, da.actionId, getBeanScope(da.bean), toArray(da.getDependencies()), exec);
+			return sa;			
+		}
+		else if (action instanceof CallAction) {
+			CallAction ca = (CallAction) action;
+			TargetSelector scope = ca.scope.getSelector(action);
+			CallExecutor exec = new CallExecutor(ca);
+			
+			ScriptAction sa = new ScriptAction(list, ca.actionId, scope, toArray(ca.getDependencies()), exec);
+			return sa;			
+		}
+		else if (action instanceof CheckpointAction) {
+			ScriptAction sa = new ScriptAction(list, action.actionId, null, toArray(action.getDependencies()), new CheckpointExecutor());
+			return sa;			
+		}
+		else {
+			throw new Error("Imposible");
+		}
+	}
+
+	private int[] toArray(List<Action> dependencies) {
+		int[] deps = new int[dependencies.size()];
+		for(int i = 0; i != deps.length; ++i) {
+			deps[i] = dependencies.get(i).actionId;
+		}
+		return deps;
+	}
+
+	private static class Bean {
 		
 		final int id;
 		final Class<?>[] interfaces;
 		
-		transient Object reference;
-		transient Object proxy;
-		transient Action deployAction;
+		TargetSelector scope;
+		Object reference;
+		Object proxy;
+		Action deployAction;
 		
 		public Bean(int id, Class<?>[] interfaces) {
 			this.id = id;
 			this.interfaces = interfaces;
+		}
+	}
+	
+	private static class BeanRef implements Serializable {
+
+		private static final long serialVersionUID = 20121016L;
+		
+		final int id;
+
+		public BeanRef(int id) {
+			this.id = id;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + id;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			BeanRef other = (BeanRef) obj;
+			if (id != other.id)
+				return false;
+			return true;
+		}
+		
+		@Override
+		public String toString() {
+			return "{" + id + "}";
 		}
 	}
 	
@@ -290,40 +396,42 @@ public class ScenarioBuilder {
 	
 	class DeployAction extends Action {
 		
-		private final Bean beanInfo;
+		private final Bean bean;
 		private final Deployable deployable;
 
 		public DeployAction(Bean beanInfo, Deployable deployable) {
-			this.beanInfo = beanInfo;
+			this.bean = beanInfo;
 			this.deployable = deployable;
 		}
 
 		@Override
 		public List<Bean> getRelatedBeans() {
-			return Collections.singletonList(beanInfo);
+			return Collections.singletonList(bean);
 		}
 		
 		@Override
 		public List<Bean> getAffectedBeans() {
-			return Collections.singletonList(beanInfo);
+			return Collections.singletonList(bean);
 		}
 		
 		@Override
 		public String toString() {
-			return "[" + actionId + "] DEPLOY: " + deployable;
+			return "[" + actionId + "] DEPLOY: {" + bean.id + "} " + deployable;
 		}		
 	}
 	
 	class CallAction extends Action {
 		
 		private final Bean bean;
+		private final Scope scope;
 		private final Method method;
 		private final Object[] arguments;
 		private final Bean deployTarget;
 		private final List<Bean> related = new ArrayList<ScenarioBuilder.Bean>();
 		
-		public CallAction(Bean bean, Method method, Object[] arguments, Bean deployTarget) {
+		public CallAction(Bean bean, Scope scope, Method method, Object[] arguments, Bean deployTarget) {
 			this.bean = bean;
+			this.scope = scope;
 			this.method = method;
 			this.arguments = arguments;
 			this.deployTarget = deployTarget;
@@ -362,15 +470,15 @@ public class ScenarioBuilder {
 		}
 	}
 	
-	class CheckPointAction extends Action {
+	class CheckpointAction extends Action {
 		
 		private final String name;
 
-		public CheckPointAction() {
+		public CheckpointAction() {
 			this.name = "<sync>";
 		}		
 		
-		public CheckPointAction(String name) {
+		public CheckpointAction(String name) {
 			this.name = name;
 			if (namedCheckpoints.containsKey(name)) {
 				throw new IllegalArgumentException("Checkpoint (" + name + ") is already defined");
@@ -394,7 +502,9 @@ public class ScenarioBuilder {
 		}
 	}
 	
-	class DeployablePrototype implements Deployable {
+	static class DeployablePrototype implements Deployable, DeploymentArtifact, Serializable {
+		
+		private static final long serialVersionUID = 20121016L;
 		
 		private final Object prototype;
 
@@ -403,22 +513,56 @@ public class ScenarioBuilder {
 		}
 
 		@Override
-		public Object deploy(DeploymentScope scope) {
+		public DeploymentArtifact createArtifact(ViNode target, DepolymentContext context) {
+			return this;
+		}
+
+		@Override
+		public Object deploy(EnvironmentContext context) {
 			return prototype;
 		}
-		
+
 		@Override
 		public String toString() {
 			return prototype.toString();
 		}
 	}
 	
-	class Stub implements InvocationHandler, Serializable {
+	abstract class Scope {
+		
+		abstract TargetSelector getSelector(Action action);
+	}
+
+	class MasterScope extends Scope {
+		
+		TargetSelector getSelector(Action action) {
+			return null;
+		}
+	}
+
+	class BeanScope extends Scope {
+
+		TargetSelector getSelector(Action action) {
+			if (action instanceof CallAction) {
+				return getBeanScope(((CallAction)action).bean);
+			}
+			else if (action instanceof DeployAction) {
+				return getBeanScope(((DeployAction)action).bean);
+			}
+			else {
+				throw new UnsupportedOperationException();
+			}
+		}		
+	}
+	
+	class Stub implements InvocationHandler {
 
 		private final Bean bean;
+		private final Scope scope;
 		
-		public Stub(Bean bean) {
+		public Stub(Bean bean, Scope scope) {
 			this.bean = bean;
+			this.scope = scope;
 		}
 		
 		@Override
@@ -429,17 +573,11 @@ public class ScenarioBuilder {
 			}
 			else {
 				Bean rbean = declareDeployable(method);
-				addCallAction(bean, method, args, rbean);
+				addCallAction(bean, scope, method, args, rbean);
 				
 				return rbean == null ? null : rbean.proxy;
 			}
 		}
-	}
-	
-	interface Deployable {
-		
-		public Object deploy(DeploymentScope scope);
-		
 	}
 	
 	interface DeploymentScope {
@@ -514,5 +652,231 @@ public class ScenarioBuilder {
 		private int actionId;
 		private List<Integer> pending = new ArrayList<Integer>();
 		
+	}
+	
+	private static class ScriptAction implements GraphScenario.Action {
+
+		private final List<GraphScenario.Action> allActions;
+		
+		private final int id;
+		private final TargetSelector selector;
+		private final int[] dependencies;
+		private final TargetAction action;
+		
+		public ScriptAction(List<GraphScenario.Action> allActions, int id, TargetSelector selector, int[] dependencies, TargetAction action) {
+			this.allActions = allActions;
+			this.id = id;
+			this.selector = selector;
+			this.dependencies = dependencies;
+			this.action = action;
+		}
+
+		@Override
+		public int getId() {
+			return id;
+		}
+
+		@Override
+		public Collection<GraphScenario.Action> getDependencies() {
+			GraphScenario.Action[] deps = new GraphScenario.Action[dependencies.length];
+			for(int i = 0; i != dependencies.length; ++i) {
+				deps[i] = allActions.get(dependencies[i]);
+			}
+			return Arrays.asList(deps);
+		}
+
+		@Override
+		public boolean isMasterAction() {
+			return selector == null;
+		}
+
+		@Override
+		public TargetSelector getTargetSelector() {
+			return selector;
+		}
+
+		@Override
+		public TargetAction getAction() {
+			return action;
+		}
+	}
+	
+	private static class DeployExecutor implements TargetAction {
+
+		private final BeanRef beanRef; 
+		private final Deployable deployable;
+
+		public DeployExecutor(BeanRef beanRef, Deployable deployable) {
+			this.beanRef = beanRef;
+			this.deployable = deployable;
+		}
+
+
+		@Override
+		public Future<Void> submit(ViNode target, final Collection<ViNode> allTargets, TargetContext context) {
+			DepolymentContext dc = new DepolymentContext() {
+				@Override
+				public Collection<ViNode> getDeploymentTargets() {
+					return allTargets;
+				}
+			};
+
+			DeploymentArtifact da = deployable.createArtifact(target, dc);
+			return target.submit(new RemoteDeployAction(beanRef, context, da));
+		}
+		
+		@Override
+		public String toString() {
+			return "DEPLOY " + beanRef + " " + deployable;
+		}				
+	}
+	
+	private static class RemoteDeployAction implements Callable<Void>, Serializable {
+		
+		private static final long serialVersionUID = 20121012L;
+		
+		private final BeanRef beanRef; 
+		private final TargetContext context;
+		private final DeploymentArtifact artifact;
+
+		public RemoteDeployAction(BeanRef beanRef, TargetContext context, DeploymentArtifact artifact) {
+			this.beanRef = beanRef;
+			this.context = context;
+			this.artifact = artifact;
+		}
+
+		@Override
+		public Void call() throws Exception {
+//			System.out.println("Context: " + context);
+			Object bean = artifact.deploy(new EnvironmentContext() {				
+			});
+			context.deployBean(beanRef.id, bean);
+			return null;
+		}
+		
+		@Override
+		public String toString() {
+			return "DEPLOY " + beanRef + " " + artifact;
+		}		
+	}
+	
+	private static class CallExecutor implements TargetAction, Serializable {
+		
+		private static final long serialVersionUID = 20121016L;
+
+		private final BeanRef beanRef;
+		private final String methodClass;
+		private final String methodToString;
+		private final Object[] args;
+		private final BeanRef deplotyTo;
+
+		
+		public CallExecutor(CallAction ca) {
+			this(new BeanRef(ca.bean.id), ca.method, replaceWithBeanRef(ca.arguments), ca.deployTarget == null ? null : new BeanRef(ca.deployTarget.id));
+		}
+
+		private static Object[] replaceWithBeanRef(Object[] arguments) {
+			Object[] args = Arrays.copyOf(arguments, arguments.length);
+			for(int i = 0; i != args.length; ++i) {
+				if (args[i] instanceof Bean) {
+					BeanRef br = new BeanRef(((Bean)args[i]).id);
+					args[i] = br;
+				}
+			}
+			return args;
+		}
+
+		CallExecutor(BeanRef beanRef, Method method, Object[] args, BeanRef deplotyTo) {
+			this.beanRef = beanRef;
+			this.methodClass = method.getDeclaringClass().getName();
+			this.methodToString = method.toString();
+			this.args = args;
+			this.deplotyTo = deplotyTo;
+		}
+
+		@Override
+		public Future<Void> submit(ViNode node, Collection<ViNode> allTargets, TargetContext context) {
+			return node.submit(new Call(context));
+		}
+
+		@Override
+		public String toString() {
+			String s1 = methodToString.substring(0, methodToString.indexOf('('));
+			String mname = s1.substring(s1.lastIndexOf('.') + 1);
+			return "CALL " + (deplotyTo == null ? "" : deplotyTo + " <- ") + beanRef + " " + methodClass.substring(methodClass.lastIndexOf('.') + 1) + "::" + mname;
+		}		
+		
+		class Call implements Serializable, Callable<Void> {
+
+			private static final long serialVersionUID = 20121016L;
+
+			private final TargetContext context;
+			
+			private transient Method method;
+			private transient Object bean;
+			private transient Object result;
+
+			public Call(TargetContext context) {
+				this.context = context;
+			}
+
+			@Override
+			public Void call() throws Exception {
+//				System.out.println("Local context: " + context);
+				bean = context.getBean(beanRef.id);
+				if (bean == null) {
+					throw new IllegalArgumentException("No bean found " + beanRef);
+				}
+				
+				for(int i = 0; i != args.length; ++i) {
+					if (args[i] instanceof BeanRef) {
+						BeanRef br = (BeanRef)args[i];
+						args[i] = context.getBean(br.id);
+						if (args[i] == null) {
+							throw new IllegalArgumentException("No bean found " + br);
+						}
+					}
+				}
+				
+				method = resolveMethod();
+				result = method.invoke(bean, args);
+				
+				if (deplotyTo != null) {
+					context.deployBean(deplotyTo.id, result);
+				}
+				
+				return null;
+			}
+			
+			private Method resolveMethod() throws SecurityException, ClassNotFoundException, NoSuchMethodException {
+				for(Method m: Class.forName(methodClass).getDeclaredMethods()) {
+					if (m.toString().equals(methodToString)) {
+						m.setAccessible(true);
+						return m;
+					}
+				}
+				throw new NoSuchMethodException(methodToString);
+			}
+			
+			@Override
+			public String toString() {
+				return CallExecutor.this.toString();
+			}		
+		}
+	}
+		
+	private static class CheckpointExecutor implements TargetAction {
+		
+		@Override
+		public Future<Void> submit(ViNode target, Collection<ViNode> allTargets, TargetContext context) {
+			FutureBox<Void> fb = new FutureBox<Void>();
+			fb.setData(null);
+			return fb;
+		}
+		
+		@Override
+		public String toString() {
+			return "checkpoint[]";
+		}
 	}
 }

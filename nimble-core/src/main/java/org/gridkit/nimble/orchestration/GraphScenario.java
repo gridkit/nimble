@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,9 +53,9 @@ class GraphScenario implements Scenario {
 	private static class Run {
 		
 		private ViNodeSet nodeSet;
-		private Map<ActionId, ActionInfo> actions = new HashMap<GraphScenario.ActionId, GraphScenario.ActionInfo>();
-		private Map<String, TargetContext> contexts = new HashMap<String, TargetContext>();
-		private Set<ActionId> pending = new HashSet<GraphScenario.ActionId>();		
+		private Map<ActionId, ActionInfo> actions = new LinkedHashMap<GraphScenario.ActionId, GraphScenario.ActionInfo>();
+		private Map<String, TargetContext> contexts = new LinkedHashMap<String, TargetContext>();
+		private Set<ActionId> pending;		
 
 		public Run(ViNodeSet nodeSet, List<Action> actions) {
 			this.nodeSet = nodeSet;
@@ -79,6 +81,7 @@ class GraphScenario implements Scenario {
 						ai.allTargets = targets;
 						ai.nodeName = name;
 						ai.target = node;
+						ai.action = action.getAction();
 						this.actions.put(id, ai);
 						ai.dependencies.add(ensureIntialized(name));
 					}
@@ -87,21 +90,27 @@ class GraphScenario implements Scenario {
 			
 			// generating dependencies
 			for(ActionInfo actionInfo: this.actions.values()) {
+				if (actionInfo.id < 0) {
+					continue;
+				}
 				Action action = actions.get(actionInfo.id);
 				if (action.getId() != actionInfo.id) {
 					throw new IllegalArgumentException("Broned action list");
 				}
 				for(Action dep: action.getDependencies()) {
 					if (action.isMasterAction()) {
+						System.out.println(actionInfo.getId() + " dep " + findAll(dep.getId()));
 						actionInfo.dependencies.addAll(findAll(dep.getId()));
 					}
 					else {
 						ActionId local = new ActionId(dep.getId(), actionInfo.nodeName);
 						ActionId global = new ActionId(dep.getId(), null);
 						if (this.actions.containsKey(local)) {
+							System.out.println(actionInfo.getId() + " dep " + local);
 							actionInfo.dependencies.add(local);
 						}
 						else if (this.actions.containsKey(global)) {
+							System.out.println(actionInfo.getId() + " dep " + global);
 							actionInfo.dependencies.add(global);
 						}
 						else {
@@ -110,7 +119,7 @@ class GraphScenario implements Scenario {
 					}					
 				}
 			}
-			pending = new HashSet<ActionId>(this.actions.keySet());
+			pending = new LinkedHashSet<ActionId>(this.actions.keySet());
 		}
 
 		public void run() {
@@ -133,7 +142,7 @@ class GraphScenario implements Scenario {
 			boolean noop = true;
 			restart:
 			while(true) {
-				for(ActionId id: pending) {
+				for(ActionId id: new LinkedHashSet<ActionId>(pending)) {
 					ActionInfo ai = actions.get(id);
 					if (readyToRun(ai)) {
 						fire(ai);
@@ -141,8 +150,22 @@ class GraphScenario implements Scenario {
 						continue restart;
 					}
 				}
+				if (noop) {
+					boolean waiting = true;
+					for(ActionInfo ai: actions.values()) {
+						if (!isCompleted(ai.getId())) {
+							waiting |= ai.pending != null;
+						}
+					}
+					if (!waiting && !pending.isEmpty()) {
+						throw new RuntimeException("Broken scenario");
+					}
+					else if (pending.isEmpty()) {
+						return true;
+					}
+				}
 				break;
-			}
+			}			
 			return noop;
 		}
 		
@@ -153,7 +176,8 @@ class GraphScenario implements Scenario {
 			}
 			Iterator<ActionId> it = ai.dependencies.iterator();
 			while(it.hasNext()) {
-				if (isCompleted(it.next())) {
+				ActionId dep = it.next();
+				if (isCompleted(dep)) {
 					it.remove();
 				}
 			}
@@ -183,17 +207,17 @@ class GraphScenario implements Scenario {
 
 		@SuppressWarnings("rawtypes")
 		private void complete(ActionInfo ai) {
+			System.out.println("DONE " + ai.id + " (" + ai.nodeName + ") " + ai.action);
 			try {
 				ai.pending.get();
-				if (ai.target instanceof InitContextAction) {
+				if (ai.action instanceof InitContextAction) {
 					TargetContext ctx = (TargetContext) ((Future)ai.pending).get();
 					contexts.put(ai.nodeName, ctx);
 				}
 				pending.remove(new ActionId(ai.id, ai.nodeName));
-				ai.pending = null;
 			}
 			catch(ExecutionException e) {
-				throw new RuntimeException("Run failed: " + e.getCause());
+				throw new RuntimeException("Run failed", e.getCause());
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
@@ -201,6 +225,7 @@ class GraphScenario implements Scenario {
 
 		private void fire(ActionInfo ai) {
 			TargetContext ctx = contexts.get(ai.nodeName);
+			System.out.println("FIRE " + ai.id + " (" + ai.nodeName + ") " + ai.action);
 			Future<Void> result = ai.action.submit(ai.target, ai.allTargets, ctx);
 			ai.pending = result;
 			if (result.isDone()) {
@@ -222,6 +247,7 @@ class GraphScenario implements Scenario {
 			ActionId id = new ActionId(-1, name);
 			if (!actions.containsKey(id)) {
 				ActionInfo ai = new ActionInfo();
+				ai.id = -1;
 				ai.action = new InitContextAction();
 				ai.nodeName = name;
 				ai.target = nodeSet.node(name);
@@ -273,7 +299,7 @@ class GraphScenario implements Scenario {
 		
 		@Override
 		public String toString() {
-			return "[" + (action == -1 ? "init" : String.valueOf(action)) + "]@" + target;
+			return "[" + (action == -1 ? "init" : String.valueOf(action)) + "]@" + (target == null ? "ROOT" :  target);
 		}		
 	}
 	
@@ -286,6 +312,10 @@ class GraphScenario implements Scenario {
 		TargetAction action;		
 		Future<Void> pending;
 		Set<ActionId> dependencies = new HashSet<ActionId>();
+		
+		public ActionId getId() {
+			return new ActionId(id, nodeName);
+		}
 	}
 	
 	private static class InitContextAction implements TargetAction {
@@ -293,13 +323,20 @@ class GraphScenario implements Scenario {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public Future<Void> submit(ViNode target, Collection<ViNode> allTargets, TargetContext context) {
-			return (Future)target.exec(new Callable<TargetContext>() {
+			return (Future)target.submit(new Callable<TargetContext>() {				
 				@Override
 				public SimpleTargetContext call() throws Exception {
-					return new SimpleTargetContext();
+					SimpleTargetContext context = new SimpleTargetContext();
+					System.out.println("New context: " + context);
+					return context;
 				}
 			});
 		}		
+		
+		@Override
+		public String toString() {
+			return "Init local context";
+		}
 	}
 	
 	private static class SimpleTargetContext implements TargetContext {

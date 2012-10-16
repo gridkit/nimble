@@ -38,6 +38,12 @@
             <artifactId>telecontrol-ssh</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>viconcurrent</artifactId>
+            <version>0.7.6-SNAPSHOT</version>
+        </dependency>
+
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -54,6 +60,7 @@
             <artifactId>tools</artifactId>
         </dependency>
 
+<!-- 
         <dependency>
             <groupId>net.java.btrace</groupId>
             <artifactId>client</artifactId>
@@ -68,6 +75,7 @@
             <groupId>net.java.btrace</groupId>
             <artifactId>ext-default</artifactId>
         </dependency>
+ -->
 
 		<dependency>
 			<groupId>ch.qos.logback</groupId>

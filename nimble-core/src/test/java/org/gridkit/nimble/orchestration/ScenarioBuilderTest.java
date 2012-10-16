@@ -1,7 +1,9 @@
 package org.gridkit.nimble.orchestration;
 
-import org.gridkit.nimble.orchestration.ScenarioBuilder;
-import org.gridkit.nimble.orchestration.ScenarioBuilderTest.Reporter;
+import java.io.Serializable;
+
+import org.gridkit.vicluster.ViManager;
+import org.gridkit.vicluster.telecontrol.isolate.IsolateCloudFactory;
 import org.junit.Test;
 
 public class ScenarioBuilderTest {
@@ -13,14 +15,14 @@ public class ScenarioBuilderTest {
 		
 		sb.natural();
 		
-		Agent a1 = sb.deploy(new SimpleAgent("AGENT1"));
-		Agent a2 = sb.deploy(new SimpleAgent("AGENT2"));
+		Agent a1 = sb.deploy("**", new SimpleAgent("AGENT1"));
+		Agent a2 = sb.deploy("**", new SimpleAgent("AGENT2"));
 		
 		a1.connect();
 		a2.connect();
 		
-		Reporter r1 = sb.deploy(new SimpleReporter("R1"));
-		Reporter r2 = sb.deploy(new SimpleReporter("R2"));
+		Reporter r1 = sb.deploy("**", new SimpleReporter("R1"));
+		Reporter r2 = sb.deploy("**", new SimpleReporter("R2"));
 		
 		sb.checkpoint("run");
 		
@@ -36,7 +38,7 @@ public class ScenarioBuilderTest {
 		
 		sb.fromStart();
 		
-		ReportingSupport rs = sb.deploy(new SimpleReportingSupport());
+		ReportingSupport rs = sb.deploy("**", new SimpleReportingSupport());
 		
 		rs.addReporter(r1);
 		rs.addReporter(r2);
@@ -47,8 +49,21 @@ public class ScenarioBuilderTest {
 		
 		rs.collect();
 		
-		sb.getScenario().play(null);
+		sb.debug_simulate();
 		
+		ViManager cloud = IsolateCloudFactory.createCloud("org.gridkit");
+		
+		cloud.node("node1");
+		cloud.node("node2");
+		
+		cloud.node("**").exec(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println("Hello isolate");
+			}
+		});		
+		
+		sb.getScenario().play(cloud);
 	}
 	
 	
@@ -73,7 +88,7 @@ public class ScenarioBuilderTest {
 		
 	}
 	
-	public static class SimpleAgent implements Agent {
+	public static class SimpleAgent implements Agent, Serializable {
 
 		private String name;
 		
@@ -97,7 +112,7 @@ public class ScenarioBuilderTest {
 		}
 	}
 	
-	public static class SimpleReporter implements Reporter {
+	public static class SimpleReporter implements Reporter, Serializable {
 		
 		private final String text;
 
@@ -111,7 +126,7 @@ public class ScenarioBuilderTest {
 		}
 	}
 
-	public static class SimpleReportingSupport implements ReportingSupport {
+	public static class SimpleReportingSupport implements ReportingSupport, Serializable {
 		
 		public SimpleReportingSupport() {
 		}
