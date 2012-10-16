@@ -8,41 +8,36 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.gridkit.vicluster.ViNodeSet;
 
 public class ScenarioBuilder {
 
-	private boolean open;
-	private boolean completed;
+	public static final String START = "START"; 
 	
-	private Map<String, Flow> namedScopes = new HashMap<String, ScenarioBuilder.Flow>();
-	
-	private Flow rootScope;
-	private Flow currentNamed;
-	private Flow current;
+	private Map<String, CheckPointAction> namedCheckpoints = new HashMap<String, CheckPointAction>();
 	
 	private IdentityHashMap<Object, Bean> beans = new IdentityHashMap<Object, ScenarioBuilder.Bean>();
 	private IdentityHashMap<Object, Bean> stubs = new IdentityHashMap<Object, ScenarioBuilder.Bean>();
 	
-	private int idCounter = 1;
-	private int actionCounter = 1;
+	private List<Bean> beanList = new ArrayList<Bean>();
+	private List<Action> actionList = new ArrayList<Action>();
 	
-	public void start() {
-		if (rootScope == null) {
-			rootScope = new SequentialFlow();
-			currentNamed = rootScope;
-			current = rootScope;
-		}
-		else {
-			throw new IllegalStateException("You can start scenarion only once");
-		}
+	private Tracker tracker;
+	private List<Action> run = new ArrayList<Action>();
+	private Order order = Order.NATURAL;
+	
+	public ScenarioBuilder() {
+		start();
+	}
+	
+	void start() {
+		CheckPointAction start = new CheckPointAction(START);
+		tracker = new NaturalDependencyTracker(start);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -63,42 +58,86 @@ public class ScenarioBuilder {
 	}
 
 	private Bean newBeanInfo(Class<?>[] interfaces) {
-		Bean beanMeta = new Bean(idCounter++, interfaces);
+		Bean beanMeta = new Bean(beanList.size(), interfaces);
+		beanList.add(beanMeta);
 		Object proxy = newProxy(beanMeta);
 		beanMeta.proxy = proxy;
 		stubs.put(proxy, beanMeta);
 		return beanMeta;
 	}
 	
-	public void subflow(String name) {
-		if (name == null || name.length() == 0) {
-			throw new IllegalArgumentException("Scenario name schuld not be empty");
-		}
-		else if (namedScopes.containsKey(name)) {
-			throw new IllegalArgumentException("Duplicate scenario name '" + name + "'");
-		}
-		else {
-			SequentialFlow flow = new SequentialFlow(name);
-			flow.parentFlow = currentNamed;
-			namedScopes.put(name, flow);
-			SubflowAction action = new SubflowAction(flow);
-			addAction(action);			
+	public void natural() {	
+		if (order != Order.NATURAL) {
+			CheckPointAction sync = makeSync();
+			tracker = new NaturalDependencyTracker(sync);
 		}		
 	}
 	
-	public void parallel() {		
+	public void sequential() {		
+		if (order != Order.SEQUENTIAL) {
+			CheckPointAction sync = makeSync();
+			tracker = new SequentialTracker(sync);
+		}		
 	}
 	
-	public void natural() {	
-		if (current.getOrder() != Order.NATURAL) {
-			NaturalFlow flow = new NaturalFlow();
-			flow.parentFlow = currentNamed;
-			currentNamed.addAction(new SubflowAction(flow));
-			current = flow;
+	public void sync() {
+		CheckPointAction sync = makeSync();
+		restartTracker(sync);
+	}
+
+	public void checkpoint(String name) {
+		CheckPointAction sync = makeCheckpoint(name);
+		restartTracker(sync);		
+	}
+	
+	public void from(String name) {
+		CheckPointAction cp = namedCheckpoints.get(name);
+		if (cp == null) {
+			throw new IllegalArgumentException("Checkpoint (" + name + ") is not defined");
+		}
+		run.clear();
+		restartTracker(cp);		
+	}
+
+	public void fromStart() {
+		from(START);
+	}
+	
+	public void join(String name) {
+		CheckPointAction cp = namedCheckpoints.get(name);
+		if (cp == null) {
+			throw new IllegalArgumentException("Checkpoint (" + name + ") is not defined");
+		}
+		CheckPointAction sync = makeSync();
+		cp.addDependency(sync);
+		from(name);
+	}
+	
+	private void restartTracker(CheckPointAction sync) {
+		if (order == Order.NATURAL) {
+			tracker = new NaturalDependencyTracker(sync);			
+		}
+		else {
+			tracker = new SequentialTracker(sync);
 		}
 	}
 	
-	public void sequential() {		
+	private CheckPointAction makeSync() {
+		CheckPointAction sync = new CheckPointAction();
+		for(Action action: run) {
+			sync.addDependency(action);
+		}
+		run.clear();
+		return sync;
+	}
+	
+	private CheckPointAction makeCheckpoint(String name) {
+		CheckPointAction sync = new CheckPointAction(name);
+		for(Action action: run) {
+			sync.addDependency(action);
+		}
+		run.clear();
+		return sync;		
 	}
 	
 	public void open(String scenarioName) {
@@ -106,12 +145,6 @@ public class ScenarioBuilder {
 	}
 	
 	public void close(String scenarioName) {
-	}
-	
-	public void finish() {
-		if (currentNamed != rootScope) {
-			throw new IllegalStateException("finsih() should match start()");
-		}
 	}
 	
 	public Scenario getScenario() {
@@ -137,12 +170,16 @@ public class ScenarioBuilder {
 		Deployable deployable = new DeployablePrototype(proto); 
 		DeployAction action = new DeployAction(beanInfo, deployable);
 		addAction(action);
+		beanInfo.deployAction = action;
 	}
 	
 	private void addCallAction(Bean beanInfo, Method method, Object[] args, Bean deployTo) {
 		Object[] refinedArgs = args == null ? new Object[0] : refine(args);
 		CallAction action = new CallAction(beanInfo, method, refinedArgs, deployTo);
 		addAction(action);
+		if (deployTo != null) {
+			deployTo.deployAction = action;
+		}
 	}
 	
 	private Object[] refine(Object[] args) {
@@ -159,7 +196,8 @@ public class ScenarioBuilder {
 	}
 
 	private void addAction(Action action) {
-		current.addAction(action);
+		run.add(action);
+		tracker.actionAdded(action, true);
 	}
 	
 	private static class Bean implements Serializable {
@@ -169,116 +207,84 @@ public class ScenarioBuilder {
 		
 		transient Object reference;
 		transient Object proxy;
-		transient int deployAction;
+		transient Action deployAction;
 		
 		public Bean(int id, Class<?>[] interfaces) {
 			this.id = id;
 			this.interfaces = interfaces;
 		}
 	}
-
+	
 	enum Order {
 		SEQUENTIAL,
-		NATURAL,
-		PARALLEL
+		NATURAL
 	}
 	
-	abstract class Flow {
+	abstract class Tracker {
 		
-		String id;
-		Flow parentFlow;
-		
-		List<Action> actions = new ArrayList<Action>();
-		
-		public abstract Order getOrder();
-		
-		public abstract void addAction(Action action);
-		
+		abstract void actionAdded(Action action, boolean active);
 	}
 	
-	class ParallelFlow extends Flow {
+	class NaturalDependencyTracker extends Tracker {
 		
-		public ParallelFlow() {			
+		Action checkPoint;
+		Map<Integer, Action> casualOrder = new HashMap<Integer, Action>();
+		
+		public NaturalDependencyTracker(Action checkPoint) {
+			this.checkPoint = checkPoint;
 		}
 		
-		public ParallelFlow(String name) {
-			id = name;
-		}
-
 		@Override
-		public Order getOrder() {
-			return Order.PARALLEL;
-		}
-
-		@Override
-		public void addAction(Action action) {
-			actions.add(action);
-		}
-	}
-
-	class NaturalFlow extends Flow {
-		
-		Map<Integer, Integer> casualOrder = new HashMap<Integer, Integer>();
-		
-		public NaturalFlow() {			
-		}
-		
-		public NaturalFlow(String name) {
-			id = name;
-		}
-
-		@Override
-		public Order getOrder() {
-			return Order.PARALLEL;
-		}
-
-		@Override
-		public void addAction(Action action) {
-			for(Bean bean: action.getRelatedBeans()) {
-				if (casualOrder.containsKey(bean.id)) {
-					action.required.add(casualOrder.get(bean.id));
+		void actionAdded(Action action, boolean active) {
+			if (active) {
+				action.addDependency(checkPoint);
+				for(Bean bean: action.getRelatedBeans()) {
+					if (casualOrder.containsKey(bean.id)) {
+						action.addDependency(casualOrder.get(bean.id));
+					}
 				}
 			}
 			for(Bean bean: action.getAffectedBeans()) {
-				casualOrder.put(bean.id, action.actionId);
+				casualOrder.put(bean.id, action);
 			}
-			actions.add(action);
 		}
 	}
 
-	class SequentialFlow extends Flow {
+	class SequentialTracker extends Tracker {
 		
-		private int prevAction = -1;
+		private Action prevAction;
 		
-		public SequentialFlow() {
-		}
-		
-		public SequentialFlow(String name) {
-			id = name;
+		public SequentialTracker(Action prevAction) {
+			this.prevAction = prevAction;
 		}
 
+		
 		@Override
-		public Order getOrder() {
-			return Order.SEQUENTIAL;
-		}
-
-		@Override
-		public void addAction(Action action) {
-			if (prevAction >= 0) {
-				action.required.add(prevAction);
+		void actionAdded(Action action, boolean active) {
+			if (prevAction != null && active) {
+				action.addDependency(prevAction);
 			}
-			prevAction = action.actionId;
-			actions.add(action);
+			prevAction = action;
 		}		
 	}
 	
 	abstract class Action {
 
-		int actionId = actionCounter++;
-		List<Integer> required = new ArrayList<Integer>();
+		int actionId = actionList.size();
+		{ actionList.add(this); };
+		
+		List<Action> required = new ArrayList<Action>();
 		
 		public abstract List<Bean> getRelatedBeans();
 		public abstract List<Bean> getAffectedBeans();
+
+		public List<Action> getDependencies() {
+			return required;
+		}
+		
+		public void addDependency(Action action) {
+			required.add(action);
+		}
 		
 	}
 	
@@ -321,6 +327,8 @@ public class ScenarioBuilder {
 			this.method = method;
 			this.arguments = arguments;
 			this.deployTarget = deployTarget;
+			
+			related.add(bean);
 			if (deployTarget != null) {
 				related.add(deployTarget);
 			}
@@ -329,6 +337,8 @@ public class ScenarioBuilder {
 					related.add((Bean) o);
 				}
 			}
+			
+			addDependency(bean.deployAction);
 		}
 
 		@Override
@@ -352,12 +362,20 @@ public class ScenarioBuilder {
 		}
 	}
 	
-	class SubflowAction extends Action {
+	class CheckPointAction extends Action {
 		
-		private final Flow flow;
+		private final String name;
+
+		public CheckPointAction() {
+			this.name = "<sync>";
+		}		
 		
-		public SubflowAction(Flow flow) {
-			this.flow = flow;
+		public CheckPointAction(String name) {
+			this.name = name;
+			if (namedCheckpoints.containsKey(name)) {
+				throw new IllegalArgumentException("Checkpoint (" + name + ") is already defined");
+			}
+			namedCheckpoints.put(name, this);
 		}
 
 		@Override
@@ -372,7 +390,7 @@ public class ScenarioBuilder {
 		
 		@Override
 		public String toString() {
-			return "[" + actionId + "] FLOW: " + flow;
+			return "[" + actionId + "] (" + name + ")";
 		}
 	}
 	
@@ -436,15 +454,15 @@ public class ScenarioBuilder {
 		
 		@Override
 		public void play(ViNodeSet nodeSet) {
-			start(rootScope);
+			start();
 			while(!pending.isEmpty()) {
 				findActionable();
 				perform();
 			}
 		}
 
-		private void start(Flow flow) {
-			for(Action action: flow.actions) {
+		private void start() {
+			for(Action action: ScenarioBuilder.this.actionList) {
 				pending.put(action.actionId, action);				
 			}
 		}
@@ -452,8 +470,8 @@ public class ScenarioBuilder {
 		private void findActionable() {
 			nextAction:
 			for(Action action: pending.values()) {
-				for(Integer id: action.required) {
-					if (!isCompleted(id)) {
+				for(Action dep: action.getDependencies()) {
+					if (!isCompleted(dep.actionId)) {
 						continue nextAction;
 					}
 				}
@@ -468,19 +486,7 @@ public class ScenarioBuilder {
 			}
 			for(Action action: actionList) {
 				System.out.println("  " + action);
-				if (action instanceof SubflowAction) {
-					Flow flow = ((SubflowAction)action).flow;
-					ExecutionInfo ei = new ExecutionInfo();
-					ei.actionId = action.actionId;
-					for(Action sa: flow.actions) {
-						ei.pending.add(sa.actionId);
-					}
-					execStatus.put(action.actionId, ei);
-					start(flow);
-				}
-				else {
-					execStatus.put(action.actionId, new ExecutionInfo());
-				}
+				execStatus.put(action.actionId, new ExecutionInfo());
 				pending.remove(action.actionId);
 			}
 			for(ExecutionInfo ei: execStatus.values()) {
