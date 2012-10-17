@@ -11,6 +11,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.gridkit.nimble.statistics.TimeUtils;
+
 public class ArraySampleManager implements SampleReader {
 
 	public static SampleSchema newScheme() {
@@ -220,8 +222,15 @@ public class ArraySampleManager implements SampleReader {
 
 		@Override
 		public SampleWriter setTimestamp(long timestamp) {
-			internalSet(Measure.TIMESTAMP, timestamp);
+			internalSet(Measure.TIMESTAMP, TimeUtils.normalize(timestamp));
 			return this;
+		}
+
+		@Override
+		public SampleWriter setTimeBounds(long start, long finish) {
+			internalSet(Measure.TIMESTAMP, TimeUtils.normalize(start));
+			internalSet(Measure.END_TIMESTAMP, TimeUtils.normalize(finish));
+			return null;
 		}
 
 		@Override

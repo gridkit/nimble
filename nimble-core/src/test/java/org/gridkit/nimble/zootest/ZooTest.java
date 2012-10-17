@@ -1,5 +1,8 @@
 package org.gridkit.nimble.zootest;
 
+import org.gridkit.nimble.driver.Activity;
+import org.gridkit.nimble.driver.ExecutionDriver;
+import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
@@ -66,17 +69,29 @@ public class ZooTest {
 		ScenarioBuilder sb = new ScenarioBuilder();
 		
 		MeteringDriver metering = sb.deploy(metrics);
+		ExecutionDriver executor = sb.deploy(ExecutionHelper.newDriver());
+		
 		ZooTestDriver zoo = sb.deploy("node1*", new ZooTestDriver.Impl());
 		
+		Runnable task = zoo.getReader();		
+		
 		sb.checkpoint("test-start");
+		
+		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(2, 10, true), null, null);
 		
 		zoo.newSample(metering);
 		
 		sb.sleep(5000);
+
+		run.stop();
 		
 		sb.checkpoint("test-finish");
 		
 		metering.flush();
+		
+		sb.fromStart();
+		run.join();
+		sb.join("test-finish");
 		
 		Scenario scenario = sb.getScenario();
 		return scenario;

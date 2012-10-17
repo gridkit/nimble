@@ -8,6 +8,8 @@ public interface SampleWriter {
 	/** Short cut for {code}set(Measure.TIMESTAMP, timestamp){code} */
 	public SampleWriter setTimestamp(long timestamp);
 	
+	public SampleWriter setTimeBounds(long start, long finish);
+	
 	public SampleWriter set(Object key, int value);
 
 	public SampleWriter set(Object key, long value);

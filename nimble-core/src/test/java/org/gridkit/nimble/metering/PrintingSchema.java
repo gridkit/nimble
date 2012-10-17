@@ -3,6 +3,8 @@ package org.gridkit.nimble.metering;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gridkit.nimble.statistics.TimeUtils;
+
 public class PrintingSchema implements SampleSchema {
     private final Map<Object, Object> attrs;
     
@@ -63,11 +65,18 @@ public class PrintingSchema implements SampleSchema {
 
         @Override
         public SampleWriter setTimestamp(long timestamp) {
-            attrs.put(Measure.TIMESTAMP, timestamp);
+            attrs.put(Measure.TIMESTAMP, TimeUtils.normalize(timestamp));
             return this;
         }
-
+        
         @Override
+		public SampleWriter setTimeBounds(long start, long finish) {
+        	attrs.put(Measure.TIMESTAMP, TimeUtils.normalize(start));
+        	attrs.put(Measure.END_TIMESTAMP, TimeUtils.normalize(finish));
+			return this;
+		}
+
+		@Override
         public SampleWriter set(Object key, int value) {
             attrs.put(key, value);
             return this;

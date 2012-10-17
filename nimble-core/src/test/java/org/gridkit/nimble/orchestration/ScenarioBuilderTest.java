@@ -13,8 +13,6 @@ public class ScenarioBuilderTest {
 		
 		ScenarioBuilder sb = new ScenarioBuilder();
 		
-		sb.natural();
-		
 		Agent a1 = sb.deploy("**", new SimpleAgent("AGENT1"));
 		Agent a2 = sb.deploy("**", new SimpleAgent("AGENT2"));
 		

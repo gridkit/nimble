@@ -16,9 +16,13 @@ import java.util.concurrent.Future;
 
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class GraphScenario implements Scenario {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(GraphScenario.class);
+	
 	
 	private List<Action> actions; 
 	
@@ -204,7 +208,7 @@ class GraphScenario implements Scenario {
 
 		@SuppressWarnings("rawtypes")
 		private void complete(ActionInfo ai) {
-			System.out.println("DONE " + ai.id + " (" + ai.nodeName + ") " + ai.action);
+			logCompletion(ai);
 			try {
 				ai.pending.get();
 				if (ai.action instanceof InitContextAction) {
@@ -222,12 +226,20 @@ class GraphScenario implements Scenario {
 
 		private void fire(ActionInfo ai) {
 			TargetContext ctx = contexts.get(ai.nodeName);
-			System.out.println("FIRE " + ai.id + " (" + ai.nodeName + ") " + ai.action);
+			logActivation(ai);
 			Future<Void> result = ai.action.submit(ai.target, ai.allTargets, ctx);
 			ai.pending = result;
 			if (result.isDone()) {
 				complete(ai);
 			}
+		}
+
+		private void logCompletion(ActionInfo ai) {
+			LOGGER.info("DONE " + ai.getId() + " " + ai.action);
+		}
+
+		private void logActivation(ActionInfo ai) {
+			LOGGER.info("FIRE " + ai.getId() + " " + ai.action);
 		}
 
 		private Collection<ActionId> findAll(int id) {
@@ -296,7 +308,7 @@ class GraphScenario implements Scenario {
 		
 		@Override
 		public String toString() {
-			return "[" + (action == -1 ? "init" : String.valueOf(action)) + "]@" + (target == null ? "ROOT" :  target);
+			return (target == null ? "[root]" :  target) + "(" + (action == -1 ? "init" : String.valueOf(action)) + ")";
 		}		
 	}
 	

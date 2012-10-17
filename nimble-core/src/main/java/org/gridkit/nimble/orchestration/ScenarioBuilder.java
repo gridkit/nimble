@@ -262,6 +262,14 @@ public class ScenarioBuilder {
 						selectors.add(ts);
 					}
 				}
+				else if (ca.bean == bean) {
+					for(Object arg: ca.arguments) {
+						if (arg instanceof Bean) {
+							Bean cb = (Bean) arg;
+							
+						}
+					}
+				}
 			}
 		}
 		if (selectors.isEmpty()) {
