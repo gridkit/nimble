@@ -10,13 +10,15 @@ import org.gridkit.nimble.metering.SampleWriter;
 
 public class MeasureSampler {
     private final SampleSchema schema;
+    private final Object nameKey;
     private final Object typeKey;
     private final Object typeValue;
     
     private final Map<Object, SampleFactory> factories = new HashMap<Object, SampleFactory>();
         
-    public MeasureSampler(SampleSchema schema, Object typeKey, Object typeValue) {
+    public MeasureSampler(SampleSchema schema, Object nameKey, Object typeKey, Object typeValue) {
         this.schema = schema;
+        this.nameKey = nameKey;
         this.typeKey = typeKey;
         this.typeValue = typeValue;
     }
@@ -38,6 +40,7 @@ public class MeasureSampler {
         if (factory == null) {
             SampleSchema writerSchema = schema.createDerivedScheme();
             
+            writerSchema.setStatic(nameKey, measure);
             writerSchema.setStatic(typeKey, typeValue);
             
             writerSchema.declareDynamic(Measure.MEASURE,   long.class);

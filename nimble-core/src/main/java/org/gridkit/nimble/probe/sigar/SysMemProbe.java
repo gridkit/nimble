@@ -15,7 +15,7 @@ public class SysMemProbe extends SigarHolder implements Callable<Void> {
     private final MeasureSampler sampler;
     
     public SysMemProbe(SampleSchema schema) {
-        this.sampler = new MeasureSampler(schema, SigarMeasure.PROBE_TYPE, PROBE_TYPE);
+        this.sampler = new MeasureSampler(schema, SigarMeasure.MEASURE_NAME, SigarMeasure.PROBE_TYPE, PROBE_TYPE);
     }
 
     public static Runnable newInstance(SampleSchema schema) {

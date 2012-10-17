@@ -19,7 +19,7 @@ public class ProcMemProbe extends SigarHolder implements Callable<Void> {
     
     public ProcMemProbe(long pid, SampleSchema schema) {
         this.pid = pid;
-        this.sampler = new MeasureSampler(schema, SigarMeasure.PROBE_TYPE, PROBE_TYPE);
+        this.sampler = new MeasureSampler(schema, SigarMeasure.MEASURE_NAME, SigarMeasure.PROBE_TYPE, PROBE_TYPE);
     }
         
     @Override
