@@ -189,8 +189,11 @@ public class ScenarioBuilder {
 
 	private Bean declareDeployable(Method method) {
 		Class<?> rt = method.getReturnType();
-		if (rt.getInterfaces().length > 0) {
-			return newBeanInfo(rt.getInterfaces());
+		if (rt == Object.class) {
+			return newBeanInfo(new Class<?>[]{Noop.class});
+		}
+		if (rt.isInterface()) {
+			return newBeanInfo(new Class<?>[]{rt});
 		}
 		else {
 			return null;
@@ -951,5 +954,8 @@ public class ScenarioBuilder {
 		public String toString() {
 			return "checkpoint " + name;
 		}
+	}
+	
+	private static interface Noop {		
 	}
 }
