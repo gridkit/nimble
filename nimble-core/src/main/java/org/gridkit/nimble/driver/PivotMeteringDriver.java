@@ -61,9 +61,10 @@ public class PivotMeteringDriver implements MeteringDriver, Deployable {
 		return new Deployer(nodename, reporter.createSlaveReporter(), bufferSize);
 	}
 
-
 	private static class Deployer implements DeploymentArtifact, Serializable {
 
+		private static final long serialVersionUID = 20121017L;
+		
 		private final String nodename;
 		private final SampleAccumulator accumulator;
 		private final int bufferSize;
@@ -92,6 +93,7 @@ public class PivotMeteringDriver implements MeteringDriver, Deployable {
 		private final SampleAccumulator accumulator;		
 		
 		private final Map<Object, Object> globals =  new HashMap<Object, Object>();
+		@SuppressWarnings("unused")
 		private final Thread reporter;
 		
 		public Slave(String nodename, SampleAccumulator accumulator, int bufferSize) {

@@ -99,18 +99,15 @@ class GraphScenario implements Scenario {
 				}
 				for(Action dep: action.getDependencies()) {
 					if (action.isMasterAction()) {
-						System.out.println(actionInfo.getId() + " dep " + findAll(dep.getId()));
 						actionInfo.dependencies.addAll(findAll(dep.getId()));
 					}
 					else {
 						ActionId local = new ActionId(dep.getId(), actionInfo.nodeName);
 						ActionId global = new ActionId(dep.getId(), null);
 						if (this.actions.containsKey(local)) {
-							System.out.println(actionInfo.getId() + " dep " + local);
 							actionInfo.dependencies.add(local);
 						}
 						else if (this.actions.containsKey(global)) {
-							System.out.println(actionInfo.getId() + " dep " + global);
 							actionInfo.dependencies.add(global);
 						}
 						else {

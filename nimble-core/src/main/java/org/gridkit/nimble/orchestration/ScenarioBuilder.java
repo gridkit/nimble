@@ -15,11 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nimble.orchestration.Deployable.DeploymentArtifact;
 import org.gridkit.nimble.orchestration.Deployable.DepolymentContext;
 import org.gridkit.nimble.orchestration.Deployable.EnvironmentContext;
-import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.util.concurrent.TimedFuture;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeSet;
 
@@ -47,13 +48,17 @@ public class ScenarioBuilder {
 		CheckpointAction start = new CheckpointAction(START);
 		tracker = new NaturalDependencyTracker(start);
 	}
+
+	public <V> V deploy(V bean) {
+		return internalDeploy(null, bean);
+	}
 	
 	public <V> V deploy(String pattern, V bean) {
-		return deploy(new PatternSelector(pattern), bean);
+		return internalDeploy(new PatternSelector(pattern), bean);
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <V> V deploy(TargetSelector scope, V bean) {
+	private <V> V internalDeploy(TargetSelector scope, V bean) {
 		if (beans.containsKey(bean)) {
 			throw new IllegalArgumentException("Bean [" + bean + "] is already deployed");
 		}
@@ -79,14 +84,18 @@ public class ScenarioBuilder {
 		return beanMeta;
 	}
 	
-	public void natural() {	
+	// to be removed
+	@SuppressWarnings("unused")
+	private void natural() {	
 		if (order != Order.NATURAL) {
 			CheckpointAction sync = makeSync();
 			tracker = new NaturalDependencyTracker(sync);
 		}		
 	}
-	
-	public void sequential() {		
+		
+	// to be removed
+	@SuppressWarnings("unused")
+	private void sequential() {		
 		if (order != Order.SEQUENTIAL) {
 			CheckpointAction sync = makeSync();
 			tracker = new SequentialTracker(sync);
@@ -98,6 +107,11 @@ public class ScenarioBuilder {
 		restartTracker(sync);
 	}
 
+	public void sleep(long millis) {
+		CheckpointAction sync = makeSleep(millis);
+		restartTracker(sync);		
+	}
+	
 	public void checkpoint(String name) {
 		CheckpointAction sync = makeCheckpoint(name);
 		restartTracker(sync);		
@@ -109,6 +123,7 @@ public class ScenarioBuilder {
 			throw new IllegalArgumentException("Checkpoint (" + name + ") is not defined");
 		}
 		run.clear();
+		run.add(cp);
 		restartTracker(cp);		
 	}
 
@@ -140,11 +155,16 @@ public class ScenarioBuilder {
 	}
 	
 	private CheckpointAction makeSync() {
-		CheckpointAction sync = new CheckpointAction();
+		return makeSleep(0);
+	}
+
+	private CheckpointAction makeSleep(long sleep) {
+		CheckpointAction sync = new CheckpointAction(sleep);
 		for(Action action: run) {
 			sync.addDependency(action);
 		}
 		run.clear();
+		run.add(sync);
 		return sync;
 	}
 	
@@ -154,6 +174,7 @@ public class ScenarioBuilder {
 			sync.addDependency(action);
 		}
 		run.clear();
+		run.add(sync);
 		return sync;		
 	}
 	
@@ -215,12 +236,35 @@ public class ScenarioBuilder {
 			return bean.scope;
 		}
 		else {
-			return deriveScope(bean);
+			return deriveScope(bean, bean);
 		}
 	}
 	
-	private TargetSelector deriveScope(Bean bean) {
-		throw new UnsupportedOperationException();
+	private TargetSelector deriveScope(Bean rootBean, Bean bean) {
+		List<TargetSelector> selectors = new ArrayList<TargetSelector>();
+		for(Action action: actionList) {
+			if (action instanceof CallAction) {
+				CallAction ca = (CallAction) action;
+				if (ca.isUsing(bean)) {
+					TargetSelector ts = ca.bean.scope;
+					if (ts == null) {
+						if (ca.bean == rootBean) {
+							throw new RuntimeException("Cyclic dependency resolving bean scope: " + rootBean.reference);
+						}
+						else {
+							selectors.add(deriveScope(rootBean, ca.bean));
+						}
+					}
+					else {
+						selectors.add(ts);
+					}
+				}
+			}
+		}
+		if (selectors.isEmpty()) {
+			throw new RuntimeException("Bean " + bean.reference + " is not used");
+		}
+		return new CompositeTargetSelector(selectors.toArray(new TargetSelector[selectors.size()]));
 	}
 
 	private List<GraphScenario.Action> exportGraph() {
@@ -251,7 +295,10 @@ public class ScenarioBuilder {
 			return sa;			
 		}
 		else if (action instanceof CheckpointAction) {
-			ScriptAction sa = new ScriptAction(list, action.actionId, null, toArray(action.getDependencies()), new CheckpointExecutor());
+			CheckpointAction ca = (CheckpointAction) action;
+			String name = ca.name != null ? ("(" + ca.name + ")") : ca.sleep == 0 ? "<sync #" + ca.actionId + ">" : "<sleep " + ca.sleep + "ms>";
+			CheckpointExecutor exec = new CheckpointExecutor(name, ca.sleep);
+			ScriptAction sa = new ScriptAction(list, action.actionId, null, toArray(action.getDependencies()), exec);
 			return sa;			
 		}
 		else {
@@ -273,7 +320,6 @@ public class ScenarioBuilder {
 		final Class<?>[] interfaces;
 		
 		TargetSelector scope;
-		@SuppressWarnings("unused")
 		Object reference;
 		Object proxy;
 		Action deployAction;
@@ -450,6 +496,15 @@ public class ScenarioBuilder {
 			addDependency(bean.deployAction);
 		}
 
+		public boolean isUsing(Bean bean) {
+			for(Object arg: arguments) {
+				if (arg == bean) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		@Override
 		public List<Bean> getRelatedBeans() {
 			return related;
@@ -474,13 +529,21 @@ public class ScenarioBuilder {
 	class CheckpointAction extends Action {
 		
 		private final String name;
+		private final long sleep;
 
 		public CheckpointAction() {
-			this.name = "<sync>";
+			this.name = null;
+			this.sleep = 0;
+		}		
+
+		public CheckpointAction(long sleepMillis) {
+			this.name = null;
+			this.sleep = sleepMillis;
 		}		
 		
 		public CheckpointAction(String name) {
 			this.name = name;
+			this.sleep = 0;
 			if (namedCheckpoints.containsKey(name)) {
 				throw new IllegalArgumentException("Checkpoint (" + name + ") is already defined");
 			}
@@ -499,7 +562,8 @@ public class ScenarioBuilder {
 		
 		@Override
 		public String toString() {
-			return "[" + actionId + "] (" + name + ")";
+			return "[" + actionId + "] " 
+					+ ( name != null ? "name" : sleep == 0 ? "<sync>" : "<sleep " + sleep + "ms>");
 		}
 	}
 	
@@ -869,16 +933,23 @@ public class ScenarioBuilder {
 		
 	private static class CheckpointExecutor implements TargetAction {
 		
+		private final String name;
+		private final long sleep;
+		
+		public CheckpointExecutor(String name, long sleepMs) {
+			this.name = name;
+			this.sleep = sleepMs;
+		}
+
 		@Override
 		public Future<Void> submit(ViNode target, Collection<ViNode> allTargets, TargetContext context) {
-			FutureBox<Void> fb = new FutureBox<Void>();
-			fb.setData(null);
-			return fb;
+			long nanodeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(sleep) - 1;
+			return new TimedFuture(nanodeadline);
 		}
 		
 		@Override
 		public String toString() {
-			return "checkpoint[]";
+			return "checkpoint " + name;
 		}
 	}
 }

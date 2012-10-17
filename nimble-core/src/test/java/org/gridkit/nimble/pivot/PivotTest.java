@@ -39,8 +39,8 @@ public class PivotTest {
 		
 		SampleSchema ss1 = ss.createDerivedScheme();
 		asm1.adopt(ss1);
-//		ss1.setStatic(Measure.NAME, "XYZ");
-		ss1.setStatic(Measure.NAME, "ABC");
+		ss1.setStatic(Measure.NAME, "XYZ");
+//		ss1.setStatic(Measure.NAME, "ABC");
 		ss1.declareDynamic(Measure.MEASURE, double.class);
 		ss1.declareDynamic("A", String.class);
 
@@ -52,29 +52,25 @@ public class PivotTest {
 		
 		SampleFactory sf1 = ss1.createFactory();
 		SampleFactory sf2 = ss2.createFactory();
-		for(int i = 0; i != 5; ++i) {
-			sf1.newSample()
-				.setMeasure(10 + i)
-				.set("A", i % 3)
-				.set(Measure.TIMESTAMP, i)
-				.submit();
-			sf2.newSample()
-				.setMeasure(8 + i)
-				.set("A", i % 2)
-				.set(Measure.TIMESTAMP, i)
-				.submit();
-		}
+
+		generateSamples(sf1, sf2);
 
 		DistributedPivotReporter reporter = new DistributedPivotReporter(pv);
 		
 		SampleAccumulator sub1 = reporter.createSlaveReporter();
 		SampleAccumulator sub2 = reporter.createSlaveReporter();
 		
-		asm1.next();
 		sub1.accumulate(asm1);
 		sub1.flush();
 
-		asm2.next();
+		sub2.accumulate(asm2);
+		sub2.flush();
+		
+		generateSamples(sf1, sf2);
+		
+		sub1.accumulate(asm1);
+		sub1.flush();
+
 		sub2.accumulate(asm2);
 		sub2.flush();
 		
@@ -88,6 +84,21 @@ public class PivotTest {
 		
 		System.out.println("Done");
 		
+	}
+
+	private void generateSamples(SampleFactory sf1, SampleFactory sf2) {
+		for(int i = 0; i != 5; ++i) {
+			sf1.newSample()
+				.setMeasure(10 + i)
+				.set("A", i % 3)
+				.set(Measure.TIMESTAMP, i)
+				.submit();
+			sf2.newSample()
+				.setMeasure(8 + i)
+				.set("A", i % 2)
+				.set(Measure.TIMESTAMP, i)
+				.submit();
+		}
 	}
 	
 }

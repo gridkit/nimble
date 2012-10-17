@@ -24,21 +24,12 @@ public class ZooTest {
 	
 	@Test
 	public void test() {
-		cloud.node("node1");
-		cloud.node("node2");
+		cloud.node("node11");
+		cloud.node("node12");
+		cloud.node("node22");
 		
 		
-		Pivot pivot = new Pivot();
-		pivot.root()
-			.group(MeteringDriver.NODE)
-				.group(Measure.NAME)
-					.level("stats")
-						.show()
-						.display(Measure.NAME)
-						.display(MeteringDriver.NODE)
-						.calcDistribution(Measure.MEASURE)
-						.displayDistribution(Measure.MEASURE);
-		
+		Pivot pivot = configurePivot();
 		PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 1024);
 		
 		Scenario scenario = createTestScenario(metrics);
@@ -54,16 +45,34 @@ public class ZooTest {
 		System.out.println("Done");
 	}
 
+	private Pivot configurePivot() {
+		Pivot pivot = new Pivot();
+		
+		pivot.root()
+			.group(MeteringDriver.NODE)
+				.group(Measure.NAME)
+					.level("stats")
+						.show()
+						.display(Measure.NAME)
+						.display(MeteringDriver.NODE)
+						.calcDistribution(Measure.MEASURE)
+						.displayDistribution(Measure.MEASURE);
+		
+		return pivot;
+	}
+
 	private Scenario createTestScenario(PivotMeteringDriver metrics) {
 		
 		ScenarioBuilder sb = new ScenarioBuilder();
 		
-		MeteringDriver metering = sb.deploy("**", metrics);
-		ZooTestDriver zoo = sb.deploy("**", new ZooTestDriver.Impl());
+		MeteringDriver metering = sb.deploy(metrics);
+		ZooTestDriver zoo = sb.deploy("node1*", new ZooTestDriver.Impl());
 		
 		sb.checkpoint("test-start");
 		
 		zoo.newSample(metering);
+		
+		sb.sleep(5000);
 		
 		sb.checkpoint("test-finish");
 		
