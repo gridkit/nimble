@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.java.btrace.client.Client;
 import net.java.btrace.ext.Printer;
 
+import org.gridkit.nimble.btrace.ext.PingCmd;
 import org.gridkit.nimble.util.SystemOps;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;

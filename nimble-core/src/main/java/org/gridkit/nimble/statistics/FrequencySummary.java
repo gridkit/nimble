@@ -3,12 +3,12 @@ package org.gridkit.nimble.statistics;
 public interface FrequencySummary extends SampleSummary {
 
 	/**
-	 * @return as normalized nanotime
+	 * @return as epoc seconds
 	 */
 	public double getEarliestEventTimestamp();
 	
 	/**
-	 * @return as normalized nanotime
+	 * @return as epoc seconds
 	 */
 	public double getLatestEventTimestamp();
 	

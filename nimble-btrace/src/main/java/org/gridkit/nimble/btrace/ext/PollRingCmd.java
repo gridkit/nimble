@@ -1,4 +1,4 @@
-package org.gridkit.nimble.btrace;
+package org.gridkit.nimble.btrace.ext;
 
 import java.io.IOException;
 import java.io.ObjectInput;

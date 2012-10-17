@@ -1,2 +1,2 @@
-org.gridkit.nimble.btrace.PollRingCmd
-org.gridkit.nimble.btrace.PingCmd
+org.gridkit.nimble.btrace.ext.PollRingCmd
+org.gridkit.nimble.btrace.ext.PingCmd

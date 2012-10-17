@@ -14,8 +14,23 @@
     
 	<dependencies>
         <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>nimble-core</artifactId>
+        </dependency>
+    
+        <dependency>
             <groupId>net.java.btrace</groupId>
-            <artifactId>core-api</artifactId>
+            <artifactId>client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>btrace-agent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>ext-default</artifactId>
         </dependency>
 	</dependencies>
 

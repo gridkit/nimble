@@ -1,5 +1,6 @@
 package org.gridkit.nimble.probe.jmx;
 
+/*
 import java.lang.management.ThreadInfo;
 import java.math.BigInteger;
 import java.util.Collection;
@@ -12,9 +13,10 @@ import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
+*/
 
 public class JmxThreadTracker {
-
+/*
 	private static ObjectName THREADING = name("java.lang:type=Threading");
 			
 	private static ObjectName name(String name) {
@@ -177,4 +179,5 @@ public class JmxThreadTracker {
 		long prevMemoryAllocated;
 		long lastMemoryAllocated;
 	}
+	*/
 }

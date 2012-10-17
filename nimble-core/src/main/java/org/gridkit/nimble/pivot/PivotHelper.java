@@ -39,6 +39,10 @@ class PivotHelper {
 	public static DisplayFunction displayFrequency(Object key) {
 		return new FrequencyDisplayFunction("Freq.", Extractors.field(key));
 	}
+
+	public static DisplayFunction displayFrequency(String caption, Object key) {
+	    return new FrequencyDisplayFunction(caption, Extractors.field(key));
+	}
 		
 	private static final class ConstantAggregator implements Pivot.Aggregator, Serializable {
 

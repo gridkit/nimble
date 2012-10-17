@@ -14,14 +14,14 @@
     <name>${project.groupId}::${project.artifactId}</name>
 
     <properties>
-        <nanocloud.version>0.7.6-SNAPSHOT</nanocloud.version>
+        <nanocloud.version>0.7.7-SNAPSHOT</nanocloud.version>
         <sigar-lib.version>0.1-SNAPSHOT</sigar-lib.version>
         
         <tools-jar.version>1.6</tools-jar.version>
         <btrace.version>2.0-SNAPSHOT</btrace.version>
         
         <commons-math.version>3.0</commons-math.version>
-        <guava.version>12.0.1</guava.version>
+        <guava.version>13.0.1</guava.version>
         <slf4j.version>1.6.6</slf4j.version>
         
         <logback.version>1.0.6</logback.version>
@@ -73,6 +73,12 @@
         <dependencies>
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
+                <artifactId>nimble-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
                 <artifactId>nimble-btrace</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -86,6 +92,12 @@
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>telecontrol-ssh</artifactId>
+                <version>${nanocloud.version}</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>viconcurrent</artifactId>
                 <version>${nanocloud.version}</version>
             </dependency>
         

@@ -1,4 +1,4 @@
-package org.gridkit.nimble.btrace;
+package org.gridkit.nimble.btrace.ext;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-public class RingBuffer {
+public class RingBuffer<T> {
     @SuppressWarnings("serial")
-    public static class Element implements Serializable {
+    public static class Element<T> implements Serializable {
         private long id;
-        private Object data;
+        private T data;
         
         public long getId() {
             return id;
@@ -24,25 +24,25 @@ public class RingBuffer {
             return data;
         }
         
-        public void setData(Object data) {
+        public void setData(T data) {
             this.data = data;
         }
     }
     
     public static final long START_ID = 0;
     
-    private final AtomicReferenceArray<Element> elements;
+    private final AtomicReferenceArray<Element<T>> elements;
     
     private AtomicLong writeCounter = new AtomicLong(START_ID);
 
     private long readCounter = START_ID;
     
     public RingBuffer(int capacity) {
-        this.elements = new AtomicReferenceArray<Element>(capacity);
+        this.elements = new AtomicReferenceArray<Element<T>>(capacity);
     }
     
-    public long add(Object data) {
-        Element element = new Element();
+    public long add(T data) {
+        Element<T> element = new Element<T>();
         
         long id = writeCounter.getAndIncrement();
         
@@ -54,11 +54,11 @@ public class RingBuffer {
         return id;
     }
     
-    public synchronized List<Element> get() {
-        List<Element> result = new ArrayList<RingBuffer.Element>();
+    public synchronized List<Element<T>> get() {
+        List<Element<T>> result = new ArrayList<RingBuffer.Element<T>>();
         
         while(result.size() < elements.length()) {
-            Element element = elements.get(index(readCounter));
+            Element<T> element = elements.get(index(readCounter));
             
             if (element == null || element.id < readCounter) {
                 break;

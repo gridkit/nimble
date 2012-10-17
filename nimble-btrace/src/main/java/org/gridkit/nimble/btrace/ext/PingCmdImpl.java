@@ -1,4 +1,4 @@
-package org.gridkit.nimble.btrace;
+package org.gridkit.nimble.btrace.ext;
 
 import java.io.IOException;
 
@@ -13,6 +13,8 @@ public class PingCmdImpl extends CommandImpl<PingCmd> {
     @Override
     public void execute(Lookup ctx, PingCmd cmd) {
         Channel channel = ctx.lookup(Channel.class);
+        
+        System.err.println("-------------");
         
         try {
             channel.sendResponse(cmd, true);

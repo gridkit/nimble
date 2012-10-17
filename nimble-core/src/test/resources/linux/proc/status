@@ -1,0 +1,37 @@
+Name:	firefox
+State:	S (sleeping)
+Tgid:	2130
+Pid:	2130
+PPid:	1
+TracerPid:	0
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
+FDSize:	256
+Groups:	4 20 24 46 105 119 122 1000 1001 
+VmPeak:	  741312 kB
+VmSize:	  702200 kB
+VmLck:	       0 kB
+VmHWM:	  278592 kB
+VmRSS:	  232980 kB
+VmData:	  606628 kB
+VmStk:	     308 kB
+VmExe:	      84 kB
+VmLib:	   54424 kB
+VmPTE:	     908 kB
+Threads:	34
+SigQ:	0/16382
+SigPnd:	0000000000000000
+ShdPnd:	0000000000000000
+SigBlk:	0000000000000004
+SigIgn:	0000000000000000
+SigCgt:	2000000181005cef
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	ffffffffffffffff
+Cpus_allowed:	ff
+Cpus_allowed_list:	0-7
+Mems_allowed:	1
+Mems_allowed_list:	0
+voluntary_ctxt_switches:	3612991
+nonvoluntary_ctxt_switches:	166105

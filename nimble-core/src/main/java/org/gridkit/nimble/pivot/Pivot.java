@@ -129,7 +129,7 @@ public class Pivot {
 		}
 
 		public Level displayThroughput(Object key) {
-			DisplayFunction df = PivotHelper.displayFrequency(key);
+			DisplayFunction df = PivotHelper.displayFrequency(key.toString(), key);
 			addDisplayFunction(df);
 			return this;			
 		}
