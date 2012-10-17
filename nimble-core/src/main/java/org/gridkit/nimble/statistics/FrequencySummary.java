@@ -1,5 +1,7 @@
 package org.gridkit.nimble.statistics;
 
+import java.io.Serializable;
+
 public interface FrequencySummary extends SampleSummary {
 
 	/**
@@ -30,7 +32,7 @@ public interface FrequencySummary extends SampleSummary {
 	 */
 	public double getDuration();
 	
-	public static class Values implements FrequencySummary {
+	public static class Values implements FrequencySummary, Serializable {
 		
 		protected long n;
 		protected double total;

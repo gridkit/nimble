@@ -1,7 +1,9 @@
 package org.gridkit.nimble.pivot;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
 
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.pivot.Pivot.Extractor;
@@ -23,7 +25,15 @@ public class Filters {
 		}
 		return new AndFilter(filters);
 	}
+	
+	public static Filter in(Object key, Collection<? extends Object> values) {
+	    return new InFilter(Extractors.field(key), values);
+	}
 
+	public static Filter in(Object key, Object... values) {
+	    return new InFilter(Extractors.field(key), Arrays.asList(values));
+	}
+	
 	public static Filter and(Collection<Filter> levelFilters) {
 		return and(levelFilters.toArray(new Filter[0]));
 	}
@@ -93,6 +103,24 @@ public class Filters {
 		}
 	}
 
+	public static class InFilter extends ExtractorFilter {
+	    
+        private static final long serialVersionUID = 1112015125669341187L;
+        
+        private final Collection<? extends Object> values;
+
+        public InFilter(Extractor extractor, Collection<? extends Object> values) {
+            super(extractor);
+            this.values = values;
+        }
+
+
+        @Override
+        protected boolean evaluate(Object extract) {
+            return values.contains(extract);
+        }
+	}
+	
 	public static enum TrueFilter implements Pivot.Filter, Serializable {
 
 		TRUE
