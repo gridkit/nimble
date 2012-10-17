@@ -76,6 +76,9 @@ public class PivotReporter implements SampleAccumulator {
 	
 	@Override
 	public void accumulate(SampleReader samples) {
+		if (!samples.isReady() && !samples.next()) {
+			return;
+		}
 		SingleSampleReader ssr = new SingleSampleReader(samples);
 		while(true) {
 			processSample(summary, ssr);

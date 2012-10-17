@@ -1,7 +1,6 @@
 package org.gridkit.nimble.orchestration;
 
 import java.util.Collection;
-import java.util.List;
 
 import org.gridkit.vicluster.ViNode;
 

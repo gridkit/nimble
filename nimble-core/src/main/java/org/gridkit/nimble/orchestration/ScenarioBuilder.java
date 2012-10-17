@@ -177,7 +177,7 @@ public class ScenarioBuilder {
 	}
 	
 	private void addDeployAction(Bean beanInfo, Object proto) {
-		Deployable deployable = new DeployablePrototype(proto); 
+		Deployable deployable = proto instanceof Deployable ? (Deployable) proto : new DeployablePrototype(proto); 
 		DeployAction action = new DeployAction(beanInfo, deployable);
 		addAction(action);
 		beanInfo.deployAction = action;
@@ -273,6 +273,7 @@ public class ScenarioBuilder {
 		final Class<?>[] interfaces;
 		
 		TargetSelector scope;
+		@SuppressWarnings("unused")
 		Object reference;
 		Object proxy;
 		Action deployAction;
@@ -649,6 +650,7 @@ public class ScenarioBuilder {
 	
 	private static class ExecutionInfo {
 		
+		@SuppressWarnings("unused")
 		private int actionId;
 		private List<Integer> pending = new ArrayList<Integer>();
 		

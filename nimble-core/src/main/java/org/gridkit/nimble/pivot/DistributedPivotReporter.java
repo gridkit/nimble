@@ -102,6 +102,7 @@ public class DistributedPivotReporter extends PivotReporter {
 		}
 		
 		private void readObject(ObjectInputStream is) throws IOException, ClassNotFoundException {
+			is.defaultReadObject();
 			reporter = new PivotReporter(rootLevel);
 		}		
 	}		
