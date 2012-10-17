@@ -69,7 +69,7 @@ public class ZooTest {
 		ScenarioBuilder sb = new ScenarioBuilder();
 		
 		MeteringDriver metering = sb.deploy(metrics);
-		ExecutionDriver executor = sb.deploy(ExecutionHelper.newDriver());
+		ExecutionDriver executor = sb.deploy("node1*", ExecutionHelper.newDriver());
 		
 		ZooTestDriver zoo = sb.deploy("node1*", new ZooTestDriver.Impl());
 		
@@ -77,7 +77,7 @@ public class ZooTest {
 		
 		sb.checkpoint("test-start");
 		
-		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(2, 10, true), null, null);
+		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(0.5, 1, true), null, null);
 		
 		zoo.newSample(metering);
 		

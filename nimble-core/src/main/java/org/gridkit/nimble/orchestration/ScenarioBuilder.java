@@ -247,12 +247,13 @@ public class ScenarioBuilder {
 		List<TargetSelector> selectors = new ArrayList<TargetSelector>();
 		for(Action action: actionList) {
 			if (action instanceof CallAction) {
+				// TODO !!!
 				CallAction ca = (CallAction) action;
 				if (ca.isUsing(bean)) {
 					TargetSelector ts = ca.bean.scope;
 					if (ts == null) {
 						if (ca.bean == rootBean) {
-							throw new RuntimeException("Cyclic dependency resolving bean scope: " + rootBean.reference);
+							continue;
 						}
 						else {
 							selectors.add(deriveScope(rootBean, ca.bean));
@@ -266,7 +267,12 @@ public class ScenarioBuilder {
 					for(Object arg: ca.arguments) {
 						if (arg instanceof Bean) {
 							Bean cb = (Bean) arg;
-							
+							if (cb.scope != null) {
+								selectors.add(cb.scope);
+							}
+							else {
+								selectors.add(deriveScope(rootBean, cb));
+							}
 						}
 					}
 				}
@@ -609,13 +615,6 @@ public class ScenarioBuilder {
 		abstract TargetSelector getSelector(Action action);
 	}
 
-	class MasterScope extends Scope {
-		
-		TargetSelector getSelector(Action action) {
-			return null;
-		}
-	}
-
 	class BeanScope extends Scope {
 
 		TargetSelector getSelector(Action action) {
@@ -649,7 +648,11 @@ public class ScenarioBuilder {
 			}
 			else {
 				Bean rbean = declareDeployable(method);
+				if (rbean != null) {
+					rbean.scope = bean.scope;
+				}
 				addCallAction(bean, scope, method, args, rbean);
+				// TODO normal dependency processing!!!
 				
 				return rbean == null ? null : rbean.proxy;
 			}

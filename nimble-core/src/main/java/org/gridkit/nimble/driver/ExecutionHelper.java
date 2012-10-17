@@ -30,7 +30,7 @@ public class ExecutionHelper {
 		}		
 	}
 	
-	private static class ExecDriver implements ExecutionDriver {
+	private static class ExecDriver implements ExecutionDriver, Serializable {
 
 		@Override
 		public Activity start(Runnable task, ExecutionConfig config, MeteringDriver metering, MeteringTemplate sampleTemplate) {
@@ -74,7 +74,7 @@ public class ExecutionHelper {
 		}
 		
 		private synchronized void startWorkers(int threads) {
-			++threadCount;
+			realThreadCount += threads;
 			for(int i = 0; i != threads; ++i) {
 				service.submit(this);
 			}			
@@ -90,6 +90,9 @@ public class ExecutionHelper {
 					}
 					if (iterationBarrier != null) {
 						iterationBarrier.pass();
+					}
+					if (stopped) {
+						break;
 					}
 					
 					long st = System.nanoTime();
@@ -116,8 +119,8 @@ public class ExecutionHelper {
 				lastError = e;
 			}
 			synchronized(this) {
-				boolean last = 0 == --realThreadCount;
-				if (last) {
+				--realThreadCount;
+				if (realThreadCount <= 0) {
 					runLatch.countDown();
 					service.shutdown();
 				}
