@@ -14,8 +14,6 @@ public class PingCmdImpl extends CommandImpl<PingCmd> {
     public void execute(Lookup ctx, PingCmd cmd) {
         Channel channel = ctx.lookup(Channel.class);
         
-        System.err.println("-------------");
-        
         try {
             channel.sendResponse(cmd, true);
         } catch (IOException e) {

@@ -4,11 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.java.btrace.api.extensions.ExtensionsRepository;
@@ -17,7 +12,6 @@ import net.java.btrace.client.Client;
 
 import org.gridkit.nimble.util.CriticalSection;
 import org.gridkit.nimble.util.JvmOps;
-import org.gridkit.nimble.util.NamedThreadFactory;
 
 import com.sun.tools.attach.VirtualMachine;
 
@@ -26,20 +20,10 @@ public class BTraceClientFactory {
     
     public static final int BTRACE_PORT = 2020;
     public static final String BTRACE_PORT_PROPERTY = "btrace.port";
-    
-    private static long CLIENT_EXIT_TIMEOUT_MS = 5000;
-    
+
     private CriticalSection connectSection = new CriticalSection();
     private AtomicInteger nextPort = new AtomicInteger(BTRACE_PORT);
-    
-    private ExecutorService exitExecutor = Executors.newCachedThreadPool(
-        new NamedThreadFactory("BTraceExitExecutor", true, Thread.MIN_PRIORITY)
-    );
         
-    private ScheduledExecutorService exitInterruptExecutor = Executors.newSingleThreadScheduledExecutor(
-        new NamedThreadFactory("BTraceExitInterruptExecutor", true, Thread.MIN_PRIORITY)
-    );
-    
     protected static String JVM_OPS = JvmOps.class.getCanonicalName(); // force tools.jar load
     
     public Client newClient(int pid, BTraceClientSettings settings) throws ClientCreateException {
@@ -50,23 +34,6 @@ public class BTraceClientFactory {
         } catch (Exception e) {
             throw new ClientCreateException("Failed to build BTrace client for process id " + pid, e);
         }
-    }
-
-    public void exit(final Client client, final int exitCode) {
-        final Future<Void> exitFuture = exitExecutor.submit(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                client.exit(exitCode);
-                return null;
-            }
-        });
-        
-        exitInterruptExecutor.schedule(new Runnable() {
-            @Override
-            public void run() {
-                exitFuture.cancel(true);
-            }
-        }, CLIENT_EXIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
     }
     
     public class ClientConnector implements Callable<Client> {
@@ -83,16 +50,17 @@ public class BTraceClientFactory {
             int port = getPort();
             
             Client client = Client.forProcess(pid);
-
-            ExtensionsRepository extRep = ExtensionsRepositoryFactory.fixed(
-                ExtensionsRepository.Location.BOTH, settings.getExtensionsPath()
-            );
+            
+            String extPath = settings.getExtensionsPath();
+            
+            ExtensionsRepository extRep = ExtensionsRepositoryFactory.fixed(ExtensionsRepository.Location.BOTH, extPath);
             
             if (settings.isDumpClasses()) {
                 File dumpDir = new File(settings.getDumpDir());
                 dumpDir.mkdirs();
             }
             
+            client.setBootCp(extPath);
             client.setAgentPath(settings.getAgentPath());
             client.setExtRepository(extRep);
             client.setTrackRetransforms(settings.isTrackRetransform());

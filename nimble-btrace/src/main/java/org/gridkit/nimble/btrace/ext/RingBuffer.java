@@ -9,18 +9,18 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 public class RingBuffer<T> {
     @SuppressWarnings("serial")
     public static class Element<T> implements Serializable {
-        private long id;
+        private long seqNumber;
         private T data;
         
-        public long getId() {
-            return id;
+        public long getSeqNumber() {
+            return seqNumber;
         }
         
-        public void setId(long id) {
-            this.id = id;
+        public void setSeqNumber(long seqNumber) {
+            this.seqNumber = seqNumber;
         }
         
-        public Object getData() {
+        public T getData() {
             return data;
         }
         
@@ -46,7 +46,7 @@ public class RingBuffer<T> {
         
         long id = writeCounter.getAndIncrement();
         
-        element.setId(id);
+        element.setSeqNumber(id);
         element.setData(data);
 
         elements.set(index(id), element);
@@ -60,13 +60,13 @@ public class RingBuffer<T> {
         while(result.size() < elements.length()) {
             Element<T> element = elements.get(index(readCounter));
             
-            if (element == null || element.id < readCounter) {
+            if (element == null || element.seqNumber < readCounter) {
                 break;
-            } else if (element.id == readCounter) {
+            } else if (element.seqNumber == readCounter) {
                 result.add(element);
                 readCounter += 1;
             } else { // (element.id > id)
-                readCounter = element.id - elements.length() + 1; // oldest id before element
+                readCounter = element.seqNumber - elements.length() + 1; // oldest id before element
             }
         }
         
