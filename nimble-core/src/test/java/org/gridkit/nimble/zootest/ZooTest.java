@@ -1,7 +1,5 @@
 package org.gridkit.nimble.zootest;
 
-import java.util.concurrent.TimeUnit;
-
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
@@ -79,7 +77,7 @@ public class ZooTest {
 		
 		Runnable task = zoo.getReader();	
 		
-        SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100, TimeUnit.MILLISECONDS));
+        SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100));
         
         PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
 
