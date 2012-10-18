@@ -3,11 +3,17 @@ package org.gridkit.nimble.probe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.metering.SampleSchema;
 
 public class ProbeOps {
+    private static final Random rnd = new Random();
+    
     public interface SingleProbeFactory<P> {
         Runnable newProbe(P param, SampleSchema schema);
     }
@@ -20,5 +26,20 @@ public class ProbeOps {
         }
 
         return probes;
+    }
+
+    public static ProbeHandle schedule(Collection<Runnable> probes, ScheduledExecutorService executor, long delayMs) {
+        List<Future<?>> futures = new ArrayList<Future<?>>();
+        
+        for (Runnable probe : probes) {
+            Future<?> future = executor.scheduleWithFixedDelay(probe, getInitialDelay(delayMs), delayMs, TimeUnit.MILLISECONDS);
+            futures.add(future);
+        }
+        
+        return new FutureProbeHandle(futures);
+    }
+    
+    private static long getInitialDelay(long delayMs) {
+        return Math.abs(rnd.nextLong()) % delayMs;
     }
 }

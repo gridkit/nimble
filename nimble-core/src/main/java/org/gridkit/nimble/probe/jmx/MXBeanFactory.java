@@ -17,7 +17,7 @@ public class MXBeanFactory {
         return newMXBean(conn, ManagementFactory.CLASS_LOADING_MXBEAN_NAME, ClassLoadingMXBean.class);
     }
     
-    private static <T> T newMXBean(MBeanServerConnection conn, String name, Class<T> clazz) {
+    public static <T> T newMXBean(MBeanServerConnection conn, String name, Class<T> clazz) {
         ObjectName objectName = null;
         
         try {

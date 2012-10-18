@@ -45,7 +45,6 @@ public class Nimble {
         
         sample.setValue(value);
         store.add(sample);
-        
     }
     
     public static void sample(SampleStore<TimestampSample> store, Number value, long timestamp) {

@@ -2,20 +2,15 @@ package org.gridkit.nimble.btrace;
 
 import java.io.Serializable;
 import java.net.ServerSocket;
-import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.java.btrace.api.wireio.AbstractCommand;
 import net.java.btrace.client.Client;
 import net.java.btrace.ext.Printer;
 
 import org.gridkit.nimble.btrace.ext.Nimble;
-import org.gridkit.nimble.btrace.ext.PollSamplesCmd;
-import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.util.SystemOps;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
@@ -27,7 +22,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class BTraceClientFactoryTest {    
@@ -79,20 +73,9 @@ public class BTraceClientFactoryTest {
             
             Thread.sleep(1000); // wait for print
             
-            final String sampleStoreName = ThreadCountScript.THREAD_COUNT_STORE;
-            
-            @SuppressWarnings("unchecked")
-            Map<String, PollSamplesCmdResult<?>> result = (Map<String, PollSamplesCmdResult<?>>)client.getCommChannel().sendCommand(
-                PollSamplesCmd.class, new AbstractCommand.Initializer<PollSamplesCmd>() {
-                    @Override
-                    public void init(PollSamplesCmd cmd) {
-                        cmd.setNames(Collections.singleton(sampleStoreName));
-                    }
-                }
-            ).get();
-            
-            Assert.assertTrue(result.containsKey(sampleStoreName));
-            Assert.assertTrue(result.get(sampleStoreName).getSamples().size() > 0);
+            //final String sampleStoreName = ThreadCountScript.THREAD_COUNT_STORE;
+            //Assert.assertTrue(result.containsKey(sampleStoreName));
+            //Assert.assertTrue(result.get(sampleStoreName).getSamples().size() > 0);
                     
             exit(client);
         } finally {

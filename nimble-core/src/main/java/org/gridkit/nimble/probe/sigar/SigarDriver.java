@@ -1,16 +1,12 @@
 package org.gridkit.nimble.probe.sigar;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.probe.PidProvider;
@@ -46,12 +42,10 @@ public interface SigarDriver {
         private transient ScheduledExecutorService executor;
         private final int corePoolSize;
         private final long delayMs;
-        private final Random rnd;
-        
+
         public Impl(int corePoolSize, long delayMs) {
             this.corePoolSize = corePoolSize;
             this.delayMs = delayMs;
-            this.rnd = new Random();
         }
 
         @Override
@@ -68,14 +62,14 @@ public interface SigarDriver {
         public ProbeHandle monitorSysCpu(MeteringDriver metering) {      
             Runnable probe = SysCpuProbe.newInstance(metering.getSchema());
 
-            return new SigarProbeHandle(schedule(Collections.singleton(probe)));
+            return ProbeOps.schedule(Collections.singleton(probe), executor, delayMs);
         }
         
         @Override
         public ProbeHandle monitorSysMem(MeteringDriver metering) {
             Runnable probe = SysMemProbe.newInstance(metering.getSchema());
 
-            return new SigarProbeHandle(schedule(Collections.singleton(probe)));
+            return ProbeOps.schedule(Collections.singleton(probe), executor, delayMs);
         }
         
         @Override
@@ -84,7 +78,7 @@ public interface SigarDriver {
              
             List<Runnable> probes = ProbeOps.instantiate(interfaces, NetInterfaceProbe.FACTORY, metering);
             
-            return new SigarProbeHandle(schedule(probes));
+            return ProbeOps.schedule(probes, executor, delayMs);
         }
         
         @Override
@@ -106,27 +100,12 @@ public interface SigarDriver {
                 probes.add(factory.newProbe(pid, metering.getSchema()));
             }
             
-            return new SigarProbeHandle(schedule(probes));
+            return ProbeOps.schedule(probes, executor, delayMs);
         }
-        
-        private List<Future<?>> schedule(Collection<Runnable> probes) {
-            List<Future<?>> futures = new ArrayList<Future<?>>();
-            
-            for (Runnable probe : probes) {
-                Future<?> future = getExecutor().scheduleWithFixedDelay(probe, getInitialDelay(), delayMs, TimeUnit.MILLISECONDS);
-                futures.add(future);
-            }
-            
-            return futures;
-        }
-                
+   
         @Override
         public void stop() {
             getExecutor().shutdownNow();
-        }
-
-        private long getInitialDelay() {
-            return Math.abs(rnd.nextLong()) % delayMs;
         }
         
         private synchronized ScheduledExecutorService getExecutor() {
@@ -145,21 +124,6 @@ public interface SigarDriver {
             } catch (SigarException e) {
                 log.error("Failed to retrieve net interfaces list", e);
                 return Collections.emptyList();
-            }
-        }
-        
-        private static class SigarProbeHandle implements ProbeHandle {
-            private final Collection<Future<?>> futures;
-            
-            public SigarProbeHandle(Collection<Future<?>> futures) {
-                this.futures = futures;
-            }
-
-            @Override
-            public void stop() {
-                for (Future<?> future : futures) {
-                    future.cancel(true);
-                }
             }
         }
     }

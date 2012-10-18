@@ -3,6 +3,7 @@ package org.gridkit.nimble.btrace;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -15,6 +16,8 @@ import java.util.concurrent.TimeoutException;
 import net.java.btrace.client.Client;
 
 import org.gridkit.nimble.btrace.ext.PingCmd;
+import org.gridkit.nimble.btrace.ext.PollSamplesCmd;
+import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.util.NamedThreadFactory;
 
 public class BTraceClientOps {    
@@ -41,6 +44,14 @@ public class BTraceClientOps {
             }
         }, timeoutMs);
 
+    }
+    
+    public Map<String, PollSamplesCmdResult<?>> poll(Client client, long delayMs) throws InterruptedException, IOException {
+        @SuppressWarnings("unchecked")
+        Map<String, PollSamplesCmdResult<?>> result = 
+            (Map<String, PollSamplesCmdResult<?>>)client.getCommChannel().sendCommand(PollSamplesCmd.class).get(delayMs);
+
+        return result;
     }
     
     public void exit(final Client client, final int exitCode, long timeoutMs) throws TimeoutException, ExecutionException, InterruptedException {

@@ -3,16 +3,15 @@ package org.gridkit.nimble.btrace;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.java.btrace.api.extensions.ExtensionsRepository;
 import net.java.btrace.api.extensions.ExtensionsRepositoryFactory;
 import net.java.btrace.client.Client;
 
-import org.gridkit.nimble.util.CriticalSection;
 import org.gridkit.nimble.util.JvmOps;
 
+import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 
 public class BTraceClientFactory {
@@ -21,86 +20,64 @@ public class BTraceClientFactory {
     public static final int BTRACE_PORT = 2020;
     public static final String BTRACE_PORT_PROPERTY = "btrace.port";
 
-    private CriticalSection connectSection = new CriticalSection();
     private AtomicInteger nextPort = new AtomicInteger(BTRACE_PORT);
-        
+ 
     protected static String JVM_OPS = JvmOps.class.getCanonicalName(); // force tools.jar load
-    
-    public Client newClient(int pid, BTraceClientSettings settings) throws ClientCreateException {
-        try {
-            return connectSection.execute(pid, new ClientConnector(pid, settings));
-        } catch (ClientCreateException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ClientCreateException("Failed to build BTrace client for process id " + pid, e);
+
+    public Client newClient(int pid, BTraceClientSettings settings) throws ClientCreateException, AttachNotSupportedException, IOException {
+        int port = getPort(pid);
+        
+        Client client = Client.forProcess(pid);
+        
+        String extPath = settings.getExtensionsPath();
+        
+        ExtensionsRepository extRep = ExtensionsRepositoryFactory.fixed(ExtensionsRepository.Location.BOTH, extPath);
+        
+        if (settings.isDumpClasses()) {
+            File dumpDir = new File(settings.getDumpDir());
+            dumpDir.mkdirs();
         }
+        
+        client.setBootCp(extPath);
+        client.setAgentPath(settings.getAgentPath());
+        client.setExtRepository(extRep);
+        client.setTrackRetransforms(settings.isTrackRetransform());
+        client.setUnsafe(settings.isUnsafe());
+        client.setDumpClasses(settings.isDumpClasses());
+        client.setDumpDir(settings.getDumpDir());
+        client.setProbeDescPath(settings.getProbeDescPath());
+        client.setPort(port);
+        
+        client.attach();
+                    
+        return client;
     }
     
-    public class ClientConnector implements Callable<Client> {
-        private final int pid;
-        private final BTraceClientSettings settings;
-
-        public ClientConnector(int pid, BTraceClientSettings settings) {
-            this.pid = pid;
-            this.settings = settings;
-        }
-
-        @Override
-        public Client call() throws Exception {
-            int port = getPort();
-            
-            Client client = Client.forProcess(pid);
-            
-            String extPath = settings.getExtensionsPath();
-            
-            ExtensionsRepository extRep = ExtensionsRepositoryFactory.fixed(ExtensionsRepository.Location.BOTH, extPath);
-            
-            if (settings.isDumpClasses()) {
-                File dumpDir = new File(settings.getDumpDir());
-                dumpDir.mkdirs();
-            }
-            
-            client.setBootCp(extPath);
-            client.setAgentPath(settings.getAgentPath());
-            client.setExtRepository(extRep);
-            client.setTrackRetransforms(settings.isTrackRetransform());
-            client.setUnsafe(settings.isUnsafe());
-            client.setDumpClasses(settings.isDumpClasses());
-            client.setDumpDir(settings.getDumpDir());
-            client.setProbeDescPath(settings.getProbeDescPath());
-            client.setPort(port);
-            
-            client.attach();
-            
-            return client;
-        }
+    private int getPort(int pid) throws AttachNotSupportedException, IOException, ClientCreateException {
+        Integer port = null;
+        VirtualMachine vm = null;
         
-        private int getPort() throws Exception {
-            Integer port = null;
-            VirtualMachine vm = null;
+        try {
+            vm = VirtualMachine.attach(String.valueOf(pid));
             
-            try {
-                vm = VirtualMachine.attach(String.valueOf(pid));
+            String portPropery = vm.getSystemProperties().getProperty(BTRACE_PORT_PROPERTY);
+            
+            if (portPropery != null) {
+                port = Integer.valueOf(portPropery);
+            } else {
+                port = borrowFreePort();
                 
-                String portPropery = vm.getSystemProperties().getProperty(BTRACE_PORT_PROPERTY);
-                
-                if (portPropery != null) {
-                    port = Integer.valueOf(portPropery);
-                } else {
-                    port = borrowFreePort();
-                    
-                    if (port == null) {
-                        throw new ClientCreateException("Failed to borrow free TCP port for pid " + pid);
-                    }
-                }
-            } finally {
-                if (vm != null) {
-                    vm.detach();
+                if (port == null) {
+                    throw new ClientCreateException("Failed to borrow free TCP port for pid " + pid);
                 }
             }
-
-            return port;
+        } finally {
+            if (vm != null) {
+                vm.detach();
+            }
         }
+
+        return port;
     }
     
     private Integer borrowFreePort() {
@@ -137,16 +114,5 @@ public class BTraceClientFactory {
         }
     
         return result;
-    }
-
-    @SuppressWarnings("serial")
-    public static class ClientCreateException extends Exception {
-        public ClientCreateException(String message) {
-            super(message);
-        }
-
-        public ClientCreateException(String message, Throwable cause) {
-            super(message, cause);
-        }
     }
 }

@@ -25,7 +25,8 @@ public class PollSamplesCmdImpl extends CommandImpl<PollSamplesCmd> {
         
         Channel channel = ctx.lookup(Channel.class);
 
-        Set<String> names = getNames(cmd, sampleStores);
+        Set<String> names = new HashSet<String>();
+        names.addAll(sampleStores.keySet());
         
         for (String name : names) {
             SampleStore<?> sampleStore = sampleStores.get(name);
@@ -41,17 +42,7 @@ public class PollSamplesCmdImpl extends CommandImpl<PollSamplesCmd> {
             BTraceLogger.debugPrint(e);
         }
     }
-    
-    private static Set<String> getNames(PollSamplesCmd cmd, ConcurrentMap<String, SampleStore<?>> sampleStores) {
-        if (cmd.getNames() != null) {
-            return cmd.getNames();
-        } else {
-            Set<String> result = new HashSet<String>();
-            result.addAll(sampleStores.keySet());
-            return result;
-        }
-    }
-    
+        
     @SuppressWarnings("unchecked")
     private static void put(String name, SampleStore<?> sampleStore, Map<String, PollSamplesCmdResult<?>> result) {
         result.put(name, new PollSamplesCmdResult<Sample>((SampleStore<Sample>)sampleStore));
