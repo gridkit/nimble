@@ -17,9 +17,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.gridkit.nimble.orchestration.Deployable.DeploymentArtifact;
-import org.gridkit.nimble.orchestration.Deployable.DepolymentContext;
-import org.gridkit.nimble.orchestration.Deployable.EnvironmentContext;
+import org.gridkit.nimble.orchestration.DeployableBean.DeploymentArtifact;
+import org.gridkit.nimble.orchestration.DeployableBean.DepolymentContext;
+import org.gridkit.nimble.orchestration.DeployableBean.EnvironmentContext;
 import org.gridkit.util.concurrent.TimedFuture;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeSet;
@@ -201,8 +201,17 @@ public class ScenarioBuilder {
 	}
 	
 	private void addDeployAction(Bean beanInfo, Object proto) {
-		Deployable deployable = proto instanceof Deployable ? (Deployable) proto : new DeployablePrototype(proto); 
-		DeployAction action = new DeployAction(beanInfo, deployable);
+		TargetAction deployer;
+		if (proto instanceof DeployableBean) {
+			deployer = new DeployExecutor(new BeanRef(beanInfo.id), (DeployableBean) proto);
+		}
+		else if (proto instanceof SplittableBean) {
+			deployer = new SplitDeployExecutor(new BeanRef(beanInfo.id), (SplittableBean) proto);
+		}
+		else {
+			deployer = new DeployExecutor(new BeanRef(beanInfo.id), new DeployablePrototype(proto));
+		}
+		DeployAction action = new DeployAction(beanInfo, proto, deployer);
 		addAction(action);
 		beanInfo.deployAction = action;
 	}
@@ -298,7 +307,7 @@ public class ScenarioBuilder {
 		
 		if (action instanceof DeployAction) {
 			DeployAction da = (DeployAction) action;
-			DeployExecutor exec = new DeployExecutor(new BeanRef(da.bean.id), da.deployable);
+			TargetAction exec = da.deployer;
 			
 			ScriptAction sa = new ScriptAction(list, da.actionId, getBeanScope(da.bean), toArray(da.getDependencies()), exec);
 			return sa;			
@@ -461,11 +470,13 @@ public class ScenarioBuilder {
 	class DeployAction extends Action {
 		
 		private final Bean bean;
-		private final Deployable deployable;
+		private final Object reference;
+		private final TargetAction deployer;
 
-		public DeployAction(Bean beanInfo, Deployable deployable) {
-			this.bean = beanInfo;
-			this.deployable = deployable;
+		public DeployAction(Bean bean, Object reference, TargetAction deployer) {
+			this.bean = bean;
+			this.reference = reference;
+			this.deployer = deployer;
 		}
 
 		@Override
@@ -480,7 +491,7 @@ public class ScenarioBuilder {
 		
 		@Override
 		public String toString() {
-			return "[" + actionId + "] DEPLOY: {" + bean.id + "} " + deployable;
+			return "[" + actionId + "] DEPLOY: {" + bean.id + "} " + reference;
 		}		
 	}
 	
@@ -584,7 +595,7 @@ public class ScenarioBuilder {
 		}
 	}
 	
-	static class DeployablePrototype implements Deployable, DeploymentArtifact, Serializable {
+	static class DeployablePrototype implements DeployableBean, DeploymentArtifact, Serializable {
 		
 		private static final long serialVersionUID = 20121016L;
 		
@@ -784,9 +795,9 @@ public class ScenarioBuilder {
 	private static class DeployExecutor implements TargetAction {
 
 		private final BeanRef beanRef; 
-		private final Deployable deployable;
+		private final DeployableBean deployable;
 
-		public DeployExecutor(BeanRef beanRef, Deployable deployable) {
+		public DeployExecutor(BeanRef beanRef, DeployableBean deployable) {
 			this.beanRef = beanRef;
 			this.deployable = deployable;
 		}
@@ -809,6 +820,52 @@ public class ScenarioBuilder {
 		public String toString() {
 			return "DEPLOY " + beanRef + " " + deployable;
 		}				
+	}
+
+	private static class SplitDeployExecutor implements TargetAction {
+
+		private final BeanRef beanRef; 
+		private final SplittableBean splittable;
+
+		public SplitDeployExecutor(BeanRef beanRef, SplittableBean splittable) {
+			this.beanRef = beanRef;
+			this.splittable = splittable;
+		}
+
+
+		@Override
+		public Future<Void> submit(ViNode target, final Collection<ViNode> allTargets, TargetContext context) {
+			DepolymentContext dc = new DepolymentContext() {
+				@Override
+				public Collection<ViNode> getDeploymentTargets() {
+					return allTargets;
+				}
+			};
+
+			Object bean = splittable.getSplit(target, dc.getDeploymentTargets());
+			return target.submit(new RemoteDeployAction(beanRef, context, new BeanArtifact(bean)));
+		}
+		
+		@Override
+		public String toString() {
+			return "DEPLOY " + beanRef + " " + splittable;
+		}				
+	}
+	
+	private static class BeanArtifact implements DeploymentArtifact, Serializable {
+		
+		private static final long serialVersionUID = 20121017L;
+		
+		private final Object bean;
+
+		public BeanArtifact(Object bean) {
+			this.bean = bean;
+		}
+
+		@Override
+		public Object deploy(EnvironmentContext context) {
+			return bean;
+		}
 	}
 	
 	private static class RemoteDeployAction implements Callable<Void>, Serializable {

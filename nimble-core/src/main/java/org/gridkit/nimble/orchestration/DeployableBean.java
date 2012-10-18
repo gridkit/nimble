@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.gridkit.vicluster.ViNode;
 
-public interface Deployable {
+public interface DeployableBean {
 
 	public DeploymentArtifact createArtifact(ViNode target, DepolymentContext context);
 	

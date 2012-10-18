@@ -9,14 +9,14 @@ import java.util.Map;
 
 import org.gridkit.nimble.metering.ArraySampleManager;
 import org.gridkit.nimble.metering.SampleSchema;
-import org.gridkit.nimble.orchestration.Deployable;
+import org.gridkit.nimble.orchestration.DeployableBean;
 import org.gridkit.nimble.pivot.DistributedPivotReporter;
 import org.gridkit.nimble.pivot.Pivot;
 import org.gridkit.nimble.pivot.PivotReporter;
 import org.gridkit.nimble.pivot.SampleAccumulator;
 import org.gridkit.vicluster.ViNode;
 
-public class PivotMeteringDriver implements MeteringDriver, Deployable {
+public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	
 	private final DistributedPivotReporter reporter;
 	private final int bufferSize;

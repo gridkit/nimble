@@ -1,5 +1,7 @@
 package org.gridkit.nimble.zootest;
 
+import java.util.concurrent.TimeUnit;
+
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
@@ -10,9 +12,10 @@ import org.gridkit.nimble.metering.MeteringTemplate;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Pivot;
-import org.gridkit.nimble.pivot.PivotDumper;
 import org.gridkit.nimble.pivot.PivotPrinter;
 import org.gridkit.nimble.print.PrettyPrinter;
+import org.gridkit.nimble.probe.PidProvider;
+import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.telecontrol.isolate.IsolateCloudFactory;
 import org.junit.After;
@@ -29,10 +32,8 @@ public class ZooTest {
 	
 	@Test
 	public void test() {
-		cloud.node("node11");
-		cloud.node("node12");
-		cloud.node("node22");
-		
+
+		cloud.nodes("node11", "node12", "node22");		
 		
 		Pivot pivot = configurePivot();
 		PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 1024);
@@ -59,8 +60,8 @@ public class ZooTest {
 				.group(Measure.NAME)
 					.level("stats")
 						.show()
-						.display(Measure.NAME)
 						.display(MeteringDriver.NODE)
+						.display(Measure.NAME)
 						.calcDistribution(Measure.MEASURE)
 						.displayDistribution(Measure.MEASURE);
 		
@@ -76,7 +77,13 @@ public class ZooTest {
 		
 		ZooTestDriver zoo = sb.deploy("node1*", new ZooTestDriver.Impl());
 		
-		Runnable task = zoo.getReader();		
+		Runnable task = zoo.getReader();	
+		
+        SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100, TimeUnit.MILLISECONDS));
+        
+        PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
+
+        sigar.monitorProcCpu(provider, metering);
 		
 		sb.checkpoint("test-start");
 
