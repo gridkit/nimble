@@ -5,7 +5,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
@@ -13,7 +12,6 @@ import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Pivot;
-import org.gridkit.nimble.pivot.Pivot.Level;
 import org.gridkit.nimble.pivot.PivotPrinter;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
@@ -33,11 +31,11 @@ public class SigarDriverTest {
         
         Pivot pivot = new Pivot();
 
-        pivot.root().group(MeteringDriver.NODE).group(SigarMeasure.PROBE_TYPE).group(SigarMeasure.MEASURE_NAME)
+        pivot.root().group(MeteringDriver.NODE).group(SigarMeasure.PROBE_TYPE_KEY).group(SigarMeasure.MEASURE_NAME_KEY)
             .level("stats")
                 .show()
                 .display(MeteringDriver.NODE)
-                .display(SigarMeasure.MEASURE_NAME)
+                .display(SigarMeasure.MEASURE_NAME_KEY)
                 .calcFrequency(Measure.MEASURE)
                 .displayThroughput(Measure.MEASURE);
         
@@ -71,7 +69,7 @@ public class SigarDriverTest {
         
         sb.checkpoint("init");
         
-        SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100, TimeUnit.MILLISECONDS));
+        SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100));
         
         PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
         

@@ -19,7 +19,7 @@ public class ProcTimeProbe extends SigarHolder implements Callable<Void> {
     
     public ProcTimeProbe(long pid, SampleSchema schema) {
         this.pid = pid;
-        this.sampler = new RateSampler(schema, SigarMeasure.MEASURE_NAME, SigarMeasure.PROBE_TYPE, PROBE_TYPE);
+        this.sampler = new RateSampler(schema, SigarMeasure.MEASURE_NAME_KEY, SigarMeasure.PROBE_TYPE_KEY, PROBE_TYPE);
     }
     
     @Override

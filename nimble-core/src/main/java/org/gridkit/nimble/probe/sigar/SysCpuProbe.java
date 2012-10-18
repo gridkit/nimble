@@ -15,7 +15,7 @@ public class SysCpuProbe extends SigarHolder implements Callable<Void> {
     private final RateSampler sampler;
     
     public SysCpuProbe(SampleSchema schema) {
-        this.sampler = new RateSampler(schema, SigarMeasure.MEASURE_NAME, SigarMeasure.PROBE_TYPE, PROBE_TYPE);
+        this.sampler = new RateSampler(schema, SigarMeasure.MEASURE_NAME_KEY, SigarMeasure.PROBE_TYPE_KEY, PROBE_TYPE);
     }
 
     public static Runnable newInstance(SampleSchema schema) {

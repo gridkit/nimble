@@ -19,7 +19,7 @@ public class NetInterfaceProbe extends SigarHolder implements Callable<Void> {
 
     public NetInterfaceProbe(String interfaceName, SampleSchema schema) {
         this.interfaceName = interfaceName;
-        this.sampler = new RateSampler(schema, SigarMeasure.MEASURE_NAME, SigarMeasure.PROBE_TYPE, PROBE_TYPE);
+        this.sampler = new RateSampler(schema, SigarMeasure.MEASURE_NAME_KEY, SigarMeasure.PROBE_TYPE_KEY, PROBE_TYPE);
     }
 
     @Override

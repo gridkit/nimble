@@ -48,9 +48,9 @@ public interface SigarDriver {
         private final long delayMs;
         private final Random rnd;
         
-        public Impl(int corePoolSize, long delay, TimeUnit unit) {
+        public Impl(int corePoolSize, long delayMs) {
             this.corePoolSize = corePoolSize;
-            this.delayMs = Math.max(1, unit.toMillis(delay));
+            this.delayMs = delayMs;
             this.rnd = new Random();
         }
 
