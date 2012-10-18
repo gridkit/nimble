@@ -94,6 +94,12 @@
                 <artifactId>telecontrol-ssh</artifactId>
                 <version>${nanocloud.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>viconcurrent</artifactId>
+                <version>${nanocloud.version}</version>
+            </dependency>
         
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
@@ -150,7 +156,8 @@
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
             </dependency>
-            
+           
+<!-- 
             <dependency>
                 <groupId>net.java.btrace</groupId>
                 <artifactId>core-api</artifactId>
@@ -192,6 +199,7 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+ -->
         </dependencies>
     </dependencyManagement>
 </project>

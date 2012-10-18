@@ -33,6 +33,10 @@ public class MeteringTemplate implements SchemaTemplate, Serializable {
 		return ss.createFactory();
 	}
 
+	public void setStatic(Object key, Object value) {
+		statics.put(key, value);
+	}
+	
 	public Object getMeasureKey() {
 		return measureKey;
 	}

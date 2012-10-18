@@ -230,7 +230,7 @@ public class ArraySampleManager implements SampleReader {
 		public SampleWriter setTimeBounds(long start, long finish) {
 			internalSet(Measure.TIMESTAMP, TimeUtils.normalize(start));
 			internalSet(Measure.END_TIMESTAMP, TimeUtils.normalize(finish));
-			return null;
+			return this;
 		}
 
 		@Override

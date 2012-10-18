@@ -6,9 +6,11 @@ import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
+import org.gridkit.nimble.metering.MeteringTemplate;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Pivot;
+import org.gridkit.nimble.pivot.PivotDumper;
 import org.gridkit.nimble.pivot.PivotPrinter;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.vicluster.ViManager;
@@ -41,9 +43,10 @@ public class ZooTest {
 		
 		PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
 		
-		PrettyPrinter pp = new PrettyPrinter();
-		
+		PrettyPrinter pp = new PrettyPrinter();		
 		pp.print(System.out, printer);
+		System.out.println();
+//		PivotDumper.dump(metrics.getReporter());
 		
 		System.out.println("Done");
 	}
@@ -76,8 +79,11 @@ public class ZooTest {
 		Runnable task = zoo.getReader();		
 		
 		sb.checkpoint("test-start");
-		
-		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(0.5, 1, true), null, null);
+
+		MeteringTemplate t = new MeteringTemplate();
+		t.setStatic(Measure.NAME, "Reader");
+
+		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(100, 20, true), metering, t);
 		
 		zoo.newSample(metering);
 		

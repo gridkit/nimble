@@ -8,9 +8,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.gridkit.nimble.metering.SampleReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DistributedPivotReporter extends PivotReporter {
 
+	private final static Logger LOGGER = LoggerFactory.getLogger(DistributedPivotReporter.class);
+	
 	private StatsReceiver receiver = new StatsReceiver() {		
 		@Override
 		public void accumulate(Map<LevelPath, Map<Object, Object>> subaggregate) {
@@ -27,6 +31,7 @@ public class DistributedPivotReporter extends PivotReporter {
 	}
 
 	synchronized void accumulate(Map<LevelPath, Map<Object, Object>> subaggregate) {
+		LOGGER.debug("Receive " + subaggregate.size() + " rows from slave");
 		for(Map.Entry<LevelPath, Map<Object, Object>> row: subaggregate.entrySet()) {
 			LevelPath path = row.getKey();
 			Map<Object, Object> stats = row.getValue();

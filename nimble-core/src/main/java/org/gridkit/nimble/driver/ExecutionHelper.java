@@ -32,6 +32,8 @@ public class ExecutionHelper {
 	
 	private static class ExecDriver implements ExecutionDriver, Serializable {
 
+		private static final long serialVersionUID = 20121017L;
+
 		@Override
 		public Activity start(Runnable task, ExecutionConfig config, MeteringDriver metering, MeteringTemplate sampleTemplate) {
 			Run run = new Run();
@@ -157,12 +159,15 @@ public class ExecutionHelper {
 		public void done(long startNanos, long finishNanos, Throwable exception) {
 			factory.newSample()
 				.setTimeBounds(startNanos, finishNanos)
-				.setMeasure((double)(finishNanos - startNanos) / TimeUnit.SECONDS.toNanos(1));
+				.setMeasure((double)(finishNanos - startNanos) / TimeUnit.SECONDS.toNanos(1))
+				.submit();
 		}
 	}
 	
 	private static class ConstantRateConfig implements ExecutionConfig, RateLimitedRun, Serializable {
 
+		private static final long serialVersionUID = 20121017L;
+		
 		private final double rate;
 		private final int threadLimit;
 		
