@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.gridkit.nimble.driver.MeteringDriver;
+import org.gridkit.nimble.driver.MeteringSink;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.orchestration.Scenario;
@@ -30,12 +31,12 @@ public class SigarDriverTest {
         cloud.node("node2");
         
         Pivot pivot = new Pivot();
-
-        pivot.root().group(MeteringDriver.NODE).group(SigarMeasure.PROBE_TYPE_KEY).group(SigarMeasure.MEASURE_NAME_KEY)
+        
+        pivot.root().group(MeteringDriver.NODE).group(SigarMeasure.PROBE_KEY).group(SigarMeasure.MEASURE_KEY)
             .level("stats")
                 .show()
                 .display(MeteringDriver.NODE)
-                .display(SigarMeasure.MEASURE_NAME_KEY)
+                .display(SigarMeasure.MEASURE_KEY)
                 .calcFrequency(Measure.MEASURE)
                 .displayThroughput(Measure.MEASURE);
         
@@ -66,18 +67,21 @@ public class SigarDriverTest {
         MeteringDriver metering = sb.deploy("**", metrics);
         
         Driver driver = sb.deploy("**", new DriverImpl());
-        
+
         sb.checkpoint("init");
         
         SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100));
         
-        PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
+        PidProvider pidProvider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
+
+        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = 
+            metering.<SigarSamplerFactoryProvider>touch(new StandardSigarSamplerFactoryProvider());
         
         sb.checkpoint("start");
         
         driver.start();
         
-        sigar.monitorProcCpu(provider, metering);
+        sigar.monitorProcCpu(pidProvider, factoryProvider);
         
         sb.checkpoint("finish");
             

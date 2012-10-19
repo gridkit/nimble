@@ -1,7 +1,5 @@
 package org.gridkit.nimble.probe;
 
-import java.util.Map;
-
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.metering.SampleFactory;
@@ -12,22 +10,18 @@ import org.gridkit.nimble.metering.SpanSampler;
 
 public class SchemeSamplerFactory implements SamplerFactory {
     private final SampleSchema schema;
-    private final String samplerKey;
+    private final String samplerKeyName;
     
-    public SchemeSamplerFactory(SampleSchema schema, String samplerKey, Map<Object, Object> globals) {
+    public SchemeSamplerFactory(SampleSchema schema, String samplerKeyName) {
         this.schema = schema.createDerivedScheme();
-        this.samplerKey = samplerKey;
-        
-        for (Map.Entry<Object, Object> global : globals.entrySet()) {
-            schema.setStatic(global.getKey(), global.getValue());
-        }
+        this.samplerKeyName = samplerKeyName;
     }
 
     @Override
     public ScalarSampler getScalarSampler(String key) {
         SampleSchema samplerSchema = schema.createDerivedScheme();
         
-        samplerSchema.setStatic(samplerKey, key);
+        samplerSchema.setStatic(samplerKeyName, key);
         samplerSchema.declareDynamic(Measure.MEASURE, double.class);
         
         final SampleFactory factory = samplerSchema.createFactory();
@@ -48,7 +42,7 @@ public class SchemeSamplerFactory implements SamplerFactory {
     public PointSampler getPointSampler(String key) {
         SampleSchema samplerSchema = schema.createDerivedScheme();
         
-        samplerSchema.setStatic(samplerKey, key);
+        samplerSchema.setStatic(samplerKeyName, key);
         samplerSchema.declareDynamic(Measure.MEASURE, double.class);
         samplerSchema.declareDynamic(Measure.TIMESTAMP, long.class);
         
@@ -71,7 +65,7 @@ public class SchemeSamplerFactory implements SamplerFactory {
     public SpanSampler getSpanSampler(String key) {
         SampleSchema samplerSchema = schema.createDerivedScheme();
         
-        samplerSchema.setStatic(samplerKey, key);
+        samplerSchema.setStatic(samplerKeyName, key);
         samplerSchema.declareDynamic(Measure.MEASURE, double.class);
         samplerSchema.declareDynamic(Measure.TIMESTAMP, long.class);
         samplerSchema.declareDynamic(Measure.END_TIMESTAMP, long.class);

@@ -4,51 +4,57 @@ import static org.gridkit.nimble.util.StringOps.F;
 
 import java.util.concurrent.Callable;
 
-import org.gridkit.nimble.metering.SampleSchema;
-import org.gridkit.nimble.probe.ProbeMeasure;
+import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.probe.RateSampler;
-import org.gridkit.nimble.probe.ProbeOps.SingleProbeFactory;
-import org.gridkit.nimble.util.SafeCallable;
+import org.gridkit.nimble.probe.SamplerFactory;
 import org.hyperic.sigar.NetInterfaceStat;
 
-public class NetInterfaceProbe extends SigarHolder implements Callable<Void> { 
-    public static final String PROBE_TYPE = "sysNet";
-    
-    private String interfaceName;
-    private final RateSampler sampler;
+public class NetInterfaceProbe extends SigarHolder implements Callable<Void> {     
+    private final String interfaceName;
 
-    public NetInterfaceProbe(String interfaceName, SampleSchema schema) {
+    private final PointSampler rxBytes;
+    private final PointSampler rxPackets;
+    private final PointSampler rxErrors;
+    private final PointSampler rxDropped;
+    
+    private final PointSampler txBytes;
+    private final PointSampler txPackets;
+    private final PointSampler txErrors;
+    private final PointSampler txDropped;
+    
+    public NetInterfaceProbe(String interfaceName, SamplerFactory factory) {
         this.interfaceName = interfaceName;
-        this.sampler = new RateSampler(schema, SigarMeasure.MEASURE_NAME_KEY, SigarMeasure.PROBE_TYPE_KEY, PROBE_TYPE);
+        
+        this.rxBytes = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_RX_BYTES));
+        this.rxPackets = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_RX_PACKETS));
+        this.rxErrors = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_RX_ERRORS));
+        this.rxDropped = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_RX_DROPPED));
+
+        this.txBytes = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_TX_BYTES));
+        this.txPackets = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_TX_PACKETS));
+        this.txErrors = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_TX_ERRORS));
+        this.txDropped = new RateSampler(factory.getSpanSampler(SigarMeasure.NET_TX_DROPPED));
     }
 
     @Override
     public Void call() throws Exception {
-        long timestamp = System.currentTimeMillis();
+        long timestamp = System.nanoTime();
         
         NetInterfaceStat stats = getSigar().getNetInterfaceStat(interfaceName);
         
-        sampler.sample(SigarMeasure.NET_RX_BYTES,      stats.getRxBytes(),    timestamp);
-        sampler.sample(SigarMeasure.NET_RX_PACKETS,    stats.getRxPackets(),  timestamp);
-        sampler.sample(SigarMeasure.NET_RX_ERRORS,     stats.getRxErrors(),   timestamp);
-        sampler.sample(SigarMeasure.NET_RX_DROPPED,    stats.getRxDropped(),  timestamp);
+        rxBytes.write(stats.getRxBytes(), timestamp);
+        rxPackets.write(stats.getRxPackets(), timestamp);
+        rxErrors.write(stats.getRxErrors(), timestamp);
+        rxDropped.write(stats.getRxDropped(), timestamp);
         
-        sampler.sample(SigarMeasure.NET_TX_BYTES,      stats.getTxBytes(),      timestamp);
-        sampler.sample(SigarMeasure.NET_TX_PACKETS,    stats.getTxPackets(),    timestamp);
-        sampler.sample(SigarMeasure.NET_TX_ERRORS,     stats.getTxErrors(),     timestamp);
-        sampler.sample(SigarMeasure.NET_TX_DROPPED,    stats.getTxDropped(),    timestamp);
+        txBytes.write(stats.getTxBytes(), timestamp);
+        txPackets.write(stats.getTxPackets(), timestamp);
+        txErrors.write(stats.getTxErrors(), timestamp);
+        txDropped.write(stats.getTxDropped(), timestamp);
         
         return null;
     }
-    
-    public static final SingleProbeFactory<String> FACTORY = new SingleProbeFactory<String>() {
-        @Override
-        public Runnable newProbe(String interfaceName, SampleSchema schema) {
-            schema.setStatic(ProbeMeasure.NET_INTERFACE, interfaceName);
-            return new SafeCallable<Void>(new NetInterfaceProbe(interfaceName, schema));
-        }
-    };
-    
+        
     @Override
     public String toString() {
         return F("%s[%s]", NetInterfaceProbe.class.getSimpleName(), interfaceName);

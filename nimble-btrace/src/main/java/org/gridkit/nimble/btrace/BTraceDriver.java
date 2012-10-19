@@ -19,7 +19,6 @@ import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.probe.CachingSamplerFactory;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.ProbeHandle;
-import org.gridkit.nimble.probe.ProbeMeasure;
 import org.gridkit.nimble.probe.ProbeOps;
 import org.gridkit.nimble.probe.SchemeSamplerFactory;
 import org.gridkit.nimble.util.NamedThreadFactory;
@@ -69,9 +68,9 @@ public interface BTraceDriver {
                 probe.setClientSource(this);
                 
                 Map<Object, Object> globals = new HashMap<Object, Object>();
-                globals.put(ProbeMeasure.PID, pid);
+                globals.put(BTraceMeasure.PID_KEY, pid);
                 
-                SchemeSamplerFactory factory = new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_KEY, globals);
+                SchemeSamplerFactory factory = new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_KEY);
                 probe.setSamplerFactory(new CachingSamplerFactory(factory));
 
                 probes.add(new RunnableAdapter(probe));

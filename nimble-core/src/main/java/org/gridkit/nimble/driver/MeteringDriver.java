@@ -13,6 +13,6 @@ public interface MeteringDriver {
 	
 	public void flush();
 	
-	public <S extends MeteringAware> MeteringSync<S> touch(S sync);
+	public <S extends MeteringAware> MeteringSink<S> touch(S sink);
 	
 }

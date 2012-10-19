@@ -51,13 +51,13 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	}
 	
     @Override
-    public <S extends MeteringAware> MeteringSync<S> touch(final S sync) {
-        sync.setMetering(this);
+    public <S extends MeteringAware> MeteringSink<S> touch(final S sink) {
+        sink.setMetering(this);
 
-        return new MeteringSync<S>() {
+        return new MeteringSink<S>() {
             @Override
-            public S getSync() {
-                return sync;
+            public S getSink() {
+                return sink;
             }
         };
     }
@@ -170,13 +170,13 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}
 		
 	    @Override
-	    public <S extends MeteringAware> MeteringSync<S> touch(final S sync) {
-	        sync.setMetering(this);
+	    public <S extends MeteringAware> MeteringSink<S> touch(final S sink) {
+	        sink.setMetering(this);
 
-	        return new MeteringSync<S>() {
+	        return new MeteringSink<S>() {
 	            @Override
-	            public S getSync() {
-	                return sync;
+	            public S getSink() {
+	                return sink;
 	            }
 	        };
 	    }

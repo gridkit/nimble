@@ -1,8 +1,18 @@
 package org.gridkit.nimble.probe.sigar;
 
 public final class SigarMeasure {
-    public static final String PROBE_TYPE_KEY   = "sigar_probe_type";
-    public static final String MEASURE_NAME_KEY = "sigar_measure";
+    public static final String PROBE_KEY   = "sigar_probe";
+    
+    public static final String SYS_NET_PROBE  = "sysNet";
+    public static final String SYS_MEM_PROBE  = "sysMem";
+    public static final String SYS_CPU_PROBE  = "sysCpu";
+    public static final String PROC_CPU_PROBE = "procCpu";
+    public static final String PROC_MEM_PROBE = "procMem";
+    
+    public static final String MEASURE_KEY = "sigar_measure";
+    
+    public static final String PID_KEY           = "pid";
+    public static final String NET_INTERFACE_KEY = "netInterface";
     
     public static final String CPU_USER    = "cpu_user";
     public static final String CPU_NICE    = "cpu_nice";
