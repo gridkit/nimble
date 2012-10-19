@@ -50,6 +50,18 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		throw new UnsupportedOperationException("Should be called in node scope");
 	}
 	
+    @Override
+    public <S extends MeteringAware> MeteringSync<S> touch(final S sync) {
+        sync.setMetering(this);
+
+        return new MeteringSync<S>() {
+            @Override
+            public S getSync() {
+                return sync;
+            }
+        };
+    }
+	
 	@Override
 	public synchronized DeploymentArtifact createArtifact(ViNode target, DepolymentContext context) {
 		String nodename = target.toString();
@@ -80,7 +92,6 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			return new Slave(nodename, accumulator, bufferSize);
 		}
 	}
-
 
 	private interface RemoteSlave extends MeteringDriver, Remote {
 
@@ -157,5 +168,17 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		private synchronized void processSamples() {
 			accumulator.accumulate(manager);
 		}
-	}	
+		
+	    @Override
+	    public <S extends MeteringAware> MeteringSync<S> touch(final S sync) {
+	        sync.setMetering(this);
+
+	        return new MeteringSync<S>() {
+	            @Override
+	            public S getSync() {
+	                return sync;
+	            }
+	        };
+	    }
+	}
 }
