@@ -21,6 +21,15 @@ public class ExecutionHelper {
 		return new ExecDriver();
 	}
 	
+	public static ExecutionConfig unlimitedExecution(int totalThreads, boolean perNode) {
+		if (perNode) {
+			return new ThreadCountConfig(totalThreads);
+		}
+		else {
+			throw new UnsupportedOperationException("Not done yet");
+		}				
+	}
+
 	public static ExecutionConfig constantRateExecution(double rate, int totalThreads, boolean perNode) {
 		if (perNode) {
 			return new ConstantRateConfig(rate, totalThreads);
@@ -161,6 +170,22 @@ public class ExecutionHelper {
 				.setTimeBounds(startNanos, finishNanos)
 				.setMeasure((double)(finishNanos - startNanos) / TimeUnit.SECONDS.toNanos(1))
 				.submit();
+		}
+	}
+	
+	private static class ThreadCountConfig implements ExecutionDriver.ExecutionConfig, Serializable {
+		
+		private static final long serialVersionUID = 20121017L;
+
+		private final int threadLimit;
+
+		public ThreadCountConfig(int threadLimit) {
+			this.threadLimit = threadLimit;
+		}
+
+		@Override
+		public int getThreadCount() {
+			return threadLimit;
 		}
 	}
 	

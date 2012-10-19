@@ -354,11 +354,13 @@ class GraphScenario implements Scenario {
 
 		@Override
 		public synchronized Object getBean(int id) {
+			System.out.println("READ BEAN " + id);
 			return beans.get(id);
 		}
 
 		@Override
 		public synchronized void deployBean(int id, Object object) {
+			System.out.println("DEPLOY " + id);
 			if (beans.containsKey(id)) {
 				throw new IllegalArgumentException("Bean [" + id + "] is already defined, cannot deploy " + object);
 			}

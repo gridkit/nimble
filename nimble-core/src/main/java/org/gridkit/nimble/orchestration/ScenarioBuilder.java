@@ -9,10 +9,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -50,35 +53,36 @@ public class ScenarioBuilder {
 	}
 
 	public <V> V deploy(V bean) {
-		return internalDeploy(null, bean);
+		return internalDeploy(new UnionScope(), bean);
 	}
 	
 	public <V> V deploy(String pattern, V bean) {
-		return internalDeploy(new PatternSelector(pattern), bean);
+		return internalDeploy(new FixedScope(pattern), bean);
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <V> V internalDeploy(TargetSelector scope, V bean) {
-		if (beans.containsKey(bean)) {
-			throw new IllegalArgumentException("Bean [" + bean + "] is already deployed");
-		}
+	private <V> V internalDeploy(ScopeResolver scope, V bean) {
+//		if (beans.containsKey(bean)) {
+//			throw new IllegalArgumentException("Bean [" + bean + "] is already deployed");
+//		}
 		if (stubs.containsKey(bean)) {
 			throw new IllegalArgumentException("Cannot deploy stub");
 		}
 		else {
-			Bean beanMeta = newBeanInfo(bean.getClass().getInterfaces());
+			Bean beanMeta = newBeanInfo(bean.getClass().getInterfaces(), scope);
 			beanMeta.reference = bean;
-			beanMeta.scope = scope;
+			beanMeta.caption = beanMeta.reference.toString();
 			beans.put(bean, beanMeta);
 			addDeployAction(beanMeta, bean);
 			return (V) beanMeta.proxy;
 		}
 	}
 
-	private Bean newBeanInfo(Class<?>[] interfaces) {
+	private Bean newBeanInfo(Class<?>[] interfaces, ScopeResolver scope) {
 		Bean beanMeta = new Bean(beanList.size(), interfaces);
 		beanList.add(beanMeta);
-		Object proxy = newProxy(beanMeta);
+		Object proxy = newProxy(beanMeta, scope);
+		beanMeta.scope = scope;
 		beanMeta.proxy = proxy;
 		stubs.put(proxy, beanMeta);
 		return beanMeta;
@@ -182,18 +186,18 @@ public class ScenarioBuilder {
 		new PrintScenario().play(null);
 	}
 	
-	private Object newProxy(Bean beanMeta) {
-		Stub stub = new Stub(beanMeta, new BeanScope());
+	private Object newProxy(Bean beanMeta, ScopeResolver scope) {
+		Stub stub = new Stub(beanMeta, scope);
 		return Proxy.newProxyInstance(Stub.class.getClassLoader(), beanMeta.interfaces, stub);
 	}
 
-	private Bean declareDeployable(Method method) {
+	private Bean declareDeployable(Method method, ScopeResolver scope) {
 		Class<?> rt = method.getReturnType();
 		if (rt == Object.class) {
-			return newBeanInfo(new Class<?>[]{Noop.class});
+			return newBeanInfo(new Class<?>[]{Noop.class}, scope);
 		}
 		if (rt.isInterface()) {
-			return newBeanInfo(new Class<?>[]{rt});
+			return newBeanInfo(new Class<?>[]{rt}, scope);
 		}
 		else {
 			return null;
@@ -216,12 +220,13 @@ public class ScenarioBuilder {
 		beanInfo.deployAction = action;
 	}
 	
-	private void addCallAction(Bean beanInfo, Scope scope, Method method, Object[] args, Bean deployTo) {
+	private void addCallAction(Bean beanInfo, ScopeResolver scope, Method method, Object[] args, Bean deployTo) {
 		Object[] refinedArgs = args == null ? new Object[0] : refine(args);
 		CallAction action = new CallAction(beanInfo, scope, method, refinedArgs, deployTo);
 		addAction(action);
 		if (deployTo != null) {
 			deployTo.deployAction = action;
+			deployTo.scope = beanInfo.scope;
 		}
 	}
 	
@@ -231,6 +236,7 @@ public class ScenarioBuilder {
 			if (stubs.containsKey(copy[i])) {
 				copy[i] = stubs.get(copy[i]);
 			}
+// TODO allow to deploy bean more than once?			
 			if (beans.containsKey(copy[i])) {
 				copy[i] = beans.get(copy[i]);
 			}
@@ -244,55 +250,9 @@ public class ScenarioBuilder {
 	}
 	
 	private TargetSelector getBeanScope(Bean bean) {
-		if (bean.scope != null) {
-			return bean.scope;
-		}
-		else {
-			return deriveScope(bean, bean);
-		}
+		return new DynamicScopeDefinition(bean.scope);
 	}
 	
-	private TargetSelector deriveScope(Bean rootBean, Bean bean) {
-		List<TargetSelector> selectors = new ArrayList<TargetSelector>();
-		for(Action action: actionList) {
-			if (action instanceof CallAction) {
-				// TODO !!!
-				CallAction ca = (CallAction) action;
-				if (ca.isUsing(bean)) {
-					TargetSelector ts = ca.bean.scope;
-					if (ts == null) {
-						if (ca.bean == rootBean) {
-							continue;
-						}
-						else {
-							selectors.add(deriveScope(rootBean, ca.bean));
-						}
-					}
-					else {
-						selectors.add(ts);
-					}
-				}
-				else if (ca.bean == bean) {
-					for(Object arg: ca.arguments) {
-						if (arg instanceof Bean) {
-							Bean cb = (Bean) arg;
-							if (cb.scope != null) {
-								selectors.add(cb.scope);
-							}
-							else {
-								selectors.add(deriveScope(rootBean, cb));
-							}
-						}
-					}
-				}
-			}
-		}
-		if (selectors.isEmpty()) {
-			throw new RuntimeException("Bean " + bean.reference + " is not used");
-		}
-		return new CompositeTargetSelector(selectors.toArray(new TargetSelector[selectors.size()]));
-	}
-
 	private List<GraphScenario.Action> exportGraph() {
 		
 		List<GraphScenario.Action> script = new ArrayList<GraphScenario.Action>();
@@ -314,7 +274,7 @@ public class ScenarioBuilder {
 		}
 		else if (action instanceof CallAction) {
 			CallAction ca = (CallAction) action;
-			TargetSelector scope = ca.scope.getSelector(action);
+			TargetSelector scope = new DynamicScopeDefinition(ca.scope);
 			CallExecutor exec = new CallExecutor(ca);
 			
 			ScriptAction sa = new ScriptAction(list, ca.actionId, scope, toArray(ca.getDependencies()), exec);
@@ -345,7 +305,8 @@ public class ScenarioBuilder {
 		final int id;
 		final Class<?>[] interfaces;
 		
-		TargetSelector scope;
+		ScopeResolver scope;
+		String caption;
 		Object reference;
 		Object proxy;
 		Action deployAction;
@@ -498,13 +459,13 @@ public class ScenarioBuilder {
 	class CallAction extends Action {
 		
 		private final Bean bean;
-		private final Scope scope;
+		private final ScopeResolver scope;
 		private final Method method;
 		private final Object[] arguments;
 		private final Bean deployTarget;
 		private final List<Bean> related = new ArrayList<ScenarioBuilder.Bean>();
 		
-		public CallAction(Bean bean, Scope scope, Method method, Object[] arguments, Bean deployTarget) {
+		public CallAction(Bean bean, ScopeResolver scope, Method method, Object[] arguments, Bean deployTarget) {
 			this.bean = bean;
 			this.scope = scope;
 			this.method = method;
@@ -621,32 +582,12 @@ public class ScenarioBuilder {
 		}
 	}
 	
-	abstract class Scope {
-		
-		abstract TargetSelector getSelector(Action action);
-	}
-
-	class BeanScope extends Scope {
-
-		TargetSelector getSelector(Action action) {
-			if (action instanceof CallAction) {
-				return getBeanScope(((CallAction)action).bean);
-			}
-			else if (action instanceof DeployAction) {
-				return getBeanScope(((DeployAction)action).bean);
-			}
-			else {
-				throw new UnsupportedOperationException();
-			}
-		}		
-	}
-	
 	class Stub implements InvocationHandler {
 
 		private final Bean bean;
-		private final Scope scope;
+		private final ScopeResolver scope;
 		
-		public Stub(Bean bean, Scope scope) {
+		public Stub(Bean bean, ScopeResolver scope) {
 			this.bean = bean;
 			this.scope = scope;
 		}
@@ -658,14 +599,71 @@ public class ScenarioBuilder {
 				return method.invoke(this, args);
 			}
 			else {
-				Bean rbean = declareDeployable(method);
+				
+				ScopeResolver callScope = deriveCallscope(scope, args);
+				
+				Bean rbean = declareDeployable(method, callScope);
 				if (rbean != null) {
-					rbean.scope = bean.scope;
+					rbean.caption = bean.caption + "." + method.getName();
 				}
-				addCallAction(bean, scope, method, args, rbean);
-				// TODO normal dependency processing!!!
+				addCallAction(bean, callScope, method, args, rbean);
 				
 				return rbean == null ? null : rbean.proxy;
+			}
+		}
+
+		private ScopeResolver deriveCallscope(ScopeResolver proxyScope, Object[] args) {
+			boolean hasDeps = false;
+			if (args != null) {
+				for(Object arg: args) {
+					if (stubs.containsKey(arg)) {
+						hasDeps = true;
+					}
+					else if (beans.containsKey(arg)) {
+						throw new IllegalArgumentException("Driver should no be used directly. Use stub object.");
+					}
+				}
+			}
+			if (hasDeps) {
+				List<UnionScope> openScopes = new ArrayList<UnionScope>();
+				
+				IntersectionScope closedScopes = new IntersectionScope();
+				
+				addScope(openScopes, closedScopes, proxyScope);
+				for(Object arg: args) {
+					if (stubs.containsKey(arg)) {
+						Bean ba = stubs.get(arg);
+						addScope(openScopes, closedScopes, ba.scope);
+					}
+				}
+				
+				if (closedScopes.isEmpty()) {
+					UnionScope openScope = new UnionScope();
+					for(UnionScope os: openScopes) {
+						os.add(openScope);
+					}
+					
+					return openScope;
+				}
+				else {
+					for(UnionScope os: openScopes) {
+						os.add(closedScopes);
+					}
+					
+					return closedScopes;				
+				}
+				
+				
+			}
+			return proxyScope;
+		}
+
+		private void addScope(List<UnionScope> openScopes, IntersectionScope closedScopes, ScopeResolver scope) {
+			if (scope instanceof UnionScope) {
+				openScopes.add((UnionScope) scope);
+			}
+			else {
+				closedScopes.intersect(scope);
 			}
 		}
 	}
@@ -965,18 +963,23 @@ public class ScenarioBuilder {
 					throw new IllegalArgumentException("No bean found " + beanRef);
 				}
 				
+				Object[] refinedArg = new Object[args.length];
 				for(int i = 0; i != args.length; ++i) {
 					if (args[i] instanceof BeanRef) {
 						BeanRef br = (BeanRef)args[i];
-						args[i] = context.getBean(br.id);
-						if (args[i] == null) {
+						refinedArg[i] = context.getBean(br.id);
+						if (refinedArg[i] == null) {
+							System.out.println("BEAN NOT FOUND: " + br);
 							throw new IllegalArgumentException("No bean found " + br);
 						}
+					}
+					else {
+						refinedArg[i] = args[i];
 					}
 				}
 				
 				method = resolveMethod();
-				result = method.invoke(bean, args);
+				result = method.invoke(bean, refinedArg);
 				
 				if (deplotyTo != null) {
 					context.deployBean(deplotyTo.id, result);
@@ -1025,5 +1028,168 @@ public class ScenarioBuilder {
 	}
 	
 	private static interface Noop {		
+	}
+	
+	private static class DynamicScopeDefinition implements TargetSelector {
+
+		private final ScopeResolver resolver;
+		
+		public DynamicScopeDefinition(ScopeResolver resolver) {
+			if (resolver == null) {
+				throw new NullPointerException("Resolver should be non empty");
+			}
+			this.resolver = resolver;
+		}
+
+		@Override
+		public Collection<ViNode> selectTargets(ViNodeSet nodes) {
+			Set<ViNode> candidates = new LinkedHashSet<ViNode>();
+
+			resolver.collectRelatedNodes(new HashSet<ScopeResolver>(), candidates, nodes);
+			
+			Iterator<ViNode> it = candidates.iterator();
+			while(it.hasNext()) {
+				ViNode node = it.next();
+				if (!resolver.isInScope(new HashSet<ScenarioBuilder.ScopeResolver>(), node, nodes)) {
+					it.remove();
+				}
+			}
+			
+			if (candidates.isEmpty()) {
+				throw new IllegalArgumentException("No target nodes have found");
+			}
+			
+			return candidates;
+		}
+	}
+	
+	private static interface ScopeResolver {
+		
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes);
+		
+		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, ViNodeSet nodes);
+		
+	}
+	
+	private static class UnionScope implements ScopeResolver {
+		
+		private final Set<ScopeResolver> resolvers = new LinkedHashSet<ScenarioBuilder.ScopeResolver>();
+		
+		public void add(ScopeResolver resolver) {
+			resolvers.add(resolver);
+		}
+		
+		@Override
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes) {
+			if (processed.add(this)) {
+				for(ScopeResolver sr: resolvers) {
+					sr.collectRelatedNodes(processed, collection, nodes);
+				}
+			}
+		}
+
+		@Override
+		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, ViNodeSet nodes) {
+			if (processed.add(this)) {
+				for(ScopeResolver sr: resolvers) {
+					if (sr.isInScope(processed, node, nodes)) {
+						return true;
+					}
+				}
+				return false;
+			}
+			else {
+				return false;
+			}
+		}				
+	}
+	
+	private static class IntersectionScope implements ScopeResolver {
+		
+		private final Set<ScopeResolver> resolvers = new LinkedHashSet<ScenarioBuilder.ScopeResolver>();
+
+		public boolean isEmpty() {
+			return resolvers.isEmpty();
+		}
+		
+		public void intersect(ScopeResolver resolver) {
+			resolvers.add(resolver);
+		}
+		
+		@Override
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes) {
+			if (processed.add(this)) {
+				for(ScopeResolver sr: resolvers) {
+					sr.collectRelatedNodes(processed, collection, nodes);
+				}
+			}
+		}
+
+		@Override
+		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, ViNodeSet nodes) {
+			if (processed.add(this)) {
+				for(ScopeResolver sr: resolvers) {
+					if (!sr.isInScope(processed, node, nodes)) {
+						return false;
+					}
+				}
+				return true;
+			}
+			else {
+				return true;
+			}
+		}		
+	}	
+	
+	private static class FixedScope implements ScopeResolver {
+		
+		private final String pattern;
+		
+		public FixedScope(String pattern) {
+			this.pattern = pattern;
+		}
+
+		@Override
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes) {
+			if (processed.add(this)) {
+				collection.addAll(nodes.listNodes(pattern));
+			}
+		}
+
+		@Override
+		public boolean isInScope(Set<ScopeResolver> precessed, ViNode node, ViNodeSet nodes) {
+			return nodes.listNodes(pattern).contains(node);
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((pattern == null) ? 0 : pattern.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			FixedScope other = (FixedScope) obj;
+			if (pattern == null) {
+				if (other.pattern != null)
+					return false;
+			} else if (!pattern.equals(other.pattern))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "(" + pattern + ")";
+		}
 	}
 }

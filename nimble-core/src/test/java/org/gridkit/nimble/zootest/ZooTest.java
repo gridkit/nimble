@@ -1,5 +1,6 @@
 package org.gridkit.nimble.zootest;
 
+import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
@@ -15,13 +16,13 @@ import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.vicluster.ViManager;
-import org.gridkit.vicluster.telecontrol.isolate.IsolateCloudFactory;
 import org.junit.After;
 import org.junit.Test;
 
 public class ZooTest {
 
-	private ViManager cloud = IsolateCloudFactory.createCloud("org.gridkit");
+//	private ViManager cloud = IsolateCloudFactory.createCloud("org.gridkit");
+	private ViManager cloud = CloudFactory.createLocalCloud();
 	
 	@After
 	public void dropCloud() {
@@ -29,14 +30,36 @@ public class ZooTest {
 	}
 	
 	@Test
-	public void test() {
+	public void testMonitoring() {
 
 		cloud.nodes("node11", "node12", "node22");		
 		
 		Pivot pivot = configurePivot();
-		PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 1024);
+		PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 16 << 10);
 		
-		Scenario scenario = createTestScenario(metrics);
+		Scenario scenario = createMonitoringTestScenario(metrics);
+		
+		scenario.play(cloud);
+		
+		PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
+		
+		PrettyPrinter pp = new PrettyPrinter();		
+		pp.print(System.out, printer);
+		System.out.println();
+//		PivotDumper.dump(metrics.getReporter());
+		
+		System.out.println("Done");
+	}
+
+	@Test
+	public void testScopeDerivation() {
+		
+		cloud.nodes("node11", "node12", "node22");		
+		
+		Pivot pivot = configurePivot();
+		PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 16 << 10);
+		
+		Scenario scenario = createComplexDependencyTestScenario(metrics);
 		
 		scenario.play(cloud);
 		
@@ -66,7 +89,7 @@ public class ZooTest {
 		return pivot;
 	}
 
-	private Scenario createTestScenario(PivotMeteringDriver metrics) {
+	private Scenario createMonitoringTestScenario(PivotMeteringDriver metrics) {
 		
 		ScenarioBuilder sb = new ScenarioBuilder();
 		
@@ -88,11 +111,11 @@ public class ZooTest {
 		MeteringTemplate t = new MeteringTemplate();
 		t.setStatic(Measure.NAME, "Reader");
 
-		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(100, 20, true), metering, t);
+		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(10, 1, true), metering, t);
 		
 		zoo.newSample(metering);
 		
-		sb.sleep(5000);
+		sb.sleep(1000);
 
 		run.stop();
 		
@@ -107,4 +130,46 @@ public class ZooTest {
 		Scenario scenario = sb.getScenario();
 		return scenario;
 	}
+	
+	private Scenario createComplexDependencyTestScenario(PivotMeteringDriver metrics) {
+		
+		ScenarioBuilder sb = new ScenarioBuilder();
+		
+		MeteringDriver metering = sb.deploy(metrics);
+		ExecutionDriver executor = sb.deploy("**", ExecutionHelper.newDriver());
+		
+		ZooTestDriver zoo1 = sb.deploy("node1*", new ZooTestDriver.Impl());
+		ZooTestDriver zoo2 = sb.deploy("node2*", new ZooTestDriver.Impl());
+		
+		Runnable task1 = zoo1.getReader();	
+		Runnable task2 = zoo2.getReader();	
+		
+		sb.checkpoint("test-start");
+
+		MeteringTemplate t = new MeteringTemplate();
+		t.setStatic(Measure.NAME, "Reader");
+
+		Activity run1 = executor.start(task1, ExecutionHelper.constantRateExecution(10, 1, true), metering, t);
+		Activity run2 = executor.start(task2, ExecutionHelper.constantRateExecution(10, 1, true), metering, t);
+		
+		zoo1.newSample(metering);
+		zoo2.newSample(metering);
+		
+		sb.sleep(1000);
+
+		run1.stop();
+		run2.stop();
+		
+		sb.checkpoint("test-finish");
+		
+		metering.flush();
+		
+		sb.fromStart();
+		run1.join();
+		run2.join();
+		sb.join("test-finish");
+		
+		Scenario scenario = sb.getScenario();
+		return scenario;
+	}	
 }

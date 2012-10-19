@@ -273,7 +273,23 @@ abstract class LevelPath implements Comparable<LevelPath>, Serializable {
 				return 1;
 			}
 			else {
-				if (key instanceof Comparable) {
+				if (key == null) {
+					if (((Group)that).key == null) {
+						return 0;
+					}
+					else {
+						return -1;
+					}
+				}
+				else if (((Group)that).key == null) {
+					if (key == null) {
+						return 0;
+					}
+					else {
+						return 1;
+					}
+				}
+				else if (key instanceof Comparable) {
 					return ((Comparable) key).compareTo(((Group)that).key);
 				}
 				else {
@@ -284,7 +300,7 @@ abstract class LevelPath implements Comparable<LevelPath>, Serializable {
 
 		@Override
 		protected int nodeHash() {
-			return key.hashCode();
+			return key == null ? 0 : key.hashCode();
 		}
 		
 		@Override
