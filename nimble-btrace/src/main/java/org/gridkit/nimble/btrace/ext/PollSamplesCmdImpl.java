@@ -1,11 +1,9 @@
 package org.gridkit.nimble.btrace.ext;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import net.java.btrace.api.core.BTraceLogger;
 import net.java.btrace.api.core.Lookup;
@@ -13,38 +11,35 @@ import net.java.btrace.api.wireio.Channel;
 import net.java.btrace.api.wireio.Command;
 import net.java.btrace.spi.wireio.CommandImpl;
 
-import org.gridkit.nimble.btrace.ext.model.Sample;
-
 @Command(clazz=PollSamplesCmd.class)
 public class PollSamplesCmdImpl extends CommandImpl<PollSamplesCmd> {    
     @Override
     public void execute(Lookup ctx, PollSamplesCmd cmd) {        
-        ConcurrentMap<String, SampleStore<?>> sampleStores = Nimble.getSampleStores();
+        List<PollSamplesCmdResult.Element> elements = new ArrayList<PollSamplesCmdResult.Element>();
         
-        Map<String, PollSamplesCmdResult<?>> result = new HashMap<String, PollSamplesCmdResult<?>>();
+        Collection<ScriptStore> scriptStores = Nimble.getScriptStores(cmd.getScriptClasses());
         
-        Channel channel = ctx.lookup(Channel.class);
+        for (ScriptStore scriptStore : scriptStores) {
+            for (SampleStore sampleStore : scriptStore.getSampleStores()) {
+                PollSamplesCmdResult.Element element = new PollSamplesCmdResult.Element();
 
-        Set<String> names = new HashSet<String>();
-        names.addAll(sampleStores.keySet());
-        
-        for (String name : names) {
-            SampleStore<?> sampleStore = sampleStores.get(name);
-            
-            if (sampleStore != null) {
-                put(name, sampleStore, result);
+                element.setScriptClass(scriptStore.getScriptClass());
+                element.setSampleStore(sampleStore.getName());
+                element.setSamples(sampleStore.getSamples());
+                
+                elements.add(element);
             }
         }
+        
+        PollSamplesCmdResult result = new PollSamplesCmdResult();
+        result.setElements(elements);
+        
+        Channel channel = ctx.lookup(Channel.class);
         
         try {
             channel.sendResponse(cmd, result);
         } catch (IOException e) {
             BTraceLogger.debugPrint(e);
         }
-    }
-        
-    @SuppressWarnings("unchecked")
-    private static void put(String name, SampleStore<?> sampleStore, Map<String, PollSamplesCmdResult<?>> result) {
-        result.put(name, new PollSamplesCmdResult<Sample>((SampleStore<Sample>)sampleStore));
     }
 }

@@ -1,6 +1,6 @@
 package org.gridkit.nimble.btrace.ext.model;
 
-public class SpanSample extends Sample {
+public class SpanSample extends ScalarSample {
     private static final long serialVersionUID = 1321554416280077368L;
     
     private long startTimestamp;

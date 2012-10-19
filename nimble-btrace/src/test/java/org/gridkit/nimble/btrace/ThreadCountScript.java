@@ -8,17 +8,14 @@ import net.java.btrace.ext.Time;
 
 import org.gridkit.nimble.btrace.ext.Nimble;
 import org.gridkit.nimble.btrace.ext.SampleStore;
-import org.gridkit.nimble.btrace.ext.model.TimestampSample;
 
 @BTrace
 public class ThreadCountScript {
-    public static final String THREAD_COUNT_STORE = "threadCountStore";
-    
-    public static SampleStore<TimestampSample> threadCount = Nimble.newTimestampSampleStore(THREAD_COUNT_STORE, 500);
+    public static SampleStore threadCount = Nimble.newSampleStore("threadCountStore", 500);
     
     @OnTimer(50)
     public static void reportThreadCount() {
-        Nimble.sample(threadCount, Threads.threadCount(), Time.millis());
+        Nimble.sample("threadCount", threadCount, Threads.threadCount(), Time.millis());
     }
     
     @OnTimer(1000)

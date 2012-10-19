@@ -19,12 +19,8 @@ public class PingCmd extends AbstractCommand {
     }
     
     @Override
-    public void write(ObjectOutput out) throws IOException {
-        
-    }
+    public void write(ObjectOutput out) throws IOException {}
 
     @Override
-    public void read(ObjectInput in) throws ClassNotFoundException, IOException {
-        
-    }
+    public void read(ObjectInput in) throws ClassNotFoundException, IOException {}
 }

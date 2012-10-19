@@ -3,24 +3,50 @@ package org.gridkit.nimble.btrace.ext;
 import java.io.Serializable;
 import java.util.List;
 
-import org.gridkit.nimble.btrace.ext.model.Sample;
+import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 
-public class PollSamplesCmdResult<S extends Sample> implements Serializable {
+public class PollSamplesCmdResult implements Serializable {
     private static final long serialVersionUID = 8988203060254970517L;
+    
+    private List<Element> elements;
 
-    private final Class<S> clazz;
-    private final List<S> samples;
-    
-    public PollSamplesCmdResult(SampleStore<S> store) {
-        this.clazz = store.getSampleClass();
-        this.samples = store.getSamples();
+    public List<Element> getElements() {
+        return elements;
     }
-    
-    public Class<S> getSampleClass() {
-        return clazz;
+
+    public void setElements(List<Element> elements) {
+        this.elements = elements;
     }
-    
-    public List<S> getSamples() {
-        return samples;
-    }    
+
+    public static class Element implements Serializable {
+        private static final long serialVersionUID = -7906160410947353935L;
+        
+        private String scriptClass;
+        private String sampleStore;
+        private List<ScalarSample> samples;
+        
+        public String getScriptClass() {
+            return scriptClass;
+        }
+        
+        public void setScriptClass(String clazz) {
+            this.scriptClass = clazz;
+        }
+        
+        public String getSampleStore() {
+            return sampleStore;
+        }
+        
+        public void setSampleStore(String sampleStore) {
+            this.sampleStore = sampleStore;
+        }
+        
+        public List<ScalarSample> getSamples() {
+            return samples;
+        }
+        
+        public void setSamples(List<ScalarSample> samples) {
+            this.samples = samples;
+        }
+    }
 }

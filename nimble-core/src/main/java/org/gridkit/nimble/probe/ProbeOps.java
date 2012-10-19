@@ -28,18 +28,18 @@ public class ProbeOps {
         return probes;
     }
 
-    public static ProbeHandle schedule(Collection<Runnable> probes, ScheduledExecutorService executor, long delayMs) {
+    public static ProbeHandle schedule(Collection<Runnable> probes, ScheduledExecutorService executor, long pollDelayMs) {
         List<Future<?>> futures = new ArrayList<Future<?>>();
         
         for (Runnable probe : probes) {
-            Future<?> future = executor.scheduleWithFixedDelay(probe, getInitialDelay(delayMs), delayMs, TimeUnit.MILLISECONDS);
+            Future<?> future = executor.scheduleWithFixedDelay(probe, getInitialDelay(pollDelayMs), pollDelayMs, TimeUnit.MILLISECONDS);
             futures.add(future);
         }
         
         return new FutureProbeHandle(futures);
     }
     
-    private static long getInitialDelay(long delayMs) {
-        return Math.abs(rnd.nextLong()) % delayMs;
+    private static long getInitialDelay(long pollDelayMs) {
+        return Math.abs(rnd.nextLong()) % pollDelayMs;
     }
 }

@@ -23,7 +23,7 @@ public class BTraceTestRun {
         write(jar, bytes);
         addJarToClasspath(jar);
         
-        JUnitCore.main("org.gridkit.nimble.btrace.BTraceClientFactoryTest");
+        JUnitCore.main("org.gridkit.nimble.btrace.BTraceDriverTest");
     }
     
     private static byte[] jarFiles(String... files) throws IOException {

@@ -1,10 +1,12 @@
 package org.gridkit.nimble.btrace;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -13,77 +15,88 @@ import net.java.btrace.client.Client;
 import net.java.btrace.ext.Printer;
 
 import org.gridkit.nimble.btrace.ext.Nimble;
+import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.probe.CachingSamplerFactory;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.ProbeHandle;
-import org.gridkit.nimble.util.CriticalSection;
+import org.gridkit.nimble.probe.ProbeMeasure;
+import org.gridkit.nimble.probe.ProbeOps;
+import org.gridkit.nimble.probe.SchemeSamplerFactory;
 import org.gridkit.nimble.util.NamedThreadFactory;
+import org.gridkit.nimble.util.RunnableAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface BTraceDriver {
-    ProbeHandle trace(PidProvider provider, Collection<Class<?>> classes, long pollDelayMs);
+    ProbeHandle trace(PidProvider provider, SampleSchema schema, BTraceScriptSettings settings);
     
     void stop();
     
-    public static class Impl implements BTraceDriver, BTraceClientSource {
+    public static class Impl implements BTraceDriver, BTraceClientSource, Serializable {
+        private static final long serialVersionUID = -7698303441795919196L;
         private static final Logger log = LoggerFactory.getLogger(Impl.class);
-        
         private static final long CLIENT_OPERATION_TIMEOUT = 1000;
+
+        private final int corePoolSize;
+        private final BTraceClientSettings settings;
         
         private transient ScheduledExecutorService executor;
-        private final int corePoolSize;
-
-        private final BTraceClientOps clientOps = new BTraceClientOps();
-        private final BTraceClientFactory clientFactory = new BTraceClientFactory();
         
-        private final Map<Long, Client> clients = Collections.synchronizedMap(new HashMap<Long, Client>());
+        private transient List<Client> clients;
         
-        private final CriticalSection connectSection = new CriticalSection();
-        
-        private final BTraceClientSettings settings = new BTraceClientSettings();
+        private transient BTraceClientOps clientOps;
+        private transient BTraceClientFactory clientFactory;
 
         public Impl(int corePoolSize) {
             this.corePoolSize = corePoolSize;
+            this.settings = new BTraceClientSettings();
+            
             settings.setExtensionClasses(Nimble.class, Printer.class);
         }
 
         @Override
-        public ProbeHandle trace(PidProvider provider, Collection<Class<?>> classes, long pollDelayMs) {
-            return null;
+        public ProbeHandle trace(PidProvider provider, SampleSchema schema, BTraceScriptSettings settings) {
+            List<Runnable> probes = new ArrayList<Runnable>();
+
+            for (Long pid : provider.getPids()) {                
+                BTraceProbe probe = new BTraceProbe();
+                
+                probe.setPid(pid);
+                probe.setSettings(settings);
+                probe.setTimeoutMs(CLIENT_OPERATION_TIMEOUT);
+                
+                probe.setClientOps(clientOps);
+                probe.setClientSource(this);
+                
+                Map<Object, Object> globals = new HashMap<Object, Object>();
+                globals.put(ProbeMeasure.PID, pid);
+                
+                SchemeSamplerFactory factory = new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_KEY, globals);
+                probe.setSamplerFactory(new CachingSamplerFactory(factory));
+
+                probes.add(new RunnableAdapter(probe));
+            }
+            
+            return ProbeOps.schedule(probes, getExecutor(), settings.getPollDelayMs());
         }
-        
+
         @Override
         public Client getClient(final long pid) throws ClientCreateException {
-            try {
-                return connectSection.execute(pid, new Callable<Client>() {
-                    @Override
-                    public Client call() throws Exception {
-                        if (!clients.containsKey(pid)) {
-                            clients.put(pid, clientFactory.newClient((int)pid, settings));
-                        }
-                        return clients.get(pid);
-                    }
-                });
-            } catch (ClientCreateException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new ClientCreateException("Failed to build BTrace client for process id " + pid, e);
-            }
+            Client client = clientFactory.newClient((int)pid, settings);
+            clients.add(client);
+            return client;
         }
         
         @Override
         public void stop() {
             getExecutor().shutdownNow();
-            
-            Map<Long, Client> clients = new HashMap<Long, Client>();
-            clients.putAll(this.clients);
-            
-            for (Map.Entry<Long, Client> client : clients.entrySet()) {
+
+            for (Client client : clients) {
                 try {
-                    clientOps.exit(client.getValue(), 0, CLIENT_OPERATION_TIMEOUT);
+                    clientOps.exit(client, 0, CLIENT_OPERATION_TIMEOUT);
                 } catch (TimeoutException ignored) { 
                 } catch (Exception e) {
-                    log.error("Failed to exit client for process id " + client.getKey(), e);
+                    log.error("Failed to stop client " + client, e);
                 }
             }
         }
@@ -97,5 +110,12 @@ public interface BTraceDriver {
             
             return executor;
         }
+        
+        private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
+            stream.defaultReadObject();
+            this.clients = new CopyOnWriteArrayList<Client>();
+            this.clientOps = new BTraceClientOps();
+            this.clientFactory = new BTraceClientFactory();
+       }
     }
 }

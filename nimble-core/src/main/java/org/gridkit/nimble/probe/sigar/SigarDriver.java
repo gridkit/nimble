@@ -62,14 +62,14 @@ public interface SigarDriver {
         public ProbeHandle monitorSysCpu(MeteringDriver metering) {      
             Runnable probe = SysCpuProbe.newInstance(metering.getSchema());
 
-            return ProbeOps.schedule(Collections.singleton(probe), executor, delayMs);
+            return ProbeOps.schedule(Collections.singleton(probe), getExecutor(), delayMs);
         }
         
         @Override
         public ProbeHandle monitorSysMem(MeteringDriver metering) {
             Runnable probe = SysMemProbe.newInstance(metering.getSchema());
 
-            return ProbeOps.schedule(Collections.singleton(probe), executor, delayMs);
+            return ProbeOps.schedule(Collections.singleton(probe), getExecutor(), delayMs);
         }
         
         @Override
@@ -78,7 +78,7 @@ public interface SigarDriver {
              
             List<Runnable> probes = ProbeOps.instantiate(interfaces, NetInterfaceProbe.FACTORY, metering);
             
-            return ProbeOps.schedule(probes, executor, delayMs);
+            return ProbeOps.schedule(probes, getExecutor(), delayMs);
         }
         
         @Override
@@ -100,7 +100,7 @@ public interface SigarDriver {
                 probes.add(factory.newProbe(pid, metering.getSchema()));
             }
             
-            return ProbeOps.schedule(probes, executor, delayMs);
+            return ProbeOps.schedule(probes, getExecutor(), delayMs);
         }
    
         @Override
