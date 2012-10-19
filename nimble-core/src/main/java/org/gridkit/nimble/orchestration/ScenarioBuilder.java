@@ -472,17 +472,20 @@ public class ScenarioBuilder {
 			this.arguments = arguments;
 			this.deployTarget = deployTarget;
 			
+			addDependency(bean.deployAction);
+
 			related.add(bean);
 			if (deployTarget != null) {
 				related.add(deployTarget);
 			}
 			for(Object o: arguments) {
 				if (o instanceof Bean) {
-					related.add((Bean) o);
+					Bean arg = (Bean) o;
+					addDependency(arg.deployAction);
+					related.add(arg);
 				}
 			}
 			
-			addDependency(bean.deployAction);
 		}
 
 		public boolean isUsing(Bean bean) {
@@ -969,7 +972,7 @@ public class ScenarioBuilder {
 						BeanRef br = (BeanRef)args[i];
 						refinedArg[i] = context.getBean(br.id);
 						if (refinedArg[i] == null) {
-							System.out.println("BEAN NOT FOUND: " + br);
+//							System.out.println("BEAN NOT FOUND: " + br);
 							throw new IllegalArgumentException("No bean found " + br);
 						}
 					}
