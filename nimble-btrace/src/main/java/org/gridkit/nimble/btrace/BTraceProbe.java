@@ -45,7 +45,7 @@ public class BTraceProbe implements Callable<Void> {
             
             return null;
         } catch (Exception e) {
-            log.error("Error while execiting BTraceProbe with settrings " + settings);
+            log.error("Error while execiting BTraceProbe with settings " + settings, e);
             throw e;
         }
     }

@@ -38,4 +38,10 @@ public class BTraceScriptSettings implements Serializable {
     public void setPollDelayMs(long pollDelayMs) {
         this.pollDelayMs = pollDelayMs;
     }
+
+    @Override
+    public String toString() {
+        return "BTraceScriptSettings [scriptClass=" + scriptClass + ", args="
+                + args + ", pollDelayMs=" + pollDelayMs + "]";
+    }
 }
