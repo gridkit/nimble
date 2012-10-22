@@ -88,24 +88,27 @@ public class ZooTest {
 		pivot.root()
 			.level("run-stats")
 				.filter(Filters.notNull(ZooMetrics.RUNMETRICS))
-				.group(MeteringDriver.NODE)
-					.group(Measure.NAME)
-						.level("stats")
-							.show()
-							.display(MeteringDriver.NODE)
-							.display(Measure.NAME)
-							.calcDistribution(Measure.MEASURE)
-							.displayDistribution(Measure.MEASURE);
+				.group(MeteringDriver.HOSTNAME)
+					.group(MeteringDriver.NODE)
+						.group(Measure.NAME)
+							.level("stats")
+								.show()
+								.display(MeteringDriver.NODE)
+								.display(Measure.NAME)
+								.calcDistribution(Measure.MEASURE)
+								.displayDistribution(Measure.MEASURE);
 		
 		pivot.root()
 			.level("sigar-cpu-stats")
 				.filter(Filters.notNull(SigarMeasure.PROBE_KEY))
-				.group(SigarMeasure.PROBE_KEY)
-					.group(SigarMeasure.MEASURE_KEY)
-						.group(SigarMeasure.PID_KEY)
-							.level("")
-								.show()
-								.calcFrequency(Measure.MEASURE);
+				.group(MeteringDriver.HOSTNAME)
+					.group(MeteringDriver.NODE)				
+						.group(SigarMeasure.PROBE_KEY)
+							.group(SigarMeasure.MEASURE_KEY)
+								.group(SigarMeasure.PID_KEY)
+									.level("")
+										.show()
+										.calcFrequency(Measure.MEASURE);
 		
 		return pivot;
 	}
@@ -121,7 +124,7 @@ public class ZooTest {
 		
 		Runnable task = zoo.getReader();	
 		
-        SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100));
+        SigarDriver sigar = sb.deploy("node22", new SigarDriver.Impl(2, 100));
         
         sb.sync();
         
