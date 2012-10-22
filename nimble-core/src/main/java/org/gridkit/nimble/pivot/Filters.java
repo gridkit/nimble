@@ -3,7 +3,6 @@ package org.gridkit.nimble.pivot;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
 
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.pivot.Pivot.Extractor;
@@ -13,6 +12,10 @@ public class Filters {
 
 	public static Pivot.Filter equals(Object key, Object value) {
 		return new EqualsFilter(Extractors.field(key), value);
+	}
+
+	public static Pivot.Filter notNull(Object key) {
+		return new NotNullFilter(Extractors.field(key));
 	}
 	
 	public static Filter always() {
@@ -79,6 +82,20 @@ public class Filters {
 			else {
 				return value.equals(extract);
 			}
+		}
+	}
+
+	public static class NotNullFilter extends ExtractorFilter {
+		
+		private static final long serialVersionUID = 20121014L;
+		
+		public NotNullFilter(Extractor extractor) {
+			super(extractor);
+		}
+		
+		@Override
+		protected boolean evaluate(Object extract) {
+			return extract != null;
 		}
 	}
 

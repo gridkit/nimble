@@ -5,7 +5,7 @@ import java.io.Serializable;
 import org.gridkit.nimble.driver.MeteringAware;
 import org.gridkit.nimble.probe.SamplerFactory;
 
-public interface SigarSamplerFactoryProvider extends MeteringAware, Serializable {
+public interface SigarSamplerFactoryProvider extends MeteringAware<SigarSamplerFactoryProvider>, Serializable {
     SamplerFactory getProcMemSampleFactory(long pid);
     
     SamplerFactory getProcCpuSampleFactory(long pid);

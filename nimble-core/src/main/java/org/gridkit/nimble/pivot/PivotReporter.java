@@ -12,23 +12,31 @@ import org.gridkit.nimble.metering.SampleReader;
 
 public class PivotReporter implements SampleAccumulator {
 
+	public static final LevelKey LEVEL_KEY = LevelKey.LEVEL_KEY;
+	private static enum LevelKey {
+		LEVEL_KEY;
+	}
+	
 	protected LevelSummary summary;
 	protected Map<LevelPath, LevelSummary> data = new HashMap<LevelPath, PivotReporter.LevelSummary>(); 
 	
 	public PivotReporter(Pivot pivot) {
-		this(translate(pivot.root()));
+		this(translate(pivot.root(), null));
 	}
 	
-	private static LevelInfo translate(Pivot.Level level) {
+	private static LevelInfo translate(Pivot.Level level, LevelInfo parent) {
 		LevelInfo li = new LevelInfo();
 		li.levelId = level.getId();
+		li.name = level.getName();
+		li.parent = parent;
 		li.filter = level.getFilter();
 		li.groupBy = level.getGroupping();
+		li.pivoted = level.isPivoted();
 		li.aggregators = level.getAggregators();
 		li.captureStatics = level.shouldCaptureStatics();
 		li.levels = new ArrayList<PivotReporter.LevelInfo>();
 		for(Pivot.Level l: level.getSublevels()) {
-			li.levels.add(translate(l));
+			li.levels.add(translate(l, li));
 		}
 		return li;		
 	}
@@ -36,6 +44,10 @@ public class PivotReporter implements SampleAccumulator {
 	protected PivotReporter(LevelInfo rootLevel) {
 		this.summary = new LevelSummary(null, rootLevel);
 		data.put(summary.path, summary);		
+	}
+	
+	public SampleReader getReader() {
+		return new LevelReader(LevelPath.root());		
 	}
 	
 	public List<LevelPath> listChildren(LevelPath path) {
@@ -147,14 +159,29 @@ public class PivotReporter implements SampleAccumulator {
 		}
 	}
 
+	static String combine(String a, String b) {
+		if (a == null || a.length() == 0) {
+			return b;
+		}
+		else if (b == null || b.length() == 0) {
+			return a;
+		}
+		else {
+			return a + "." + b;
+		}
+	}
+	
 	protected static class LevelInfo implements Serializable {
 		
 		private static final long serialVersionUID = 20121010L;
 		
+		private String name;
+		private LevelInfo parent;
 		private int levelId;
 		private Pivot.Filter filter;
 		private Pivot.Extractor groupBy;
-		private boolean captureStatics;		
+		private boolean captureStatics;
+		private boolean pivoted;
 		private List<LevelInfo> levels;
 		private Map<Object, Pivot.Aggregator> aggregators;
 	}
@@ -206,13 +233,32 @@ public class PivotReporter implements SampleAccumulator {
 				}
 			}
 		}
-		
+
 		Map<Object, Object> getData() {
-			Map<Object, Object> data = new LinkedHashMap<Object, Object>();
-			for(Object key: aggregations.keySet()) {
-				data.put(key, aggregations.get(key).getResult());
+			if (isGroupping()) {
+				return Collections.emptyMap();
 			}
-			return data;
+			else {
+				Map<Object, Object> data = new LinkedHashMap<Object, Object>();
+				for(Object key: aggregations.keySet()) {
+					data.put(key, aggregations.get(key).getResult());
+				}
+				return data;
+			}
+		}
+		
+		boolean isReportable() {
+			if (isGroupping() && sublevels == null) {
+				return false;
+			}
+			else {
+				for(LevelSummary sub: sublevels.values()) {
+					if (!sub.info.pivoted) {
+						return false;
+					}
+				}
+				return true;
+			}
 		}
 	}
 		
@@ -239,6 +285,133 @@ public class PivotReporter implements SampleAccumulator {
 
 		public Object get(Object key) {
 			return reader.get(key);
+		}
+	}
+	
+	private class LevelReader implements SampleReader {
+		
+		private final List<LevelPath> stack = new ArrayList<LevelPath>();
+		
+		private LevelPath currentRow;
+		private Map<Object, Object> bottom;
+		private List<Object> keySet;
+		
+		public LevelReader(LevelPath path) {
+			push(path);
+		}
+
+		@Override
+		public boolean isReady() {
+			return currentRow != null;
+		}
+
+		@Override
+		public boolean next() {
+			currentRow = null;
+			bottom = null;
+			keySet = null;
+			while(true) {
+				LevelPath path = pop();
+				for(LevelPath sub: listChildren(path)) {
+					push(sub);
+				}
+				LevelSummary summary = data.get(path);
+				if (summary == null || !summary.isReportable()) {
+					// continue
+				}
+				else {
+					currentRow = path;
+					bottom = summary.getData();
+					return true;
+				}
+			}
+		}
+
+		@Override
+		public List<Object> keySet() {
+			if (keySet != null) {
+				return keySet;
+			}
+			else {
+				keySet = new ArrayList<Object>();
+				keySet.add(LEVEL_KEY);
+				caclKeySet(keySet, currentRow);
+			}
+			return keySet;
+		}
+
+		private void caclKeySet(List<Object> proto, LevelPath path) {
+			if (path != null) {
+				caclKeySet(proto, path.parent());
+				LevelSummary ls = data.get(path);
+				if (ls != null) {
+					for(Object key: ls.getData().keySet()) {
+						if (!proto.contains(key)) {
+							proto.add(key);
+						}
+					}
+				}
+			}
+		}
+
+		@Override
+		public Object get(Object key) {
+			if (key == LEVEL_KEY) {
+				return getLevelKey();
+			}
+			else {
+				if (bottom.containsKey(key)) {
+					return bottom.get(key);
+				}
+				else {
+					return findValue(currentRow.parent(), key);
+				}
+			}
+		}
+
+		private Object getLevelKey() {
+			return getLevelKey(currentRow, "");
+		}
+
+		private Object getLevelKey(LevelPath path, String suffix) {
+			if (path == null) {
+				return suffix;
+			}
+			else {
+				LevelSummary ls = data.get(path);
+				if (ls != null && !ls.isGroupping() && ls.info.name != null) {
+					suffix = combine(ls.info.name, suffix);
+				}
+				return getLevelKey(path.parent(), suffix);
+			}
+		}
+
+		private Object findValue(LevelPath path, Object key) {
+			if (path != null) {
+				LevelSummary ls = data.get(path);
+				if (ls !=null) {
+					if (ls.aggregations.containsKey(key)) {
+						return ls.aggregations.get(key).getResult();
+					}
+				}
+				return findValue(path.parent(), key);
+			}
+			else {
+				return null;			
+			}
+		}
+
+		private void push(LevelPath path) {
+			stack.add(path);
+		}
+		
+		private LevelPath pop() {
+			if (stack.isEmpty()) {
+				return null;
+			}
+			else {
+				return stack.remove(stack.size() - 1); 
+			}
 		}
 	}
 }

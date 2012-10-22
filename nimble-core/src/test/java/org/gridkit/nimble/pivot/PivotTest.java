@@ -1,8 +1,13 @@
 package org.gridkit.nimble.pivot;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.gridkit.nimble.metering.ArraySampleManager;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
+import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.junit.Test;
@@ -74,6 +79,8 @@ public class PivotTest {
 		sub2.accumulate(asm2);
 		sub2.flush();
 		
+		dump(reporter.getReader());
+		
 		reporter.listChildren(LevelPath.root()).get(0);
 		
 		PrettyPrinter pp = new PrettyPrinter();
@@ -84,6 +91,22 @@ public class PivotTest {
 		
 		System.out.println("Done");
 		
+	}
+
+	private void dump(SampleReader reader) {
+		if (reader.isReady() || reader.next()) {
+			while(true) {
+				List<Object> keys = reader.keySet();
+				for(Object key: keys) {
+					Object value = reader.get(key);
+					System.out.print(key + "=" + (value instanceof StatisticalSummary ? "<stat. summary>" : value) + ", ");
+				}
+				System.out.println();
+				if (reader.next()) {
+					break;
+				}
+			}
+		}
 	}
 
 	private void generateSamples(SampleFactory sf1, SampleFactory sf2) {
