@@ -3,9 +3,9 @@ package org.gridkit.nimble.btrace;
 import java.io.Serializable;
 
 import org.gridkit.nimble.driver.MeteringDriver;
+import org.gridkit.nimble.driver.MeteringSink;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
-import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Pivot;
@@ -71,17 +71,18 @@ public class BTraceDriverTest {
 
         SigarDriver sigar = sb.deploy("monitor", new SigarDriver.Impl(1, 100));
         
+        sb.sync();
+        
         PidProvider provider = sigar.newPtqlPidProvider("Pid.Pid.eq=" + pid);
-
-        SampleSchema schema = metering.getSchema();
+        MeteringSink<BTraceSamplerFactoryProvider> factoryProvider = metering.touch(BTraceDriver.Impl.newStandardSamplerFactoryProvider());
         
         sb.checkpoint("init");
         
         BTraceScriptSettings settings = new BTraceScriptSettings();
         settings.setScriptClass(ServiceScript.class);
         settings.setPollDelayMs(100);
-        
-        btrace.trace(provider, schema, settings);
+
+        btrace.trace(provider, settings, factoryProvider);
 
         sb.checkpoint("start");
         

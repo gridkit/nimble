@@ -68,14 +68,13 @@ public class SigarDriverTest {
         
         Driver driver = sb.deploy("**", new DriverImpl());
 
-        sb.checkpoint("init");
-        
         SigarDriver sigar = sb.deploy("**", new SigarDriver.Impl(2, 100));
+        
+        sb.checkpoint("init");
         
         PidProvider pidProvider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
 
-        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = 
-            metering.<SigarSamplerFactoryProvider>touch(new StandardSigarSamplerFactoryProvider());
+        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = metering.touch(SigarDriver.Impl.newStandardSamplerFactoryProvider());
         
         sb.checkpoint("start");
         

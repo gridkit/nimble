@@ -3,9 +3,7 @@ package org.gridkit.nimble.btrace;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -15,19 +13,18 @@ import net.java.btrace.client.Client;
 import net.java.btrace.ext.Printer;
 
 import org.gridkit.nimble.btrace.ext.Nimble;
-import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.driver.MeteringSink;
 import org.gridkit.nimble.probe.CachingSamplerFactory;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.ProbeHandle;
 import org.gridkit.nimble.probe.ProbeOps;
-import org.gridkit.nimble.probe.SchemeSamplerFactory;
 import org.gridkit.nimble.util.NamedThreadFactory;
 import org.gridkit.nimble.util.RunnableAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface BTraceDriver {
-    ProbeHandle trace(PidProvider provider, SampleSchema schema, BTraceScriptSettings settings);
+    ProbeHandle trace(PidProvider pidProvider, BTraceScriptSettings settings, MeteringSink<BTraceSamplerFactoryProvider> factoryProvider);
     
     void stop();
     
@@ -54,10 +51,10 @@ public interface BTraceDriver {
         }
 
         @Override
-        public ProbeHandle trace(PidProvider provider, SampleSchema schema, BTraceScriptSettings settings) {
+        public ProbeHandle trace(PidProvider pidProvider, BTraceScriptSettings settings, MeteringSink<BTraceSamplerFactoryProvider> factoryProvider) {
             List<Runnable> probes = new ArrayList<Runnable>();
 
-            for (Long pid : provider.getPids()) {                
+            for (Long pid : pidProvider.getPids()) {                
                 BTraceProbe probe = new BTraceProbe();
                 
                 probe.setPid(pid);
@@ -67,11 +64,7 @@ public interface BTraceDriver {
                 probe.setClientOps(clientOps);
                 probe.setClientSource(this);
                 
-                Map<Object, Object> globals = new HashMap<Object, Object>();
-                globals.put(BTraceMeasure.PID_KEY, pid);
-                
-                SchemeSamplerFactory factory = new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_KEY);
-                probe.setSamplerFactory(new CachingSamplerFactory(factory));
+                probe.setSamplerFactory(new CachingSamplerFactory(factoryProvider.getSink().getProcSampleFactory(pid)));
 
                 probes.add(new RunnableAdapter(probe));
             }
@@ -98,6 +91,10 @@ public interface BTraceDriver {
                     log.error("Failed to stop client " + client, e);
                 }
             }
+        }
+        
+        public static BTraceSamplerFactoryProvider newStandardSamplerFactoryProvider() {
+            return new StandardBTraceSamplerFactoryProvider();
         }
         
         private synchronized ScheduledExecutorService getExecutor() {

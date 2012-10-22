@@ -122,6 +122,10 @@ public interface SigarDriver {
             return executor;
         }
         
+        public static SigarSamplerFactoryProvider newStandardSamplerFactoryProvider() {
+            return new StandardSigarSamplerFactoryProvider();
+        }
+        
         private List<String> getNetInterfaceList() {
             try {
                 return Arrays.asList(getSigar().getNetInterfaceList());
