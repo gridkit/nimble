@@ -1,5 +1,7 @@
 package org.gridkit.nimble.probe.sigar;
 
+import org.gridkit.nimble.driver.MeteringAware;
+
 public class Sigar {
 
 	public static SigarDriver newDriver() {
@@ -14,7 +16,7 @@ public class Sigar {
 		return new SigarDriver.Impl(poolSize, pollTime);
 	}
 	
-	public static SigarSamplerFactoryProvider defaultReporter() {
+	public static MeteringAware<SigarSamplerFactoryProvider> defaultReporter() {
 		return new StandardSigarSamplerFactoryProvider();
 	}
 	

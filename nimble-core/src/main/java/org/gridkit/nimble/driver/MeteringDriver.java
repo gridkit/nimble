@@ -13,6 +13,6 @@ public interface MeteringDriver {
 	
 	public void flush();
 	
-	public <T extends MeteringAware<?>> MeteringSink<T> bind(T sink);
+	public <S, T extends MeteringAware<S>> MeteringSink<S> bind(T sink);
 	
 }

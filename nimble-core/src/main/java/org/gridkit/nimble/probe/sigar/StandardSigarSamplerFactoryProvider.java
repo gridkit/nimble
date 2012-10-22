@@ -1,11 +1,14 @@
 package org.gridkit.nimble.probe.sigar;
 
+import java.io.Serializable;
+
+import org.gridkit.nimble.driver.MeteringAware;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.probe.SamplerFactory;
 import org.gridkit.nimble.probe.SchemeSamplerFactory;
 
-public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryProvider {
+public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryProvider, MeteringAware<SigarSamplerFactoryProvider>, Serializable {
     private static final long serialVersionUID = -5760137045611926786L;
     
     private SampleSchema globalSchema;
@@ -59,7 +62,8 @@ public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryP
     }
     
     @Override
-    public void setMetering(MeteringDriver metering) {
+    public StandardSigarSamplerFactoryProvider attach(MeteringDriver metering) {
         this.globalSchema = metering.getSchema();
+        return this;
     }
 }

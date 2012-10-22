@@ -52,7 +52,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	
 	
     @Override
-	public <T extends MeteringAware<?>> MeteringSink<T> bind(final T sink) {
+	public <S, T extends MeteringAware<S>> MeteringSink<S> bind(T sink) {
     	throw new UnsupportedOperationException("Should be called in node scope");
     }
 	
@@ -163,14 +163,14 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			accumulator.accumulate(manager);
 		}
 		
-	    @Override
-		public <T extends MeteringAware<?>> MeteringSink<T> bind(final T sink) {
-	        sink.setMetering(this);
+		@Override
+		public <S, T extends MeteringAware<S>> MeteringSink<S> bind(final T sink) {
+	        final S attached = sink.attach(this);
 
-	        return new MeteringSink<T>() {
+	        return new MeteringSink<S>() {
 				@Override
-	            public T getSink() {
-	                return sink;
+	            public S getSink() {
+	                return attached;
 	            }
 	        };
 	    }

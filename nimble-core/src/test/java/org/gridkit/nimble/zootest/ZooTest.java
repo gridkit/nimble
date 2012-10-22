@@ -15,6 +15,7 @@ import org.gridkit.nimble.pivot.Pivot;
 import org.gridkit.nimble.pivot.PivotPrinter;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
+import org.gridkit.nimble.probe.sigar.Sigar;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.nimble.probe.sigar.SigarSamplerFactoryProvider;
 import org.gridkit.vicluster.ViManager;
@@ -107,7 +108,7 @@ public class ZooTest {
         sb.sync();
         
         PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
-        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = metering.touch(SigarDriver.Impl.newStandardSamplerFactoryProvider());
+        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = metering.bind(Sigar.defaultReporter());
         
         sb.sync();
         

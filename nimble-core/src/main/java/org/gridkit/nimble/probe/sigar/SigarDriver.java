@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.gridkit.nimble.driver.MeteringAware;
 import org.gridkit.nimble.driver.MeteringSink;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.ProbeHandle;
@@ -122,7 +123,7 @@ public interface SigarDriver {
             return executor;
         }
         
-        public static SigarSamplerFactoryProvider newStandardSamplerFactoryProvider() {
+        public static MeteringAware<SigarSamplerFactoryProvider> newStandardSamplerFactoryProvider() {
             return new StandardSigarSamplerFactoryProvider();
         }
         

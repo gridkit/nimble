@@ -74,7 +74,7 @@ public class SigarDriverTest {
         
         PidProvider pidProvider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
 
-        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = metering.touch(SigarDriver.Impl.newStandardSamplerFactoryProvider());
+        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = metering.bind(SigarDriver.Impl.newStandardSamplerFactoryProvider());
         
         sb.checkpoint("start");
         
