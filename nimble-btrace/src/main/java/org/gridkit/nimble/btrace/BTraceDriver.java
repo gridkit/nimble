@@ -93,10 +93,6 @@ public interface BTraceDriver {
             }
         }
         
-        public static BTraceSamplerFactoryProvider newStandardSamplerFactoryProvider() {
-            return new StandardBTraceSamplerFactoryProvider();
-        }
-        
         private synchronized ScheduledExecutorService getExecutor() {
             if (executor == null) {
                 executor = Executors.newScheduledThreadPool(

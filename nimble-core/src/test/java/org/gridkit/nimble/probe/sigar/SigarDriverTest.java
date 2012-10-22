@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.gridkit.nimble.driver.MeteringDriver;
-import org.gridkit.nimble.driver.MeteringSink;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.orchestration.Scenario;
@@ -73,14 +72,12 @@ public class SigarDriverTest {
         sb.checkpoint("init");
         
         PidProvider pidProvider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
-
-        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = metering.bind(SigarDriver.Impl.newStandardSamplerFactoryProvider());
         
         sb.checkpoint("start");
         
         driver.start();
         
-        sigar.monitorProcCpu(pidProvider, factoryProvider);
+        sigar.monitorProcCpu(pidProvider, metering.bind(Sigar.defaultReporter()));
         
         sb.checkpoint("finish");
             
