@@ -1,14 +1,14 @@
 package org.gridkit.nimble.pivot;
 
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.statistics.DistributionSummary;
 
 class DisplayDistributionFunction implements DisplayFunction {
 
-	private final Pivot.Extractor extractor;
+	private final SampleExtractor extractor;
 	private final CommonStats.StatAppraisal[] appraisals;
 	
-	DisplayDistributionFunction(Pivot.Extractor extractor, CommonStats.StatAppraisal... stats) {
+	DisplayDistributionFunction(SampleExtractor extractor, CommonStats.StatAppraisal... stats) {
 		this.extractor = extractor;
 		this.appraisals = stats;
 	}
@@ -16,8 +16,8 @@ class DisplayDistributionFunction implements DisplayFunction {
 	@Override
 	public void getDisplayValue(CellPrinter printer, SampleReader row) {
 		Object x = extractor.extract(row);
-		if (x instanceof StatisticalSummary) {
-			StatisticalSummary ss = (StatisticalSummary) x;
+		if (x instanceof DistributionSummary) {
+			DistributionSummary ss = (DistributionSummary) x;
 			for(CommonStats.StatAppraisal m: appraisals) {
 				printer.addCell(m.toString(), m.extract(ss));
 			}

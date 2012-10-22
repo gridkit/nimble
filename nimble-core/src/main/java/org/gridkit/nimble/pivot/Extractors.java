@@ -4,16 +4,20 @@ import org.gridkit.nimble.metering.SampleReader;
 
 public class Extractors {
 	
-	public static Pivot.Extractor field(Object key) {
+	public static SampleExtractor field(Object key) {
 		return new FieldExtractor(key);
 	}
 
-	public static Pivot.Extractor constant(double value) {
+	public static SampleExtractor constant(double value) {
+		return new ConstExtractor(value);
+	}
+
+	public static SampleExtractor constant(Object value) {
 		return new ConstExtractor(value);
 	}
 	
 	
-	public static class FieldExtractor implements Pivot.Extractor {
+	public static class FieldExtractor implements SampleExtractor {
 
 		private static final long serialVersionUID = 20121014L;
 		
@@ -29,7 +33,7 @@ public class Extractors {
 		}
 	}
 
-	public static class ConstExtractor implements Pivot.Extractor {
+	public static class ConstExtractor implements SampleExtractor {
 
 		private static final long serialVersionUID = 20121014L;
 		

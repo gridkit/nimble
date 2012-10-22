@@ -5,49 +5,47 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.gridkit.nimble.metering.SampleReader;
-import org.gridkit.nimble.pivot.Pivot.Extractor;
-import org.gridkit.nimble.pivot.Pivot.Filter;
 
 public class Filters {
 
-	public static Pivot.Filter equals(Object key, Object value) {
+	public static SampleFilter equals(Object key, Object value) {
 		return new EqualsFilter(Extractors.field(key), value);
 	}
 
-	public static Pivot.Filter notNull(Object key) {
+	public static SampleFilter notNull(Object key) {
 		return new NotNullFilter(Extractors.field(key));
 	}
 	
-	public static Filter always() {
+	public static SampleFilter always() {
 		return TrueFilter.TRUE;
 	}
 
-	public static Filter and(Filter... filters) {
+	public static SampleFilter and(SampleFilter... filters) {
 		if (filters.length == 0) {
 			return TrueFilter.TRUE;
 		}
 		return new AndFilter(filters);
 	}
 	
-	public static Filter in(Object key, Collection<? extends Object> values) {
+	public static SampleFilter in(Object key, Collection<? extends Object> values) {
 	    return new InFilter(Extractors.field(key), values);
 	}
 
-	public static Filter in(Object key, Object... values) {
+	public static SampleFilter in(Object key, Object... values) {
 	    return new InFilter(Extractors.field(key), Arrays.asList(values));
 	}
 	
-	public static Filter and(Collection<Filter> levelFilters) {
-		return and(levelFilters.toArray(new Filter[0]));
+	public static SampleFilter and(Collection<SampleFilter> levelFilters) {
+		return and(levelFilters.toArray(new SampleFilter[0]));
 	}
 
-	static abstract class ExtractorFilter implements Pivot.Filter {
+	static abstract class ExtractorFilter implements SampleFilter {
 		
 		private static final long serialVersionUID = 20121014L;
 
-		protected final Pivot.Extractor extractor;
+		protected final SampleExtractor extractor;
 
-		protected ExtractorFilter(Extractor extractor) {
+		protected ExtractorFilter(SampleExtractor extractor) {
 			this.extractor = extractor;
 		}
 
@@ -66,7 +64,7 @@ public class Filters {
 		
 		protected Object value;
 		
-		public EqualsFilter(Extractor extractor, Object value) {
+		public EqualsFilter(SampleExtractor extractor, Object value) {
 			super(extractor);
 			this.value = value;
 		}
@@ -89,7 +87,7 @@ public class Filters {
 		
 		private static final long serialVersionUID = 20121014L;
 		
-		public NotNullFilter(Extractor extractor) {
+		public NotNullFilter(SampleExtractor extractor) {
 			super(extractor);
 		}
 		
@@ -99,19 +97,19 @@ public class Filters {
 		}
 	}
 
-	public static class AndFilter implements Pivot.Filter, Serializable {
+	public static class AndFilter implements SampleFilter, Serializable {
 
 		private static final long serialVersionUID = 20121014L;
 		
-		private final Pivot.Filter[] filters;
+		private final SampleFilter[] filters;
 		
-		public AndFilter(Filter[] filters) {
+		public AndFilter(SampleFilter[] filters) {
 			this.filters = filters;
 		}
 
 		@Override
 		public boolean match(SampleReader sample) {
-			for(Pivot.Filter f: filters) {
+			for(SampleFilter f: filters) {
 				if (!f.match(sample)) {
 					return false;
 				}
@@ -126,7 +124,7 @@ public class Filters {
         
         private final Collection<? extends Object> values;
 
-        public InFilter(Extractor extractor, Collection<? extends Object> values) {
+        public InFilter(SampleExtractor extractor, Collection<? extends Object> values) {
             super(extractor);
             this.values = values;
         }
@@ -138,7 +136,7 @@ public class Filters {
         }
 	}
 	
-	public static enum TrueFilter implements Pivot.Filter, Serializable {
+	public static enum TrueFilter implements SampleFilter, Serializable {
 
 		TRUE
 		

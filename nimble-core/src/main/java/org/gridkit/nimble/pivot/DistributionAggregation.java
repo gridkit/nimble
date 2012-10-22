@@ -1,18 +1,17 @@
 package org.gridkit.nimble.pivot;
 
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummaryValues;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.statistics.DistributionSummary;
 import org.gridkit.nimble.statistics.StatsOps;
 
-public class DistributionAggregation implements Aggregation<StatisticalSummary> {
+public class DistributionAggregation implements Aggregation<DistributionSummary> {
 
-	private final Pivot.Extractor extractor;
-	private StatisticalSummary baseStats;
+	private final SampleExtractor extractor;
+	private DistributionSummary baseStats;
 	private SummaryStatistics runningStats;
 	
-	public DistributionAggregation(Pivot.Extractor extractor) {
+	public DistributionAggregation(SampleExtractor extractor) {
 		this.extractor = extractor;
 	}
 	
@@ -29,30 +28,30 @@ public class DistributionAggregation implements Aggregation<StatisticalSummary> 
 			double v = ((Number)extract).doubleValue();
 			runningStats.addValue(v);
 		}
-		else if (extract instanceof StatisticalSummary) {
-			StatisticalSummary ss = (StatisticalSummary) extract;
+		else if (extract instanceof DistributionSummary) {
+			DistributionSummary ss = (DistributionSummary) extract;
 			merge(ss);
 		}
 	}
 
 	@Override
-	public void addAggregate(StatisticalSummary aggregate) {
+	public void addAggregate(DistributionSummary aggregate) {
 		merge(aggregate);
 	}
 
 	@Override
-	public StatisticalSummary getResult() {
+	public DistributionSummary getResult() {
 		merge(null);
-		return baseStats == null ? emptyStats() : baseStats;
+		return baseStats == null ? StatsOps.EMPTY_DISTRIBUTION_SUMMARY : baseStats;
 	}
 	
-	private void merge(StatisticalSummary aggregate) {
+	private void merge(DistributionSummary aggregate) {
 		if (baseStats != null && runningStats != null) {
-			baseStats = StatsOps.combine(baseStats, runningStats);
+			baseStats = StatsOps.combine(baseStats, new DistributionSummary.Values(runningStats));
 			runningStats = null;
 		}
 		if (runningStats != null) {
-			baseStats = runningStats;
+			baseStats = new DistributionSummary.Values(runningStats);
 		}		
 		if (baseStats != null && aggregate != null) {
 			baseStats = StatsOps.combine(baseStats, aggregate);
@@ -61,10 +60,5 @@ public class DistributionAggregation implements Aggregation<StatisticalSummary> 
 			baseStats = aggregate;
 		}
 		
-	}
-
-	private StatisticalSummary emptyStats() {
-		StatisticalSummaryValues value = new StatisticalSummaryValues(Double.NaN, Double.NaN, 0, Double.NaN, Double.NaN, Double.NaN);
-		return value;
 	}
 }

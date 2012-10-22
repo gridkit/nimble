@@ -1,25 +1,31 @@
 package org.gridkit.nimble.pivot;
 
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
+import org.gridkit.nimble.statistics.DistributionSummary;
+import org.gridkit.nimble.statistics.FrequencySummary;
+import org.gridkit.nimble.statistics.Summary;
+import org.gridkit.nimble.statistics.Summary.CountSummary;
+import org.gridkit.nimble.statistics.Summary.SumSummary;
 
 public class CommonStats {
 
-	
-	public static final StatAppraisal[] GENERIC_STATS = StatAppraisal.values();
-	
 	public static final StatAppraisal COUNT = StatAppraisal.COUNT;
 	public static final StatAppraisal MAX = StatAppraisal.MAX;
 	public static final StatAppraisal MIN = StatAppraisal.MIN;
 	public static final StatAppraisal MEAN = StatAppraisal.MEAN;
 	public static final StatAppraisal STD_DEV = StatAppraisal.STD_DEV;
 	public static final StatAppraisal TOTAL = StatAppraisal.TOTAL;
+	public static final StatAppraisal DURATION = StatAppraisal.DURATION;
+	public static final StatAppraisal FREQUENCY = StatAppraisal.FREQUENCY;
 	
-	enum StatAppraisal {
+	public static final StatAppraisal[] DISTRIBUTION_STATS = {COUNT, MEAN, STD_DEV, MAX, MIN, TOTAL}; 
+	public static final StatAppraisal[] FREQUENCY_STATS = {COUNT, FREQUENCY, TOTAL, DURATION};
+	
+	public enum StatAppraisal {
 		
 		COUNT() {
 			@Override
-			public Object extract(StatisticalSummary summary) {
-				return summary.getN();
+			public Object extract(Summary summary) {
+				return summary instanceof CountSummary ? ((CountSummary)summary).getN() : null;
 			}
 			
 			@Override
@@ -29,8 +35,8 @@ public class CommonStats {
 		},
 		MEAN() {
 			@Override
-			public Object extract(StatisticalSummary summary) {
-				return summary.getMean();
+			public Object extract(Summary summary) {
+				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getMean() : null;
 			}
 
 			@Override
@@ -40,19 +46,19 @@ public class CommonStats {
 		},
 		STD_DEV() {
 			@Override
-			public Object extract(StatisticalSummary summary) {
-				return summary.getStandardDeviation();
+			public Object extract(Summary summary) {
+				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getStandardDeviation() : null;
 			}
 			
 			@Override
 			public String toString() {
-				return "SDev";
+				return "StdDev";
 			}						
 		},
 		MIN() {
 			@Override
-			public Object extract(StatisticalSummary summary) {
-				return summary.getMin();
+			public Object extract(Summary summary) {
+				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getMin() : null;
 			}
 			
 			@Override
@@ -62,8 +68,8 @@ public class CommonStats {
 		},
 		MAX() {
 			@Override
-			public Object extract(StatisticalSummary summary) {
-				return summary.getMax();
+			public Object extract(Summary summary) {
+				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getMax() : null;
 			}
 			
 			@Override
@@ -73,18 +79,40 @@ public class CommonStats {
 		},
 		TOTAL() {
 			@Override
-			public Object extract(StatisticalSummary summary) {
-				return summary.getSum();
+			public Object extract(Summary summary) {
+				return summary instanceof SumSummary ? ((SumSummary)summary).getSum() : null;
 			}
 			
 			@Override
 			public String toString() {
 				return "Total";
 			}															
+		},
+		DURATION() {
+			@Override
+			public Object extract(Summary summary) {
+				return summary instanceof FrequencySummary ? ((FrequencySummary)summary).getDuration() : null;
+			}
+			
+			@Override
+			public String toString() {
+				return "Duration";
+			}															
+		},
+		FREQUENCY() {
+			@Override
+			public Object extract(Summary summary) {
+				return summary instanceof FrequencySummary ? ((FrequencySummary)summary).getWeigthedFrequency() : null;
+			}
+			
+			@Override
+			public String toString() {
+				return "Freq.";
+			}															
 		}
 		
 		;
 		
-		public abstract Object extract(StatisticalSummary summary);
+		public abstract Object extract(Summary summary);
 	}
 }

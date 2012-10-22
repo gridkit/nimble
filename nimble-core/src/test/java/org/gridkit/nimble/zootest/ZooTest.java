@@ -5,25 +5,30 @@ import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
-import org.gridkit.nimble.driver.MeteringSink;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.MeteringTemplate;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
+import org.gridkit.nimble.pivot.Filters;
 import org.gridkit.nimble.pivot.Pivot;
 import org.gridkit.nimble.pivot.PivotPrinter;
+import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.sigar.Sigar;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
-import org.gridkit.nimble.probe.sigar.SigarSamplerFactoryProvider;
+import org.gridkit.nimble.probe.sigar.SigarMeasure;
 import org.gridkit.vicluster.ViManager;
 import org.junit.After;
 import org.junit.Test;
 
 public class ZooTest {
 
+	private enum ZooMetrics {
+		RUNMETRICS,
+	}
+	
 //	private ViManager cloud = IsolateCloudFactory.createCloud("org.gridkit");
 	private ViManager cloud = CloudFactory.createLocalCloud();
 	
@@ -44,10 +49,11 @@ public class ZooTest {
 		
 		scenario.play(cloud);
 		
-		PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
+		PivotPrinter2 printer = new PivotPrinter2();
+		printer.dumpUnprinted();
 		
 		PrettyPrinter pp = new PrettyPrinter();		
-		pp.print(System.out, printer);
+		pp.print(System.out, printer.print(metrics.getReporter().getReader()));
 		System.out.println();
 //		PivotDumper.dump(metrics.getReporter());
 		
@@ -80,14 +86,26 @@ public class ZooTest {
 		Pivot pivot = new Pivot();
 		
 		pivot.root()
-			.group(MeteringDriver.NODE)
-				.group(Measure.NAME)
-					.level("stats")
-						.show()
-						.display(MeteringDriver.NODE)
-						.display(Measure.NAME)
-						.calcDistribution(Measure.MEASURE)
-						.displayDistribution(Measure.MEASURE);
+			.level("run-stats")
+				.filter(Filters.notNull(ZooMetrics.RUNMETRICS))
+				.group(MeteringDriver.NODE)
+					.group(Measure.NAME)
+						.level("stats")
+							.show()
+							.display(MeteringDriver.NODE)
+							.display(Measure.NAME)
+							.calcDistribution(Measure.MEASURE)
+							.displayDistribution(Measure.MEASURE);
+		
+		pivot.root()
+			.level("sigar-cpu-stats")
+				.filter(Filters.notNull(SigarMeasure.PROBE_KEY))
+				.group(SigarMeasure.PROBE_KEY)
+					.group(SigarMeasure.MEASURE_KEY)
+						.group(SigarMeasure.PID_KEY)
+							.level("")
+								.show()
+								.calcFrequency(Measure.MEASURE);
 		
 		return pivot;
 	}
@@ -108,15 +126,13 @@ public class ZooTest {
         sb.sync();
         
         PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
-        MeteringSink<SigarSamplerFactoryProvider> factoryProvider = metering.bind(Sigar.defaultReporter());
-        
-        sb.sync();
-        
-        sigar.monitorProcCpu(provider, factoryProvider);
+
+        sigar.monitorProcCpu(provider, metering.bind(Sigar.defaultReporter()));
 		
 		sb.checkpoint("test-start");
 
 		MeteringTemplate t = new MeteringTemplate();
+		t.setStatic(ZooMetrics.RUNMETRICS, true);
 		t.setStatic(Measure.NAME, "Reader");
 
 		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(10, 1, true), metering, t);

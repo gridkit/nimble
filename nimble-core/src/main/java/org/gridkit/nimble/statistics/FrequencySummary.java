@@ -2,7 +2,7 @@ package org.gridkit.nimble.statistics;
 
 import java.io.Serializable;
 
-public interface FrequencySummary extends SampleSummary {
+public interface FrequencySummary extends Summary, Summary.CountSummary, Summary.SumSummary {
 
 	/**
 	 * @return as epoc seconds
@@ -24,7 +24,8 @@ public interface FrequencySummary extends SampleSummary {
 	 */
 	public double getEventFrequency();
 	
-	public double getTotal();
+	@Override
+	public double getSum();
 	
 	/**
 	 * 
@@ -33,6 +34,8 @@ public interface FrequencySummary extends SampleSummary {
 	public double getDuration();
 	
 	public static class Values implements FrequencySummary, Serializable {
+		
+		private static final long serialVersionUID = 20121017L;
 		
 		protected long n;
 		protected double total;
@@ -72,13 +75,17 @@ public interface FrequencySummary extends SampleSummary {
 		}
 
 		@Override
-		public double getTotal() {
+		public double getSum() {
 			return total;
 		}
 
 		@Override
 		public double getDuration() {
 			return last - first;
+		}
+		
+		public String toString() {
+			return "Summary{n: " + getN() + ", freq: " + getWeigthedFrequency() + ", duration: " + getDuration() + "}";
 		}
 	}
 }

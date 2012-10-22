@@ -8,11 +8,11 @@ class ConstantAggregation implements Aggregation<Object> {
 
 	private static Object NO_VALUE = new NoValue();
 	
-	private Pivot.Extractor extractor;
+	private SampleExtractor extractor;
 	private Object value;
 	private boolean notSet; 
 	
-	public ConstantAggregation(Pivot.Extractor extractor) {
+	public ConstantAggregation(SampleExtractor extractor) {
 		this.extractor = extractor;
 		this.value = null;
 		this.notSet = true;

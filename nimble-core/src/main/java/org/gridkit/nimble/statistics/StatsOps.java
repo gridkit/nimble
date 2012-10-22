@@ -12,6 +12,7 @@ public class StatsOps {
     public static final String MARK_SEP = "^";
     
     private static final StatisticalSummary emptySummary = (new SummaryStatistics()).getSummary();
+    public static final DistributionSummary EMPTY_DISTRIBUTION_SUMMARY = new DistributionSummary.Values(new SummaryStatistics().getSummary());
     
     public static StatisticalSummary combine(StatisticalSummary s1, StatisticalSummary s2) {
         if (s1.getN() == 0){
@@ -37,6 +38,32 @@ public class StatsOps {
         double min = Math.min(s1.getMin(), s2.getMin());
         
         return new StatisticalSummaryValues(mean, var, n, max, min, sum);
+    }
+
+    public static DistributionSummary combine(DistributionSummary s1, DistributionSummary s2) {
+    	if (s1.getN() == 0){
+    		return s2;
+    	} else if (s2.getN() == 0) {
+    		return s1;
+    	} else if (s1.getN() == 0 && s2.getN() == 0) {
+    		return EMPTY_DISTRIBUTION_SUMMARY;
+    	}
+    	
+    	long n = s1.getN() + s2.getN();
+    	
+    	double mean = (s1.getN() * s1.getMean() + s2.getN() * s2.getMean()) / n;
+    	
+    	double s1Diff = (mean - s1.getMean()) * (mean - s1.getMean());
+    	double s2Diff = (mean - s2.getMean()) * (mean - s2.getMean());
+    	
+    	double var = (s1.getN() * (s1.getVariance() + s1Diff) + s2.getN() * (s2.getVariance() + s2Diff)) / n;
+    	
+    	double sum = s1.getSum() + s2.getSum();
+    	
+    	double max = Math.max(s1.getMax(), s2.getMax());
+    	double min = Math.min(s1.getMin(), s2.getMin());
+    	
+    	return new DistributionSummary.Values(mean, var, n, max, min, sum);
     }
     
     public static StatisticalSummary scale(StatisticalSummary s, double scale) {

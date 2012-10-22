@@ -8,9 +8,9 @@ import org.gridkit.nimble.statistics.FrequencySummary;
 
 public class StandardEventFrequencyExtractor extends FrequencySummary.Values implements EventFrequencyExtractor, Serializable {
 
-	private final Pivot.Extractor weight;
+	private final SampleExtractor weight;
 	
-	public StandardEventFrequencyExtractor(Pivot.Extractor weight) {
+	public StandardEventFrequencyExtractor(SampleExtractor weight) {
 		super(0, 0, 0, 0);
 		this.weight = weight;
 	}

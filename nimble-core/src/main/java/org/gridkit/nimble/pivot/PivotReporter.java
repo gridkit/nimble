@@ -28,7 +28,6 @@ public class PivotReporter implements SampleAccumulator {
 		LevelInfo li = new LevelInfo();
 		li.levelId = level.getId();
 		li.name = level.getName();
-		li.parent = parent;
 		li.filter = level.getFilter();
 		li.groupBy = level.getGroupping();
 		li.pivoted = level.isPivoted();
@@ -51,6 +50,9 @@ public class PivotReporter implements SampleAccumulator {
 	}
 	
 	public List<LevelPath> listChildren(LevelPath path) {
+		if (path == null) {
+			new String();
+		}
 		if (path.length() == 0) {
 			return Collections.singletonList(summary.path);
 		}
@@ -125,7 +127,7 @@ public class PivotReporter implements SampleAccumulator {
 	
 	private void processGroups(LevelSummary summary, SingleSampleReader reader) {
 		if (summary.subgroups != null) {
-			Pivot.Extractor groupBy = summary.info.groupBy;
+			SampleExtractor groupBy = summary.info.groupBy;
 			Object group = groupBy.extract(reader);
 			LevelSummary subgroup = summary.subgroups.get(group);
 			if (subgroup == null) {
@@ -176,10 +178,9 @@ public class PivotReporter implements SampleAccumulator {
 		private static final long serialVersionUID = 20121010L;
 		
 		private String name;
-		private LevelInfo parent;
 		private int levelId;
-		private Pivot.Filter filter;
-		private Pivot.Extractor groupBy;
+		private SampleFilter filter;
+		private SampleExtractor groupBy;
 		private boolean captureStatics;
 		private boolean pivoted;
 		private List<LevelInfo> levels;
@@ -246,14 +247,57 @@ public class PivotReporter implements SampleAccumulator {
 				return data;
 			}
 		}
+
+		Map<Object, Object> getDataWithPivot() {
+			if (isGroupping()) {
+				return Collections.emptyMap();
+			}
+			else {
+				Map<Object, Object> data = getData();
+				if (sublevels != null) {
+					for(LevelSummary sub: sublevels.values()) {
+						if (sub.info.pivoted) {
+							Object levelId = sub.info.name;
+							List<Object> deco = isEmpty(levelId) ? Collections.emptyList() : Collections.singletonList(levelId);
+							sub.dumpData(data, deco);
+						}
+					}
+				}
+				return data;
+			}
+		}
+
+		private boolean isEmpty(Object levelId) {
+			return levelId == null || String.valueOf(levelId).length() == 0;
+		}
 		
+		private void dumpData(Map<Object, Object> data, List<Object> deco) {
+			if (aggregations != null) {
+				for(Object key: aggregations.keySet()) {
+					data.put(new Decorated(deco, key), aggregations.get(key).getResult());
+				}
+			}
+			if (sublevels != null) {
+				for(LevelSummary sub: sublevels.values()) {
+					if (sub.info.pivoted) {
+						List<Object> subDeco = new ArrayList<Object>(deco);
+						Object levelId = sub.info.name;
+						if (!isEmpty(levelId)) {
+							subDeco.add(levelId);
+						}
+						sub.dumpData(data, subDeco);
+					}
+				}
+			}			
+		}
+
 		boolean isReportable() {
-			if (isGroupping() && sublevels == null) {
+			if (isGroupping() || aggregations == null || info.pivoted) {
 				return false;
 			}
 			else {
-				for(LevelSummary sub: sublevels.values()) {
-					if (!sub.info.pivoted) {
+				for(LevelInfo sub: info.levels) {
+					if (!sub.pivoted) {
 						return false;
 					}
 				}
@@ -312,6 +356,9 @@ public class PivotReporter implements SampleAccumulator {
 			keySet = null;
 			while(true) {
 				LevelPath path = pop();
+				if (path == null) {
+					return false;
+				}
 				for(LevelPath sub: listChildren(path)) {
 					push(sub);
 				}
@@ -321,7 +368,7 @@ public class PivotReporter implements SampleAccumulator {
 				}
 				else {
 					currentRow = path;
-					bottom = summary.getData();
+					bottom = summary.getDataWithPivot();
 					return true;
 				}
 			}
@@ -345,7 +392,7 @@ public class PivotReporter implements SampleAccumulator {
 				caclKeySet(proto, path.parent());
 				LevelSummary ls = data.get(path);
 				if (ls != null) {
-					for(Object key: ls.getData().keySet()) {
+					for(Object key: ls.getDataWithPivot().keySet()) {
 						if (!proto.contains(key)) {
 							proto.add(key);
 						}

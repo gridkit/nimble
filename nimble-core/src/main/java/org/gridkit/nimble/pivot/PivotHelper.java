@@ -3,20 +3,19 @@ package org.gridkit.nimble.pivot;
 import java.io.Serializable;
 
 import org.gridkit.nimble.metering.SampleReader;
-import org.gridkit.nimble.pivot.Pivot.Extractor;
 import org.gridkit.nimble.statistics.FrequencySummary;
 
 class PivotHelper {
 
-	public static Pivot.Aggregator createGaussianAggregator(Pivot.Extractor extractor) {
+	public static Pivot.Aggregator createGaussianAggregator(SampleExtractor extractor) {
 		return new DistributionAggregator(extractor);
 	}
 	
-	public static Pivot.Aggregator createFrequencyAggregator(Extractor extractor) {
+	public static Pivot.Aggregator createFrequencyAggregator(SampleExtractor extractor) {
 		return new FrequencyAggregator(new StandardEventFrequencyExtractor(extractor));
 	}
 
-	public static Pivot.Aggregator createConstantAggregator(final Extractor extractor) {
+	public static Pivot.Aggregator createConstantAggregator(final SampleExtractor extractor) {
 		return new ConstantAggregator(extractor);
 	}
 
@@ -29,7 +28,7 @@ class PivotHelper {
 	}
 
 	public static DisplayFunction displayDistributionStats(Object key) {
-		return new DisplayDistributionFunction(Extractors.field(key), CommonStats.GENERIC_STATS);
+		return new DisplayDistributionFunction(Extractors.field(key), CommonStats.DISTRIBUTION_STATS);
 	}
 
 	public static DisplayFunction displayDistributionStats(Object key, CommonStats.StatAppraisal... params) {
@@ -48,9 +47,9 @@ class PivotHelper {
 
 		private static final long serialVersionUID = 20121014L;
 		
-		private final Extractor extractor;
+		private final SampleExtractor extractor;
 
-		private ConstantAggregator(Extractor extractor) {
+		private ConstantAggregator(SampleExtractor extractor) {
 			this.extractor = extractor;
 		}
 
@@ -80,9 +79,9 @@ class PivotHelper {
 
 		private static final long serialVersionUID = 20121010L;
 		
-		private final Pivot.Extractor extractor;
+		private final SampleExtractor extractor;
 		
-		public DistributionAggregator(Pivot.Extractor extractor) {
+		public DistributionAggregator(SampleExtractor extractor) {
 			this.extractor = extractor;
 		}
 		
@@ -111,9 +110,9 @@ class PivotHelper {
 	private static class SimpleDisplayFunction implements DisplayFunction {
 		
 		private final String caption;
-		private final Pivot.Extractor extrator;
+		private final SampleExtractor extrator;
 		
-		public SimpleDisplayFunction(String caption, Extractor extrator) {
+		public SimpleDisplayFunction(String caption, SampleExtractor extrator) {
 			this.caption = caption;
 			this.extrator = extrator;
 		}
@@ -128,9 +127,9 @@ class PivotHelper {
 	private static class FrequencyDisplayFunction implements DisplayFunction {
 		
 		private final String caption;
-		private final Pivot.Extractor extrator;
+		private final SampleExtractor extrator;
 		
-		public FrequencyDisplayFunction(String caption, Extractor extrator) {
+		public FrequencyDisplayFunction(String caption, SampleExtractor extrator) {
 			this.caption = caption;
 			this.extrator = extrator;
 		}

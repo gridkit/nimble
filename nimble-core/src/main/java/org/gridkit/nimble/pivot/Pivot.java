@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.gridkit.nimble.metering.SampleReader;
 
 public class Pivot {
 
@@ -40,8 +39,8 @@ public class Pivot {
 		private boolean pivoted;
 		private boolean visible;
 		private boolean captureStatics;
-		private List<Filter> levelFilters = new ArrayList<Pivot.Filter>();
-		private Extractor groupBy;
+		private List<SampleFilter> levelFilters = new ArrayList<SampleFilter>();
+		private SampleExtractor groupBy;
 		private List<Level> sublevels = new ArrayList<Level>();
 		private Map<Object, Aggregator> aggregators = new LinkedHashMap<Object, Pivot.Aggregator>();
 		private List<DisplayFunction> displayFunctions = new ArrayList<DisplayFunction>();
@@ -69,7 +68,7 @@ public class Pivot {
 			return group;
 		}
 
-		public Level group(Extractor extractor) {
+		public Level group(SampleExtractor extractor) {
 			Level level = level("");
 			level.groupBy = extractor;			
 			return level;
@@ -79,7 +78,7 @@ public class Pivot {
 			return filter(Filters.equals(key, value));
 		}
 
-		public Level filter(Filter equals) {
+		public Level filter(SampleFilter equals) {
 			levelFilters.add(equals);
 			return this;
 		}
@@ -164,11 +163,11 @@ public class Pivot {
 			return name;
 		}
 		
-		public Pivot.Filter getFilter() {
+		public SampleFilter getFilter() {
 			return Filters.and(levelFilters);
 		}
 		
-		public Pivot.Extractor getGroupping() {
+		public SampleExtractor getGroupping() {
 			return groupBy;
 		}
 		
@@ -210,16 +209,7 @@ public class Pivot {
 		}
 	}
 	
-	public interface Filter extends Serializable {
-		public boolean match(SampleReader sample);
-	}
-
-	public interface Extractor extends Serializable {
-		public Object extract(SampleReader sample);
-	}
-	
 	public interface Aggregator extends Serializable {
 		public Aggregation<?> newAggregation();
 	}
-	
 }

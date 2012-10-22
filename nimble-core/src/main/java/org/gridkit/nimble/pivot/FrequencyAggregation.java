@@ -39,12 +39,12 @@ public class FrequencyAggregation implements Aggregation<FrequencySummary> {
 	@Override
 	public void addAggregate(FrequencySummary aggregate) {
 		if (aggregate.getN() > 0) {
-			add(aggregate.getN(), aggregate.getEarliestEventTimestamp(), aggregate.getLatestEventTimestamp(), aggregate.getTotal());
+			add(aggregate.getN(), aggregate.getEarliestEventTimestamp(), aggregate.getLatestEventTimestamp(), aggregate.getSum());
 		}
 	}
 
 	@Override
 	public FrequencySummary getResult() {
 		return new FrequencySummary.Values(n, total, first, last);
-	}	
+	}		
 }

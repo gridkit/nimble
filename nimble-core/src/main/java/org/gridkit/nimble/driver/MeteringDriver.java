@@ -1,11 +1,12 @@
 package org.gridkit.nimble.driver;
 
+import org.gridkit.nimble.metering.DisrtibutedMetering;
 import org.gridkit.nimble.metering.SampleSchema;
 
 public interface MeteringDriver {
 	
-	public static final String NODE = "node";
-	public static final String HOSTNAME = "host";
+	public static final Object NODE = DisrtibutedMetering.NODENAME;
+	public static final Object HOSTNAME = DisrtibutedMetering.HOSTNAME;
 
 	public SampleSchema getSchema();
 	
