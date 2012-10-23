@@ -18,8 +18,8 @@ public class TimeUtils {
 		return (long)(1000 * epoc);
 	}
 
-	public static long toSeconds(double epoc) {
-		return (long)(epoc / S);
+	public static double toSeconds(double nanos) {
+		return nanos / S;
 	}
 
 }
