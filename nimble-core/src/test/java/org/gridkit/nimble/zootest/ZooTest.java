@@ -1,13 +1,23 @@
 package org.gridkit.nimble.zootest;
 
+import java.io.Serializable;
+import java.util.concurrent.TimeUnit;
+
+import javax.management.MBeanServerConnection;
+
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
+import org.gridkit.nimble.driver.MeteringAware;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
-import org.gridkit.nimble.metering.MeteringTemplate;
+import org.gridkit.nimble.metering.SampleFactory;
+import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.metering.SampleWriter;
+import org.gridkit.nimble.metering.SpanSamplerTemplate;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Filters;
@@ -16,9 +26,15 @@ import org.gridkit.nimble.pivot.PivotPrinter;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
+import org.gridkit.nimble.probe.jmx.JavaThreadStatsSampler;
+import org.gridkit.nimble.probe.jmx.JmxAwareSamplerProvider;
+import org.gridkit.nimble.probe.jmx.JmxProbeFactory;
+import org.gridkit.nimble.probe.jmx.JmxThreadProbe;
+import org.gridkit.nimble.probe.jmx.LocalMBeanConnector;
 import org.gridkit.nimble.probe.sigar.Sigar;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.nimble.probe.sigar.SigarMeasure;
+import org.gridkit.nimble.statistics.TimeUtils;
 import org.gridkit.vicluster.ViManager;
 import org.junit.After;
 import org.junit.Test;
@@ -27,9 +43,10 @@ public class ZooTest {
 
 	private enum ZooMetrics {
 		RUNMETRICS,
+		THREAD_STATS,
 	}
 	
-//	private ViManager cloud = IsolateCloudFactory.createCloud("org.gridkit");
+//	private ViManager cloud = CloudFactory.createIsolateCloud();
 	private ViManager cloud = CloudFactory.createLocalCloud();
 	
 	@After
@@ -49,17 +66,23 @@ public class ZooTest {
 		
 		scenario.play(cloud);
 		
-		PivotPrinter2 printer = new PivotPrinter2();
-		printer.dumpUnprinted();
-		
-		PrettyPrinter pp = new PrettyPrinter();		
-		pp.print(System.out, printer.print(metrics.getReporter().getReader()));
+		print(metrics.getReporter().getReader());
+				
 		System.out.println();
 //		PivotDumper.dump(metrics.getReporter());
 		
 		System.out.println("Done");
 	}
 
+	public void print(SampleReader reader) {
+		PivotPrinter2 printer = new PivotPrinter2();
+		printer.dumpUnprinted();
+		
+		PrettyPrinter pp = new PrettyPrinter();		
+		pp.print(System.out, printer.print(reader));
+		
+	}
+	
 	@Test
 	public void testScopeDerivation() {
 		
@@ -97,6 +120,16 @@ public class ZooTest {
 								.display(Measure.NAME)
 								.calcDistribution(Measure.MEASURE)
 								.displayDistribution(Measure.MEASURE);
+		pivot.root()
+			.level("jmx-cpu-stats")
+				.filter(Filters.notNull(ZooMetrics.THREAD_STATS))
+					.group(MeteringDriver.HOSTNAME)
+						.group(MeteringDriver.NODE)
+							.level("")
+								.show()
+								.display(MeteringDriver.NODE)
+								.display(Measure.NAME)
+								.calcFrequency(Measure.MEASURE);
 		
 		pivot.root()
 			.level("sigar-cpu-stats")
@@ -126,23 +159,24 @@ public class ZooTest {
 		
         SigarDriver sigar = sb.deploy("node22", new SigarDriver.Impl(2, 100));
         
-        sb.sync();
-        
         PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
 
         sigar.monitorProcCpu(provider, metering.bind(Sigar.defaultReporter()));
+
+        JmxThreadProbe probe = sb.deploy("**", JmxProbeFactory.newThreadProbe(new LocalMBeanConnector()));
+        probe.addSampler(metering.bind(new TestThreadSamplerProvider()));
 		
 		sb.checkpoint("test-start");
 
-		MeteringTemplate t = new MeteringTemplate();
+		SpanSamplerTemplate t = new SpanSamplerTemplate();
 		t.setStatic(ZooMetrics.RUNMETRICS, true);
 		t.setStatic(Measure.NAME, "Reader");
 
-		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(10, 1, true), metering, t);
+		Activity run = executor.start(task, ExecutionHelper.constantRateExecution(10, 1, true), metering.bind(t));
 		
 		zoo.newSample(metering);
 		
-		sb.sleep(1000);
+		sb.sleep(30000);
 
 		run.stop();
 		
@@ -173,11 +207,12 @@ public class ZooTest {
 		
 		sb.checkpoint("test-start");
 
-		MeteringTemplate t = new MeteringTemplate();
+		SpanSamplerTemplate t = new SpanSamplerTemplate();
+		t.setStatic(ZooMetrics.RUNMETRICS, true);
 		t.setStatic(Measure.NAME, "Reader");
 
-		Activity run1 = executor.start(task1, ExecutionHelper.constantRateExecution(10, 1, true), metering, t);
-		Activity run2 = executor.start(task2, ExecutionHelper.constantRateExecution(10, 1, true), metering, t);
+		Activity run1 = executor.start(task1, ExecutionHelper.constantRateExecution(10, 1, true), metering.bind(t));
+		Activity run2 = executor.start(task2, ExecutionHelper.constantRateExecution(10, 1, true), metering.bind(t));
 		
 		zoo1.newSample(metering);
 		zoo2.newSample(metering);
@@ -199,4 +234,55 @@ public class ZooTest {
 		Scenario scenario = sb.getScenario();
 		return scenario;
 	}	
+	
+	@SuppressWarnings("serial")
+	private static class TestThreadSamplerProvider implements MeteringAware<JmxAwareSamplerProvider<JavaThreadStatsSampler>>, JmxAwareSamplerProvider<JavaThreadStatsSampler>, Serializable {
+
+		private SampleSchema schema;
+		
+		@Override
+		public JmxAwareSamplerProvider<JavaThreadStatsSampler> attach(MeteringDriver metering) {
+			schema = metering.getSchema();
+			return this;
+		}
+		
+		protected SampleSchema configure(MBeanServerConnection connection, SampleSchema root) {
+			SampleSchema schema = root.createDerivedScheme();
+			schema.setStatic(ZooMetrics.THREAD_STATS, Boolean.TRUE);
+			schema.declareDynamic(Measure.MEASURE, double.class);
+			return schema;
+		}
+		
+		protected void writeSample(SampleWriter writer, long threadId, String threadName, long cpuTime, long userTime, long blockedTime, long blockedCount, long waitTime, long waitCount, long allocated) {
+			System.out.println("THREAD: " + threadName + " cpu: " + TimeUtils.toSeconds(cpuTime) + " alloc: " + allocated);
+			writer.setMeasure(TimeUtils.toSeconds(cpuTime));
+		}
+		
+		@Override
+		public JavaThreadStatsSampler getSampler(MBeanServerConnection connection) {
+			SampleSchema cs = configure(connection, schema);
+			cs.declareDynamic(Measure.TIMESTAMP, double.class);
+			cs.declareDynamic(Measure.END_TIMESTAMP, double.class);
+			SampleFactory sf = cs.createFactory();
+			
+			return new ThreadSampler(sf);
+		}
+		
+		private class ThreadSampler implements JavaThreadStatsSampler {
+
+			private SampleFactory factory;
+			
+			public ThreadSampler(SampleFactory factory) {
+				this.factory = factory;
+			}
+
+			@Override
+			public void report(long startNanos, long finishNanos, long threadId, String threadName, long cpuTime, long userTime, long blockedTime, long blockedCount, long waitTime, long waitCount, long allocated) {
+				SampleWriter sw = factory.newSample();
+				sw.setTimeBounds(startNanos, finishNanos);
+				writeSample(sw, threadId, threadName, cpuTime, userTime, blockedTime, blockedCount, waitTime, waitCount, allocated);
+				sw.submit();				
+			}			
+		}		
+	}
 }

@@ -4,22 +4,35 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gridkit.nimble.driver.MeteringAware;
+import org.gridkit.nimble.driver.MeteringDriver;
 
-public class MeteringTemplate implements SchemaTemplate, Serializable {
+
+public abstract class AbstractSamplerTemplate<T> implements MeteringAware<T>, Serializable {
 
 	private static final long serialVersionUID = 20121017L;
 	
 	private final Map<Object, Object> statics = new HashMap<Object, Object>();
-	private Object measureKey = Measure.MEASURE;
-	private Object timestampKey = Measure.TIMESTAMP;
-	private Object endTimestampKey = Measure.END_TIMESTAMP;
+	protected Object measureKey = Measure.MEASURE;
+	protected Object timestampKey = Measure.TIMESTAMP;
+	protected Object endTimestampKey = Measure.END_TIMESTAMP;
+	
+	protected SampleSchema schema;
+	protected SampleFactory factory;
 	
 	@Override
-	public SampleFactory createFactory(SampleSchema rootSchema) {
+	@SuppressWarnings("unchecked")
+	public T attach(MeteringDriver metering) {
+		factory = createFactory(metering.getSchema());
+		return (T)this;
+	}
+
+	protected SampleFactory createFactory(SampleSchema rootSchema) {
 		SampleSchema ss = rootSchema.createDerivedScheme();
 		for(Object key: statics.keySet()) {
 			ss.setStatic(key, statics.get(key));
 		}
+		// TODO do not declare unneeded dynamics
 		if (measureKey != null) {
 			ss.declareDynamic(measureKey, double.class);
 		}
@@ -29,6 +42,7 @@ public class MeteringTemplate implements SchemaTemplate, Serializable {
 		if (endTimestampKey != null) {
 			ss.declareDynamic(endTimestampKey, double.class);
 		}
+		schema = ss;
 		
 		return ss.createFactory();
 	}
@@ -37,27 +51,27 @@ public class MeteringTemplate implements SchemaTemplate, Serializable {
 		statics.put(key, value);
 	}
 	
-	public Object getMeasureKey() {
+	protected Object getMeasureKey() {
 		return measureKey;
 	}
 
-	public void setMeasureKey(Object measureKey) {
+	protected void setMeasureKey(Object measureKey) {
 		this.measureKey = measureKey;
 	}
 
-	public Object getTimestampKey() {
+	protected Object getTimestampKey() {
 		return timestampKey;
 	}
 
-	public void setTimestampKey(Object timestampKey) {
+	protected void setTimestampKey(Object timestampKey) {
 		this.timestampKey = timestampKey;
 	}
 
-	public Object getEndTimestampKey() {
+	protected Object getEndTimestampKey() {
 		return endTimestampKey;
 	}
 
-	public void setEndTimestampKey(Object endTimestampKey) {
+	protected void setEndTimestampKey(Object endTimestampKey) {
 		this.endTimestampKey = endTimestampKey;
 	}
 }

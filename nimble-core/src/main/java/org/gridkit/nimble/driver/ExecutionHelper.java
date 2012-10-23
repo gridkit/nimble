@@ -4,14 +4,13 @@ import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nimble.driver.ExecutionDriver.ExecutionConfig;
 import org.gridkit.nimble.driver.ExecutionDriver.ExecutionObserver;
 import org.gridkit.nimble.driver.ExecutionDriver.IterationLimit;
 import org.gridkit.nimble.driver.ExecutionDriver.RateLimitedRun;
-import org.gridkit.nimble.metering.MeteringTemplate;
-import org.gridkit.nimble.metering.SampleFactory;
+import org.gridkit.nimble.metering.SpanSampler;
+import org.gridkit.nimble.statistics.TimeUtils;
 import org.gridkit.util.concurrent.Barriers;
 import org.gridkit.util.concurrent.BlockingBarrier;
 
@@ -44,13 +43,13 @@ public class ExecutionHelper {
 		private static final long serialVersionUID = 20121017L;
 
 		@Override
-		public Activity start(Runnable task, ExecutionConfig config, MeteringDriver metering, MeteringTemplate sampleTemplate) {
+		public Activity start(Runnable task, ExecutionConfig config, MeteringSink<SpanSampler> sampler) {
 			Run run = new Run();
 			run.task = task;
 			run.threadCount = config.getThreadCount();
 
-			if (sampleTemplate != null) {
-				run.observer = new MeteringObserver(sampleTemplate.createFactory(metering.getSchema()));
+			if (sampler != null) {
+				run.observer = new MeteringObserver(sampler.getSink());
 			}
 			
 			if (config instanceof RateLimitedRun) {
@@ -158,18 +157,15 @@ public class ExecutionHelper {
 
 	private static class MeteringObserver implements ExecutionObserver {
 
-		private final SampleFactory factory;
+		private final SpanSampler sampler;
 		
-		public MeteringObserver(SampleFactory factory) {
-			this.factory = factory;
+		public MeteringObserver(SpanSampler sampler) {
+			this.sampler = sampler;
 		}
 
 		@Override
 		public void done(long startNanos, long finishNanos, Throwable exception) {
-			factory.newSample()
-				.setTimeBounds(startNanos, finishNanos)
-				.setMeasure((double)(finishNanos - startNanos) / TimeUnit.SECONDS.toNanos(1))
-				.submit();
+			sampler.write(TimeUtils.normalize(finishNanos - startNanos), startNanos, finishNanos);
 		}
 	}
 	

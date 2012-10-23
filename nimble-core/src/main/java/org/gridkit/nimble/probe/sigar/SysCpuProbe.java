@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.probe.RateSampler;
 import org.gridkit.nimble.probe.SamplerFactory;
+import org.gridkit.nimble.statistics.TimeUtils;
 import org.hyperic.sigar.Cpu;
 
 public class SysCpuProbe extends SigarHolder implements Callable<Void> {    
@@ -39,15 +40,15 @@ public class SysCpuProbe extends SigarHolder implements Callable<Void> {
         
         Cpu cpu = getSigar().getCpu();
         
-        userSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getUser()), timestamp);
-        systemSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getSys()), timestamp);
-        niceSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getNice()), timestamp);
-        idleSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getIdle()), timestamp);
-        waitSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getWait()), timestamp);
-        irqSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getIrq()), timestamp);
-        softirqSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getSoftIrq()), timestamp);
-        stolenSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getStolen()), timestamp);
-        totalSampler.write(TimeUnit.MILLISECONDS.toNanos(cpu.getTotal()), timestamp);
+        userSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getUser())), timestamp);
+        systemSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getSys())), timestamp);
+        niceSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getNice())), timestamp);
+        idleSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getIdle())), timestamp);
+        waitSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getWait())), timestamp);
+        irqSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getIrq())), timestamp);
+        softirqSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getSoftIrq())), timestamp);
+        stolenSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getStolen())), timestamp);
+        totalSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getTotal())), timestamp);
 
         return null;
     }

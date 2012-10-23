@@ -1,168 +1,101 @@
 package org.gridkit.nimble.probe.jmx;
 
-/*
 import java.lang.management.ThreadInfo;
-import java.math.BigInteger;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 import javax.management.MBeanServerConnection;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.management.openmbean.CompositeData;
-*/
 
-public class JmxThreadTracker {
-/*
-	private static ObjectName THREADING = name("java.lang:type=Threading");
-			
-	private static ObjectName name(String name) {
-		try {
-			return new ObjectName(name);
-		} catch (MalformedObjectNameException e) {
-			throw new RuntimeException(e);
-		}
-	}
-			
-			
-	private MBeanServerConnection mserver;
+class JmxThreadTracker {
+
+	private ExtendedThreadMXBean mbean;
 
 	private Map<Long, ThreadNote> notes = new HashMap<Long, JmxThreadTracker.ThreadNote>();
 	
 	public JmxThreadTracker(MBeanServerConnection mserver) {
-		this.mserver = mserver;
+		this.mbean = MXBeanFactory.newThreadMXBean(mserver);
 	}
 
 	public synchronized void updateSnapshot() {
-		long[] ids = getAllThreadIds();
+		long[] ids = mbean.getAllThreadIds();
+		Arrays.sort(ids);
+		long timestamp = System.nanoTime();
+		long[] cpuTime = mbean.getThreadCpuTime(ids);
+		long[] userTime = mbean.getThreadUserTime(ids);
+		long[] alloc = mbean.getThreadAllocatedBytes(ids);
+		ThreadInfo[] infos = mbean.getThreadInfo(ids, 0);
+
+		Map<Long, ThreadNote> nnotes = new HashMap<Long, JmxThreadTracker.ThreadNote>();
+		for(ThreadInfo i: infos) {
+			if (i != null) {
+				ThreadNote note = notes.get(i.getThreadId());
+				if (note == null) {
+					note = new ThreadNote();
+					note.threadId = i.getThreadId();
+				}
+				else {
+					note.push();
+				}
+				
+				note.lastTimestamp = timestamp;
+				note.lastThreadInfo = i;
+				int n = Arrays.binarySearch(ids, i.getThreadId());
+				note.lastCpuTime = cpuTime[n];
+				note.lastUserTime = userTime[n];
+				note.lastMemoryAllocated = alloc[n];
+				
+				nnotes.put(i.getThreadId(), note);
+			}
+		}	
+		notes = nnotes;
 	}
 	
-	
-	
-	public String report() {
-
-		dumpThreads();
-		
-		StringBuilder sb = new StringBuilder();
-		
-		long currentTime = System.nanoTime();
-		long timeSplit = currentTime - lastTimestamp;
-		long currentCpuTime = getProcessCpuTime();
-		
-		Map<Long,ThreadNote> newNotes = new HashMap<Long, ThreadNote>();
-		Set<String> report = new TreeSet<String>();
-		
-		BigInteger totalCpu = BigInteger.valueOf(0);
-		BigInteger totalUser = BigInteger.valueOf(0);
-		
-		
-		for(long tid: getAllThreadIds()) {
-			ThreadNote lastNote = notes.get(tid);
-			ThreadNote newNote = new ThreadNote();
-			newNote.lastCpuTime = getThreadCpuTime(tid);
-			newNote.lastUserTime = getThreadUserTime(tid);
-			
-			newNotes.put(tid, newNote);
-			
-			totalCpu = totalCpu.add(BigInteger.valueOf(newNote.lastCpuTime));
-			totalUser = totalUser.add(BigInteger.valueOf(newNote.lastUserTime));
-			
-			if (lastNote != null) {
-
-				double cpuT = ((double)(newNote.lastCpuTime - lastNote.lastCpuTime)) / timeSplit;
-				double userT = ((double)(newNote.lastUserTime - lastNote.lastUserTime)) / timeSplit;
-
-				StringBuffer buf = new StringBuffer();
-				buf.append(String.format("[%06d] user=%.2f%% sys=%.2f%% - %s", tid, 100 * userT, 100 * (cpuT - userT), getThreadName(tid)));
-				report.add(buf.toString());
+	public synchronized List<TradeDetails> getAllThreads() {
+		List<TradeDetails> result = new ArrayList<TradeDetails>();
+		for(ThreadNote td: notes.values()) {
+			if (td.prevThreadInfo != null) {
+				result.add(td);
 			}
 		}
+		return result;
+	}
+
+	public static interface TradeDetails {
 		
-		if (report.size() >0) {				
-
-			double processT = ((double)(currentCpuTime - lastProcessCpuTime)) / timeSplit;
-			double cpuT = ((double)(totalCpu.subtract(lastCummulativeCpuTime).longValue())) / timeSplit;
-			double userT = ((double)(totalUser.subtract(lastCummulativeUserTime).longValue())) / timeSplit;
-
-			sb.append(Formats.toDatestamp(System.currentTimeMillis()));
-			sb.append(String.format(" CPU usage \n  process cpu=%.2f%%\n  application: cpu=%.2f%% (user=%.2f%% sys=%.2f%%)\n  other: cpu=%.2f%% \n", 100 * processT, 100 * cpuT, 100 * userT, 100 * (cpuT - userT), 100 * (processT - cpuT)));
-			for(String line: report) {
-				sb.append(line).append('\n');
-			}
-			sb.append("\n");			
-		}
+		public long getThreadId();
 		
-		lastTimestamp = currentTime;
-		notes = newNotes;
-		lastCummulativeCpuTime = totalCpu;
-		lastCummulativeUserTime = totalUser;
-		lastProcessCpuTime = currentCpuTime;
+		public String getThreadName();
 		
-		return sb.toString();
-	}
-
-	private void dumpThreads() {
-		try {
-			ObjectName bean = new ObjectName("java.lang:type=Threading");
-			CompositeData[] ti = (CompositeData[]) mserver.invoke(bean, "dumpAllThreads", new Object[]{Boolean.TRUE, Boolean.TRUE}, new String[]{"boolean", "boolean"});
-			threadDump.clear();
-			for(CompositeData t:ti) {
-				threadDump.put((Long) t.get("threadId"), t);
-			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private Object getThreadName(long tid) {
-		try {
-			CompositeData info = threadDump.get(tid);
-			return info.get("threadName");
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private Collection<Long> getAllThreadIds() {
-		return threadDump.keySet();
-	}
-
-	private long getThreadCpuTime(long tid) {
-		try {
-			ObjectName bean = new ObjectName("java.lang:type=Threading");
-			long time = (Long) mserver.invoke(bean, "getThreadCpuTime", new Object[]{tid}, new String[]{"long"});
-			return time;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private long getThreadUserTime(long tid) {
-		try {
-			ObjectName bean = new ObjectName("java.lang:type=Threading");
-			long time = (Long) mserver.invoke(bean, "getThreadUserTime", new Object[]{tid}, new String[]{"long"});
-			return time;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		public long getPrevTimestamp();
+		
+		public long getLastTimestamp();
+		
+		public long getCpuTime();
+		
+		public long getUserTime();
+		
+		public long getAllocatedBytes();
+		
+		public long getWaitCount();
+		
+		public long getWaitTime();
+		
+		public long getBlockedCount();
+		
+		public long getBlockedTime();
+		
 	}
 	
-
-	private long getProcessCpuTime() {
-		try {
-			ObjectName bean = new ObjectName("java.lang:type=OperatingSystem");
-			return (Long) mserver.getAttribute(bean, "ProcessCpuTime");
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
-	private static class ThreadNote {
+	private static class ThreadNote implements TradeDetails {
 		
 		long threadId;
+		
+		long prevTimestamp;
+		long lastTimestamp;
 		
 		ThreadInfo prevThreadInfo;
 		ThreadInfo lastThreadInfo;
@@ -173,11 +106,70 @@ public class JmxThreadTracker {
 		long prevUserTime;
 		long lastUserTime;
 		
-		long prevTimestamp;
-		long lastTimestamp;
-		
 		long prevMemoryAllocated;
 		long lastMemoryAllocated;
+		
+		public void push() {
+			prevThreadInfo = lastThreadInfo;
+			prevCpuTime = lastCpuTime;
+			prevUserTime = lastUserTime;
+			prevTimestamp = lastTimestamp;
+			prevMemoryAllocated = lastMemoryAllocated; 
+		}
+
+		@Override
+		public long getThreadId() {
+			return threadId;
+		}
+
+		@Override
+		public String getThreadName() {
+			return lastThreadInfo.getThreadName();
+		}
+
+		@Override
+		public long getPrevTimestamp() {
+			return prevTimestamp;
+		}
+
+		@Override
+		public long getLastTimestamp() {
+			return lastTimestamp;
+		}
+
+		@Override
+		public long getCpuTime() {
+			return lastCpuTime == -1 ? 0 : lastCpuTime - prevCpuTime;
+		}
+
+		@Override
+		public long getUserTime() {
+			return lastUserTime == -1 ? 0 : lastUserTime - prevUserTime;
+		}
+
+		@Override
+		public long getAllocatedBytes() {
+			return lastMemoryAllocated == -1 ? 0 : lastMemoryAllocated - prevMemoryAllocated;
+		}
+
+		@Override
+		public long getWaitCount() {
+			return lastThreadInfo.getWaitedCount() - prevThreadInfo.getWaitedCount();
+		}
+
+		@Override
+		public long getWaitTime() {
+			return TimeUnit.MILLISECONDS.toNanos(lastThreadInfo.getWaitedTime() - prevThreadInfo.getWaitedTime());
+		}
+
+		@Override
+		public long getBlockedCount() {
+			return lastThreadInfo.getBlockedCount() - prevThreadInfo.getBlockedCount();
+		}
+
+		@Override
+		public long getBlockedTime() {
+			return TimeUnit.MILLISECONDS.toNanos(lastThreadInfo.getBlockedTime() - prevThreadInfo.getBlockedTime());
+		}
 	}
-	*/
 }

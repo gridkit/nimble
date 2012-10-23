@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.probe.RateSampler;
 import org.gridkit.nimble.probe.SamplerFactory;
+import org.gridkit.nimble.statistics.TimeUtils;
 import org.hyperic.sigar.ProcTime;
 
 public class ProcCpuProbe extends SigarHolder implements Callable<Void> {            
@@ -31,9 +32,9 @@ public class ProcCpuProbe extends SigarHolder implements Callable<Void> {
 
         ProcTime procTime = getSigar().getProcTime(pid);
 
-        userSampler.write(TimeUnit.MILLISECONDS.toNanos(procTime.getUser()), timestamp);
-        systemSampler.write(TimeUnit.MILLISECONDS.toNanos(procTime.getSys()), timestamp);
-        totalSampler.write(TimeUnit.MILLISECONDS.toNanos(procTime.getTotal()), timestamp);
+        userSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(procTime.getUser())), timestamp);
+        systemSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(procTime.getSys())), timestamp);
+        totalSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(procTime.getTotal())), timestamp);
         
         return null;
     }

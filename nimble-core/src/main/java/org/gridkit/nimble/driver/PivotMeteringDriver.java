@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.gridkit.nimble.metering.ArraySampleManager;
+import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.orchestration.DeployableBean;
 import org.gridkit.nimble.pivot.DistributedPivotReporter;
@@ -33,6 +34,10 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	
 	public PivotReporter getReporter() {
 		return reporter;
+	}
+	
+	public SampleReader getReader() {
+		return reporter.getReader();
 	}
 
 	@Override

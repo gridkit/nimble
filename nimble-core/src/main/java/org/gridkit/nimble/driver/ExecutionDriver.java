@@ -1,12 +1,12 @@
 package org.gridkit.nimble.driver;
 
-import org.gridkit.nimble.metering.MeteringTemplate;
+import org.gridkit.nimble.metering.SpanSampler;
 import org.gridkit.util.concurrent.BlockingBarrier;
 
 
 public interface ExecutionDriver {
 
-	public Activity start(Runnable task, ExecutionConfig execConfig, MeteringDriver driver, MeteringTemplate sampleTemplate);	
+	public Activity start(Runnable task, ExecutionConfig execConfig, MeteringSink<SpanSampler> execTimeSampler);	
 	
 	interface ExecutionConfig {
 	
