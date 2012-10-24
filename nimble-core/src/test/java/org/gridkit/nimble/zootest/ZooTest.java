@@ -8,6 +8,7 @@ import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
+import org.gridkit.nimble.metering.DisrtibutedMetering;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
@@ -19,6 +20,7 @@ import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Filters;
 import org.gridkit.nimble.pivot.Pivot;
 import org.gridkit.nimble.pivot.PivotPrinter;
+import org.gridkit.nimble.pivot.display.DisplayBuilder;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
@@ -74,6 +76,20 @@ public class ZooTest {
 		PivotPrinter2 printer = new PivotPrinter2();
 		printer.dumpUnprinted();
 		
+		DisplayBuilder.with(printer)
+			.hostname()
+			.nodename()
+			.level("sigar-cpu-stats").constant("Source", "SIGAR")
+			.level("sigar-cpu-stats").attribute("Name", SigarMeasure.MEASURE_KEY)
+			.level("sigar-cpu-stats").attribute("PID", SigarMeasure.PID_KEY)
+			.level("sigar-cpu-stats").frequencyStats()
+			.level("jmx-cpu-stats").constant("Source", "JMX")
+			.level("jmx-cpu-stats").measureName("Name")
+			.level("jmx-cpu-stats").frequencyStats()
+			.level("run-stats.*").constant("Source", "Task")
+			.level("run-stats.*").measureName("Name")
+			.level("run-stats.*").distributionStats().asMillis();
+			
 		PrettyPrinter pp = new PrettyPrinter();		
 		pp.print(System.out, printer.print(reader));
 		

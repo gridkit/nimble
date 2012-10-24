@@ -9,12 +9,12 @@ import org.gridkit.nimble.pivot.CommonStats;
 import org.gridkit.nimble.pivot.SampleExtractor;
 import org.gridkit.nimble.statistics.Summary;
 
-public class StatsDisplayComponent implements DisplayComponent, UnitDecoratable {
+public class StatsDisplayComponent implements DisplayComponent, WithUnits {
 
 	private final String captionFormat;
 	private final SampleExtractor extractor;
 	private final CommonStats.StatAppraisal[] appraisals;
-	// TODO implement
+	// TODO implement, multiple decos
 	private UnitDeco deco;
 	
 	public StatsDisplayComponent(SampleExtractor extractor, CommonStats.StatAppraisal... stats) {
@@ -35,7 +35,13 @@ public class StatsDisplayComponent implements DisplayComponent, UnitDecoratable 
 			
 			Summary ss = (Summary) x;
 			for(CommonStats.StatAppraisal m: appraisals) {
-				result.put(String.format(captionFormat, m.toString()), m.extract(ss));
+				Object extract = m.extract(ss);
+				if (extract != null && deco != null) {
+					double v = ((Number)extract).doubleValue();
+					v *= m.transalte(deco);
+					extract =v;
+				}
+				result.put(String.format(captionFormat, m.toString()), extract);
 			}
 			return result;
 		}
@@ -44,9 +50,7 @@ public class StatsDisplayComponent implements DisplayComponent, UnitDecoratable 
 		}
 	}
 
-	@Override
-	public DisplayComponent as(UnitDeco units) {
+	public void setUnits(UnitDeco units) {
 		deco = units;
-		return this;
 	}
 }

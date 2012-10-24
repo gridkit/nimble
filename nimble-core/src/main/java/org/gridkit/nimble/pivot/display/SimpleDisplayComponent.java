@@ -6,7 +6,7 @@ import java.util.Map;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.pivot.SampleExtractor;
 
-public class SimpleDisplayComponent implements DisplayComponent, UnitDecoratable {
+public class SimpleDisplayComponent implements DisplayComponent, WithUnits {
 
 	private String caption;
 	private SampleExtractor extractor;
@@ -24,7 +24,7 @@ public class SimpleDisplayComponent implements DisplayComponent, UnitDecoratable
 		if (deco != null) {
 			if (extract != null) {
 				if (extract instanceof Number) {
-					extract = deco.transalte(((Number) extract).doubleValue());
+					extract = deco.getMultiplier() * (((Number) extract).doubleValue());
 				}
 				else {
 					throw new IllegalArgumentException("Usage of UnitDeco is allowed only with numric values");
@@ -37,9 +37,7 @@ public class SimpleDisplayComponent implements DisplayComponent, UnitDecoratable
 		return Collections.singletonMap(caption, extract);
 	}
 
-	@Override
-	public DisplayComponent as(UnitDeco units) {
+	public void setUnits(UnitDeco units) {
 		this.deco = units;
-		return this;
 	}
 }

@@ -2,11 +2,11 @@ package org.gridkit.nimble.pivot.display;
 
 import java.util.Arrays;
 
+import org.gridkit.nimble.metering.DisrtibutedMetering;
 import org.gridkit.nimble.pivot.CommonStats;
 import org.gridkit.nimble.pivot.Extractors;
 
 public class DisplayFactory {
-
 	public static SimpleDisplayComponent constant(String caption, Object value) {
 		return new SimpleDisplayComponent(caption, Extractors.constant(value));
 	}
@@ -17,6 +17,14 @@ public class DisplayFactory {
 
 	public static SimpleDisplayComponent attribute(String caption, Object key) {
 		return new SimpleDisplayComponent(caption, Extractors.field(key));
+	}
+	
+	public static SimpleDisplayComponent hostname() {
+		return attribute("Hostname", DisrtibutedMetering.HOSTNAME);
+	}
+
+	public static SimpleDisplayComponent nodename() {
+		return attribute("Node", DisrtibutedMetering.NODENAME);
 	}
 
 	public static StatsDisplayComponent genericStats(Object key, CommonStats.StatAppraisal... stats) {
@@ -42,4 +50,5 @@ public class DisplayFactory {
 	public static DisplayComponent decorated(DisplayComponent component, Object... deco) {
 		return new DecorationAdapter(Arrays.asList(deco), component);
 	}	
+
 }

@@ -165,7 +165,7 @@ public class ExecutionHelper {
 
 		@Override
 		public void done(long startNanos, long finishNanos, Throwable exception) {
-			sampler.write(TimeUtils.normalize(finishNanos - startNanos), startNanos, finishNanos);
+			sampler.write(TimeUtils.toSeconds(finishNanos - startNanos), startNanos, finishNanos);
 		}
 	}
 	

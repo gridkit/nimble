@@ -1,56 +1,46 @@
 package org.gridkit.nimble.pivot.display;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
+
+import org.gridkit.nimble.pivot.display.UnitDeco.UnitDecoType;
 
 public class Units {
 
-	private static double MILLIS_PER_SEC = TimeUnit.SECONDS.toMillis(1);
+	public static UnitDeco MILLIS = new SimpleUnitDeco("Millis", TimeUnit.SECONDS.toMillis(1), UnitDecoType.NUMERATOR);
+	public static UnitDeco KiB = new SimpleUnitDeco("KiB", 1d / (1 <<10), UnitDecoType.NUMERATOR);
+	public static UnitDeco MiB = new SimpleUnitDeco("MiB", 1d / (1 <<20), UnitDecoType.NUMERATOR);
+	public static UnitDeco GiB = new SimpleUnitDeco("GiB", 1d / (1 <<30), UnitDecoType.NUMERATOR);
+	public static UnitDeco K = new SimpleUnitDeco("K", 1e-3d, UnitDecoType.NUMERATOR);
+	public static UnitDeco M = new SimpleUnitDeco("M", 1e-6d, UnitDecoType.NUMERATOR);
 	
-	public static UnitDeco MILLIS = new UnitDeco() {
+	
+	private static class SimpleUnitDeco implements UnitDeco, Serializable {
 		
-		@Override
-		public double transalte(double source) {
-			return MILLIS_PER_SEC * source;
-		}
+		private static final long serialVersionUID = 20121024L;
 		
-		public String toString() {
-			return "Millis";
+		final String name;
+		final double multiplier;
+		final UnitDecoType type;
+		
+		public SimpleUnitDeco(String name, double multiplier, UnitDecoType type) {
+			this.name = name;
+			this.multiplier = multiplier;
+			this.type = type;
 		}
-	};
 
-	public static UnitDeco KiB = new UnitDeco() {
+		@Override
+		public double getMultiplier() {
+			return multiplier;
+		}
 		
 		@Override
-		public double transalte(double source) {
-			return source / (1 << 10);
+		public UnitDecoType getType() {
+			return type;
 		}
 		
 		public String toString() {
-			return "KiB";
-		}		
-	};
-
-	public static UnitDeco MiB = new UnitDeco() {
-		
-		@Override
-		public double transalte(double source) {
-			return source / (1 << 20);
+			return name;
 		}
-		
-		public String toString() {
-			return "MiB";
-		}				
-	};
-
-	public static UnitDeco GiB = new UnitDeco() {
-		
-		@Override
-		public double transalte(double source) {
-			return source / (1 << 30);
-		}
-		
-		public String toString() {
-			return "GiB";
-		}				
-	};	
+	}	
 }
