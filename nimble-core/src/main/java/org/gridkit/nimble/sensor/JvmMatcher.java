@@ -13,7 +13,6 @@ import org.gridkit.nimble.util.JvmOps;
 
 import com.sun.tools.attach.VirtualMachineDescriptor;
 
-@SuppressWarnings("restriction")
 public interface JvmMatcher {
 
 	public boolean matches(Object vm); 

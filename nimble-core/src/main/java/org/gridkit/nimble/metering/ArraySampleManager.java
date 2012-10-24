@@ -32,7 +32,7 @@ public class ArraySampleManager implements SampleReader {
 	
 	public void adopt(SampleSchema schema) {
 		if (!(schema instanceof Schema)) {
-			throw new IllegalArgumentException("Unsupported schema implementation " + schema);
+			throw new IllegalArgumentException("Unsupported rootSchema implementation " + schema);
 		}
 		else {
 			((Schema)schema).manager = this;
@@ -88,6 +88,7 @@ public class ArraySampleManager implements SampleReader {
 		private Schema parent;
 		private Map<Object, Object> statics = new LinkedHashMap<Object, Object>();
 		private Map<Object, Class<?>> measures = new LinkedHashMap<Object, Class<?>>();
+		private boolean frozen;
 		
 		private transient ArraySampleManager manager;
 		
@@ -114,6 +115,11 @@ public class ArraySampleManager implements SampleReader {
 				throw new IllegalStateException("Schema instance should be bound to ArraySampleManager");
 			}
 			return new ArraySampleFactory(this);
+		}
+		
+		@Override
+		public synchronized void freeze() {
+			this.frozen = true;
 		}
 
 		Map<Object, Object> collectStatics() {
@@ -156,6 +162,9 @@ public class ArraySampleManager implements SampleReader {
 		
 		@Override
 		public synchronized SampleSchema setStatic(Object key, Object value) {
+			if (frozen) {
+				throw new IllegalStateException("Schema is frozen");
+			}
 			if (containsKey(key)) {
 				throw new IllegalArgumentException("Attribute: " + key + " is already present");
 			}
@@ -165,6 +174,9 @@ public class ArraySampleManager implements SampleReader {
 
 		@Override
 		public SampleSchema declareDynamic(Object key, Class<?> type) {
+			if (frozen) {
+				throw new IllegalStateException("Schema is frozen");
+			}			
 			if (containsKey(key)) {
 				throw new IllegalArgumentException("Attribute: " + key + " is already present");
 			}

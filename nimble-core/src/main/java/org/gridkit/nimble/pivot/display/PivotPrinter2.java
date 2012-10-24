@@ -87,7 +87,6 @@ public class PivotPrinter2 {
 		}
 	}
 	
-	
 	private static class SingleSampleReader implements SampleReader {
 
 		final List<Object> touchedKeys = new ArrayList<Object>();

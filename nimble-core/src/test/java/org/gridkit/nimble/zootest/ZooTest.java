@@ -1,15 +1,11 @@
 package org.gridkit.nimble.zootest;
 
-import java.io.Serializable;
-import java.util.concurrent.TimeUnit;
-
 import javax.management.MBeanServerConnection;
 
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
-import org.gridkit.nimble.driver.MeteringAware;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
@@ -26,15 +22,14 @@ import org.gridkit.nimble.pivot.PivotPrinter;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
-import org.gridkit.nimble.probe.jmx.JavaThreadStatsSampler;
-import org.gridkit.nimble.probe.jmx.JmxAwareSamplerProvider;
+import org.gridkit.nimble.probe.jmx.AbstractMBeanTrackingSamplerProvider;
+import org.gridkit.nimble.probe.jmx.AbstractThreadSamplerProvider;
 import org.gridkit.nimble.probe.jmx.JmxProbeFactory;
 import org.gridkit.nimble.probe.jmx.JmxThreadProbe;
 import org.gridkit.nimble.probe.jmx.LocalMBeanConnector;
 import org.gridkit.nimble.probe.sigar.Sigar;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.nimble.probe.sigar.SigarMeasure;
-import org.gridkit.nimble.statistics.TimeUtils;
 import org.gridkit.vicluster.ViManager;
 import org.junit.After;
 import org.junit.Test;
@@ -44,6 +39,7 @@ public class ZooTest {
 	private enum ZooMetrics {
 		RUNMETRICS,
 		THREAD_STATS,
+		GC_STATS,
 	}
 	
 //	private ViManager cloud = CloudFactory.createIsolateCloud();
@@ -125,11 +121,12 @@ public class ZooTest {
 				.filter(Filters.notNull(ZooMetrics.THREAD_STATS))
 					.group(MeteringDriver.HOSTNAME)
 						.group(MeteringDriver.NODE)
-							.level("")
-								.show()
-								.display(MeteringDriver.NODE)
-								.display(Measure.NAME)
-								.calcFrequency(Measure.MEASURE);
+							.group(Measure.NAME)
+								.level("")
+									.show()
+									.display(MeteringDriver.NODE)
+									.display(Measure.NAME)
+									.calcFrequency(Measure.MEASURE);
 		
 		pivot.root()
 			.level("sigar-cpu-stats")
@@ -164,7 +161,8 @@ public class ZooTest {
         sigar.monitorProcCpu(provider, metering.bind(Sigar.defaultReporter()));
 
         JmxThreadProbe probe = sb.deploy("**", JmxProbeFactory.newThreadProbe(new LocalMBeanConnector()));
-        probe.addSampler(metering.bind(new TestThreadSamplerProvider()));
+        probe.addSampler(metering.bind(new TotalCpuSamplerProvider()));
+        probe.addSampler(metering.bind(new FilteredCpuSamplerProvider()));
 		
 		sb.checkpoint("test-start");
 
@@ -176,7 +174,7 @@ public class ZooTest {
 		
 		zoo.newSample(metering);
 		
-		sb.sleep(30000);
+		sb.sleep(10000);
 
 		run.stop();
 		
@@ -236,53 +234,54 @@ public class ZooTest {
 	}	
 	
 	@SuppressWarnings("serial")
-	private static class TestThreadSamplerProvider implements MeteringAware<JmxAwareSamplerProvider<JavaThreadStatsSampler>>, JmxAwareSamplerProvider<JavaThreadStatsSampler>, Serializable {
+	private static class TotalCpuSamplerProvider extends AbstractThreadSamplerProvider {
 
-		private SampleSchema schema;
+		@Override
+		protected SampleSchema configureConnectionSchema(MBeanServerConnection connection, SampleSchema root) {
+			SampleSchema deriv = root.createDerivedScheme();
+			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
+			deriv.declareDynamic(Measure.MEASURE, double.class);
+			return deriv;
+		}
+
+		@Override
+		protected void writeSample(SampleWriter writer, long threadId, double cpuTime, double userTime, double blockedTime, long blockedCount, double waitTime, long waitCount, long allocated) {
+			writer.setMeasure(cpuTime);
+		}
+	}
+
+	@SuppressWarnings("serial")
+	private static class FilteredCpuSamplerProvider extends AbstractThreadSamplerProvider {
 		
 		@Override
-		public JmxAwareSamplerProvider<JavaThreadStatsSampler> attach(MeteringDriver metering) {
-			schema = metering.getSchema();
-			return this;
-		}
-		
-		protected SampleSchema configure(MBeanServerConnection connection, SampleSchema root) {
-			SampleSchema schema = root.createDerivedScheme();
-			schema.setStatic(ZooMetrics.THREAD_STATS, Boolean.TRUE);
-			schema.declareDynamic(Measure.MEASURE, double.class);
-			return schema;
-		}
-		
-		protected void writeSample(SampleWriter writer, long threadId, String threadName, long cpuTime, long userTime, long blockedTime, long blockedCount, long waitTime, long waitCount, long allocated) {
-			System.out.println("THREAD: " + threadName + " cpu: " + TimeUtils.toSeconds(cpuTime) + " alloc: " + allocated);
-			writer.setMeasure(TimeUtils.toSeconds(cpuTime));
+		protected SampleSchema configureConnectionSchema(MBeanServerConnection connection, SampleSchema root) {
+			SampleSchema deriv = root.createDerivedScheme();
+			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
+			deriv.setStatic(Measure.NAME, "pool*");
+			deriv.declareDynamic(Measure.MEASURE, double.class);
+			return deriv;
 		}
 		
 		@Override
-		public JavaThreadStatsSampler getSampler(MBeanServerConnection connection) {
-			SampleSchema cs = configure(connection, schema);
-			cs.declareDynamic(Measure.TIMESTAMP, double.class);
-			cs.declareDynamic(Measure.END_TIMESTAMP, double.class);
-			SampleFactory sf = cs.createFactory();
-			
-			return new ThreadSampler(sf);
-		}
-		
-		private class ThreadSampler implements JavaThreadStatsSampler {
-
-			private SampleFactory factory;
-			
-			public ThreadSampler(SampleFactory factory) {
-				this.factory = factory;
+		protected SampleSchema configureThreadSchema(String threadName, SampleSchema root) {
+			if (threadName.toLowerCase().startsWith("pool")) {
+				return root;
 			}
+			else {
+				return null;
+			}
+		}
 
-			@Override
-			public void report(long startNanos, long finishNanos, long threadId, String threadName, long cpuTime, long userTime, long blockedTime, long blockedCount, long waitTime, long waitCount, long allocated) {
-				SampleWriter sw = factory.newSample();
-				sw.setTimeBounds(startNanos, finishNanos);
-				writeSample(sw, threadId, threadName, cpuTime, userTime, blockedTime, blockedCount, waitTime, waitCount, allocated);
-				sw.submit();				
-			}			
+		@Override
+		protected void writeSample(SampleWriter writer, long threadId, double cpuTime, double userTime, double blockedTime, long blockedCount, double waitTime, long waitCount, long allocated) {
+			writer.setMeasure(cpuTime);
+		}
+	}
+	
+	private static class GcSamplerProvider extends AbstractMBeanTrackingSamplerProvider {
+
+		@Override
+		protected void report(SampleFactory factory, MBeanContext ctx) {
 		}		
 	}
 }

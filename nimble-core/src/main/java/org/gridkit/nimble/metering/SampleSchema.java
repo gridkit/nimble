@@ -10,4 +10,6 @@ public interface SampleSchema {
 	
 	public SampleSchema declareDynamic(Object key, Class<?> type);
 	
+	public void freeze();
+	
 }

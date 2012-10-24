@@ -9,11 +9,13 @@ import org.gridkit.nimble.pivot.CommonStats;
 import org.gridkit.nimble.pivot.SampleExtractor;
 import org.gridkit.nimble.statistics.Summary;
 
-public class StatsDisplayComponent implements DisplayComponent {
+public class StatsDisplayComponent implements DisplayComponent, UnitDecoratable {
 
 	private final String captionFormat;
 	private final SampleExtractor extractor;
 	private final CommonStats.StatAppraisal[] appraisals;
+	// TODO implement
+	private UnitDeco deco;
 	
 	public StatsDisplayComponent(SampleExtractor extractor, CommonStats.StatAppraisal... stats) {
 		this("%s", extractor, stats);
@@ -40,5 +42,11 @@ public class StatsDisplayComponent implements DisplayComponent {
 		else {
 			return Collections.emptyMap();
 		}
+	}
+
+	@Override
+	public DisplayComponent as(UnitDeco units) {
+		deco = units;
+		return this;
 	}
 }

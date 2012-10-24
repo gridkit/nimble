@@ -37,7 +37,12 @@ public class PrintingSchema implements SampleSchema {
         return this;
     }
     
-    public static class Factory implements SampleFactory {
+    @Override
+	public void freeze() {
+		// do nothing
+	}
+
+	public static class Factory implements SampleFactory {
         private final Map<Object, Object> attrs;
         
         public Factory(Map<Object, Object> attrs) {
