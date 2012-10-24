@@ -18,7 +18,7 @@
         <sigar-lib.version>0.1-SNAPSHOT</sigar-lib.version>
         
         <tools-jar.version>1.6</tools-jar.version>
-        <btrace.version>2.0-SNAPSHOT</btrace.version>
+        <btrace.version>2.0-nimble-1</btrace.version>
         
         <commons-math.version>3.0</commons-math.version>
         <guava.version>13.0.1</guava.version>
@@ -86,22 +86,10 @@
 
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
-                <artifactId>nimble-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.gridkit.lab</groupId>
                 <artifactId>telecontrol-ssh</artifactId>
                 <version>${nanocloud.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.gridkit.lab</groupId>
-                <artifactId>viconcurrent</artifactId>
-                <version>${nanocloud.version}</version>
-            </dependency>
-        
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>viconcurrent</artifactId>
@@ -131,12 +119,6 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-    
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>log4j-over-slf4j</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
             
             <dependency>
                 <groupId>com.sun</groupId>
@@ -147,9 +129,57 @@
             </dependency>
             
             <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>core-api</artifactId>
+                <version>${btrace.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>client</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>btrace-agent</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>ext-default</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
             
             <dependency>

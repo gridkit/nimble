@@ -1,5 +1,6 @@
 package org.gridkit.nimble.pivot;
 
+import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleReader;
 
 public class Extractors {
@@ -16,6 +17,9 @@ public class Extractors {
 		return new ConstExtractor(value);
 	}
 	
+    public static SampleExtractor durationMs() {
+        return new DurationExtractor(1000);
+    }
 	
 	public static class FieldExtractor implements SampleExtractor {
 
@@ -47,5 +51,24 @@ public class Extractors {
 		public Object extract(SampleReader sample) {
 			return value;
 		}
-	}	
+	}
+	
+	public static class DurationExtractor implements SampleExtractor {
+
+        private static final long serialVersionUID = 3939066356481747214L;
+
+        private final double scale;
+
+        public DurationExtractor(double scale) {
+            this.scale = scale;
+        }
+
+        @Override
+        public Object extract(SampleReader sample) {
+            double startTs = (Double)sample.get(Measure.TIMESTAMP);
+            double finishTs = (Double)sample.get(Measure.END_TIMESTAMP);
+                        
+            return (finishTs - startTs) * scale;
+        }
+    }
 }

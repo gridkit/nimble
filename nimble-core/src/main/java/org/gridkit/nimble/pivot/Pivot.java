@@ -88,6 +88,12 @@ public class Pivot {
 			addAggregator(key, agg);
 			return this;
 		}
+		
+        public Level calcDistribution(Object key, SampleExtractor extractor) {
+            Aggregator agg = PivotHelper.createGaussianAggregator(extractor);
+            addAggregator(key, agg);
+            return this;
+        }
 
 		private Aggregator addAggregator(Object key, Aggregator agg) {
 			return aggregators.put(key, agg);
