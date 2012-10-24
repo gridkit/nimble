@@ -1,7 +1,5 @@
 package org.gridkit.nimble.probe;
 
-import java.util.concurrent.TimeUnit;
-
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.metering.SampleFactory;
@@ -9,8 +7,6 @@ import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.metering.SampleWriter;
 import org.gridkit.nimble.metering.ScalarSampler;
 import org.gridkit.nimble.metering.SpanSampler;
-
-import ch.qos.logback.core.util.TimeUtil;
 
 public class SchemeSamplerFactory implements SamplerFactory {
     private final SampleSchema schema;
