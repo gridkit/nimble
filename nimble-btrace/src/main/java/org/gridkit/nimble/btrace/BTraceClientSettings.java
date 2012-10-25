@@ -13,6 +13,7 @@ import java.util.List;
 @SuppressWarnings("serial")
 public class BTraceClientSettings implements Serializable {
     private static Class<?> btraceAgentClass = net.java.btrace.agent.Main.class;
+    private static Class<?> btraceRuntimeClass = net.java.btrace.runtime.BTraceRuntime.class;
     
     private List<Class<?>> extensionClasses = new ArrayList<Class<?>>();
     
@@ -31,6 +32,10 @@ public class BTraceClientSettings implements Serializable {
 
     public String getAgentPath() {
         return path(jar(btraceAgentClass));
+    }
+    
+    public String getRuntimePath() {
+        return path(jar(btraceRuntimeClass));
     }
     
     public String getDumpDir() {

@@ -60,7 +60,7 @@ public class BTraceClientFactory {
                 dumpDir.mkdirs();
             }
             
-            client.setBootCp(extPath);
+            client.setBootstrapPath(settings.getRuntimePath());
             client.setAgentPath(settings.getAgentPath());
             client.setExtRepository(extRep);
             client.setTrackRetransforms(settings.isTrackRetransform());

@@ -12,19 +12,41 @@ public class StandardBTraceSamplerFactoryProvider implements BTraceSamplerFactor
     private static final long serialVersionUID = -8634420203507579307L;
 
     private SampleSchema globalSchema;
-    
+
     @Override
-    public SamplerFactory getProcSampleFactory(long pid) {
+    public SamplerFactory getReceivedSampleFactory(long pid, Class<?> scriptClass, String sampleStore) {
         SampleSchema schema = globalSchema.createDerivedScheme();
         
         schema.setStatic(BTraceMeasure.PID_KEY, pid);
+        schema.setStatic(BTraceMeasure.TYPE_KEY, BTraceMeasure.TYPE_RECEIVED);
+        schema.setStatic(BTraceMeasure.SCRIPT_KEY, scriptClass.getName());
+        schema.setStatic(BTraceMeasure.STORE_KEY, sampleStore);
 
+        postprocessSchema(schema);
+        
         return new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_KEY);
+    }
+
+    @Override
+    public SamplerFactory getMissedSamplerFactory(long pid, Class<?> scriptClass) {
+        SampleSchema schema = globalSchema.createDerivedScheme();
+        
+        schema.setStatic(BTraceMeasure.PID_KEY, pid);
+        schema.setStatic(BTraceMeasure.TYPE_KEY, BTraceMeasure.TYPE_MISSED);
+        schema.setStatic(BTraceMeasure.SCRIPT_KEY, scriptClass.getName());
+
+        postprocessSchema(schema);
+        
+        return new SchemeSamplerFactory(schema, BTraceMeasure.STORE_KEY);
     }
 
     @Override
     public BTraceSamplerFactoryProvider attach(MeteringDriver metering) {
         this.globalSchema = metering.getSchema();
         return this;
+    }
+    
+    protected void postprocessSchema(SampleSchema schema) {
+
     }
 }

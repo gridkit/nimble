@@ -78,7 +78,7 @@ public class BTraceDriverTest {
         
         BTraceScriptSettings settings = new BTraceScriptSettings();
         settings.setScriptClass(ServiceScript.class);
-        settings.setPollDelayMs(100);
+        settings.setPollDelayMs(100l);
 
         btrace.trace(provider, settings, metering.bind(BTrace.defaultReporter()));
 

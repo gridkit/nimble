@@ -14,7 +14,6 @@ import net.java.btrace.ext.Printer;
 
 import org.gridkit.nimble.btrace.ext.Nimble;
 import org.gridkit.nimble.driver.MeteringSink;
-import org.gridkit.nimble.probe.CachingSamplerFactory;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.ProbeHandle;
 import org.gridkit.nimble.probe.ProbeOps;
@@ -24,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface BTraceDriver {
+    ProbeHandle trace(PidProvider pidProvider, Class<?> scriptClass, MeteringSink<BTraceSamplerFactoryProvider> factoryProvider);
+    
     ProbeHandle trace(PidProvider pidProvider, BTraceScriptSettings settings, MeteringSink<BTraceSamplerFactoryProvider> factoryProvider);
     
     void stop();
@@ -31,9 +32,11 @@ public interface BTraceDriver {
     public static class Impl implements BTraceDriver, BTraceClientSource, Serializable {
         private static final long serialVersionUID = -7698303441795919196L;
         private static final Logger log = LoggerFactory.getLogger(Impl.class);
-        private static final long CLIENT_OPERATION_TIMEOUT = 1000;
 
         private final int corePoolSize;
+        private final long pollDelayMs;
+        private final long timeoutMs;
+
         private final BTraceClientSettings settings;
         
         private transient ScheduledExecutorService executor;
@@ -43,8 +46,10 @@ public interface BTraceDriver {
         private transient BTraceClientOps clientOps;
         private transient BTraceClientFactory clientFactory;
 
-        public Impl(int corePoolSize) {
+        public Impl(int corePoolSize, long pollDelayMs, long timeoutMs) {
             this.corePoolSize = corePoolSize;
+            this.pollDelayMs = pollDelayMs;
+            this.timeoutMs = timeoutMs;
             this.settings = new BTraceClientSettings();
             
             settings.setExtensionClasses(Nimble.class, Printer.class);
@@ -54,17 +59,18 @@ public interface BTraceDriver {
         public ProbeHandle trace(PidProvider pidProvider, BTraceScriptSettings settings, MeteringSink<BTraceSamplerFactoryProvider> factoryProvider) {
             List<Runnable> probes = new ArrayList<Runnable>();
 
+            settings = settings.init(pollDelayMs, timeoutMs);
+            
             for (Long pid : pidProvider.getPids()) {                
                 BTraceProbe probe = new BTraceProbe();
-                
+
                 probe.setPid(pid);
                 probe.setSettings(settings);
-                probe.setTimeoutMs(CLIENT_OPERATION_TIMEOUT);
                 
                 probe.setClientOps(clientOps);
                 probe.setClientSource(this);
                 
-                probe.setSamplerFactory(new CachingSamplerFactory(factoryProvider.getSink().getProcSampleFactory(pid)));
+                probe.setFactoryProvider(factoryProvider.getSink());
 
                 probes.add(new RunnableAdapter(probe));
             }
@@ -72,6 +78,15 @@ public interface BTraceDriver {
             return ProbeOps.schedule(probes, getExecutor(), settings.getPollDelayMs());
         }
 
+        @Override
+        public ProbeHandle trace(PidProvider pidProvider, Class<?> scriptClass, MeteringSink<BTraceSamplerFactoryProvider> factoryProvider) {
+            BTraceScriptSettings settings = new BTraceScriptSettings();
+            
+            settings.setScriptClass(scriptClass);
+            
+            return trace(pidProvider, settings, factoryProvider);
+        }
+        
         @Override
         public Client getClient(final long pid) throws ClientCreateException {
             Client client = clientFactory.newClient((int)pid, settings);
@@ -85,7 +100,7 @@ public interface BTraceDriver {
 
             for (Client client : clients) {
                 try {
-                    clientOps.exit(client, 0, CLIENT_OPERATION_TIMEOUT);
+                    clientOps.exit(client, 0, timeoutMs);
                 } catch (TimeoutException ignored) { 
                 } catch (Exception e) {
                     log.error("Failed to stop client " + client, e);

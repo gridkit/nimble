@@ -20,7 +20,7 @@ public class ScriptStore {
         SampleStore result = new SampleStore(name, capacity);
 
         if (sampleStores.put(name, result) != null) {
-            Printer.print("Replacing existing sample store with name '" + name + "' for script '" + scriptClass + "'");
+            Printer.println("Replacing existing sample store with name '" + name + "' for script '" + scriptClass + "'");
         }
 
         return result;
