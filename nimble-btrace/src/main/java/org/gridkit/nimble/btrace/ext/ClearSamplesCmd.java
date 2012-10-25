@@ -8,11 +8,11 @@ import java.util.Collection;
 import net.java.btrace.api.wireio.AbstractCommand;
 import net.java.btrace.api.wireio.Command;
 
-@Command(clazz = PollStateCmd.class)
-public class PollStateCmd extends AbstractCommand {
+@Command(clazz = ClearSamplesCmd.class)
+public class ClearSamplesCmd extends AbstractCommand {
     private Collection<String> scriptClasses;
     
-    public PollStateCmd(int type, int rx, int tx) {
+    public ClearSamplesCmd(int type, int rx, int tx) {
         super(type, rx, tx);
     }
 

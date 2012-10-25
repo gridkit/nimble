@@ -18,10 +18,9 @@ import java.util.concurrent.TimeoutException;
 import net.java.btrace.api.wireio.AbstractCommand;
 import net.java.btrace.client.Client;
 
-import org.gridkit.nimble.btrace.ext.PollStateCmd;
+import org.gridkit.nimble.btrace.ext.ClearSamplesCmd;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmd;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
-import org.gridkit.nimble.btrace.ext.PollStateCmdResult;
 import org.gridkit.nimble.util.NamedThreadFactory;
 
 public class BTraceClientOps {    
@@ -71,10 +70,10 @@ public class BTraceClientOps {
         return result;
     }
 
-    public PollStateCmdResult pollState(Client client, final Collection<Class<?>> classes, long timeoutMs) throws InterruptedException, IOException, TimeoutException {
-        AbstractCommand.Initializer<PollStateCmd> initializer = new AbstractCommand.Initializer<PollStateCmd>() {
+    public boolean clearSamples(Client client, final Collection<Class<?>> classes, long timeoutMs) throws InterruptedException, IOException, TimeoutException {
+        AbstractCommand.Initializer<ClearSamplesCmd> initializer = new AbstractCommand.Initializer<ClearSamplesCmd>() {
             @Override
-            public void init(PollStateCmd cmd) {
+            public void init(ClearSamplesCmd cmd) {
                 Set<String> scriptClasses = new HashSet<String>();
                 
                 for (Class<?> clazz : classes) {
@@ -84,10 +83,10 @@ public class BTraceClientOps {
                 cmd.setScriptClasses(scriptClasses);
             }
         };
-        
-        PollStateCmdResult result = (PollStateCmdResult)client.getCommChannel()
-                                                              .sendCommand(PollStateCmd.class, initializer)
-                                                              .get(timeoutMs);
+                
+        Boolean result = (Boolean)client.getCommChannel()
+                                        .sendCommand(ClearSamplesCmd.class, initializer)
+                                        .get(timeoutMs);
 
         if (result == null) {
             throw new TimeoutException("Failed to wait " + timeoutMs + " (ms) to poll results");
@@ -107,15 +106,15 @@ public class BTraceClientOps {
     }
     
     private <T> T execute(Callable<T> callable, long timeoutMs) throws TimeoutException, ExecutionException, InterruptedException {
-        final Future<T> exitFuture = executor.submit(callable);
+        final Future<T> future = executor.submit(callable);
         
         try {
-            return exitFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+            return future.get(timeoutMs, TimeUnit.MILLISECONDS);
         } finally {
             interruptExecutor.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    exitFuture.cancel(true);
+                    future.cancel(true);
                 }
             }, INTERRUPT_DELAY_MS, TimeUnit.MILLISECONDS);
         }

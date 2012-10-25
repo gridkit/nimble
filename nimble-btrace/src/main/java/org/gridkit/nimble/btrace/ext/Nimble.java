@@ -24,7 +24,7 @@ public class Nimble {
         
         return result.values();
     }
-    
+        
     public static SampleStore newSampleStore(String name, int capacity) {
         String scriptClass = getScriptClass();
         
@@ -53,23 +53,45 @@ public class Nimble {
         store.add(sample);
     }
     
-    public static void sample(String key, SampleStore store, Number value, long timestamp) {
+    public static void duration(String key, SampleStore store, long durationNs, long timestampMs) {
+        PointSample sample = new PointSample();
+        
+        sample.setKey(key);
+        sample.setValue(durationNs);
+        sample.setTimestampMs(timestampMs);
+        sample.setDuration(true);
+        
+        store.add(sample);
+    }
+    
+    public static void rate(String key, SampleStore store, Number value, long timestampMs) {
         PointSample sample = new PointSample();
         
         sample.setKey(key);
         sample.setValue(value);
-        sample.setTimestamp(timestamp);
+        sample.setTimestampMs(timestampMs);
+        sample.setRate(true);
+        
+        store.add(sample);
+    }
+    
+    public static void sample(String key, SampleStore store, Number value, long timestampMs) {
+        PointSample sample = new PointSample();
+        
+        sample.setKey(key);
+        sample.setValue(value);
+        sample.setTimestampMs(timestampMs);
         
         store.add(sample);
     }
 
-    public static void sample(String key, SampleStore store, Number value, long startTimestamp, long finishTimestamp) {
+    public static void sample(String key, SampleStore store, Number value, long startTimestampMs, long finishTimestampMs) {
         SpanSample sample = new SpanSample();
         
         sample.setKey(key);
         sample.setValue(value);
-        sample.setStartTimestamp(startTimestamp);
-        sample.setFinishTimestamp(finishTimestamp);
+        sample.setStartTimestampMs(startTimestampMs);
+        sample.setFinishTimestampMs(finishTimestampMs);
         
         store.add(sample);
     }

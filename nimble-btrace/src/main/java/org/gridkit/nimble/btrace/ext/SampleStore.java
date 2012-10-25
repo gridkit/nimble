@@ -36,7 +36,7 @@ public class SampleStore {
         return storeName;
     }
     
-    public long getNextSeqNum() {
-        return buffer.getWriteCounter();
+    public void clear() {
+        buffer.clear();
     }
 }

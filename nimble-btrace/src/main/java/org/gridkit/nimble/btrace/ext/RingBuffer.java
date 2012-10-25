@@ -73,8 +73,8 @@ public class RingBuffer<T> {
         return result;
     }
     
-    public long getWriteCounter() {
-        return writeCounter.get();
+    public synchronized void clear() {
+        readCounter = writeCounter.get();
     }
     
     private int index(long id) {

@@ -1,2 +1,2 @@
 org.gridkit.nimble.btrace.ext.PollSamplesCmdImpl
-org.gridkit.nimble.btrace.ext.PollStateCmdImpl
+org.gridkit.nimble.btrace.ext.ClearSamplesCmdImpl

@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipException;
@@ -17,6 +18,8 @@ import java.util.zip.ZipException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
 
 public class BTraceTestRun {
     @BeforeClass
@@ -26,17 +29,37 @@ public class BTraceTestRun {
         write(jar, bytes);
         addJarToClasspath(jar);
     }
-    
+        
     @Test
-    public void BTraceClientFactoryTest() throws Exception {
-        JUnitCore.runClasses(Class.forName("org.gridkit.nimble.btrace.BTraceClientFactoryTest"));
+    public void BTraceClientFactoryTest() throws Exception {  
+        runTest(Class.forName("org.gridkit.nimble.btrace.BTraceClientFactoryTest"));
     }
     
     @Test
     public void BTraceDriverTest() throws Exception {
-        JUnitCore.runClasses(Class.forName("org.gridkit.nimble.btrace.BTraceDriverTest"));
+        runTest(Class.forName("org.gridkit.nimble.btrace.BTraceDriverTest"));
     }
     
+    private void runTest(Class<?> clazz) {
+        JUnitCore junitCore = new JUnitCore();
+                
+        final AtomicInteger failures = new AtomicInteger(0);
+        
+        junitCore.addListener(new RunListener() {
+            @Override
+            public void testFailure(Failure failure) throws Exception {
+                System.err.print("Failure" + failure);
+                failures.incrementAndGet();
+            }
+        });
+        
+        junitCore.run(clazz);
+        
+        if (failures.get() != 0) {
+            throw new RuntimeException();
+        }
+    }
+
     private static byte[] jarFiles(String... files) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         JarOutputStream jarOut = new JarOutputStream(bos);

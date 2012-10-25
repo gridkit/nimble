@@ -56,7 +56,7 @@ public class BTraceClientFactoryTest {
         Thread.sleep(2000); // release TCP ports
     }
 
-    private void simple_connect(Class<?> clazz) throws Exception {
+    private void simple_connect(Class<?> clazz) throws Exception {        
         BTraceClientFactory factory = new BTraceClientFactory();
         
         ViNode node = newNode("connect");
@@ -81,7 +81,7 @@ public class BTraceClientFactoryTest {
     }
 
     private static boolean ping(Client client) throws Exception {
-        return clientOps.pollState(client, Collections.<Class<?>>emptySet(), OP_TIMEOUT_MS).getData().isEmpty();
+        return clientOps.clearSamples(client, Collections.<Class<?>>emptySet(), OP_TIMEOUT_MS);
     }
     
     @Test

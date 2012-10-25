@@ -3,22 +3,22 @@ package org.gridkit.nimble.btrace.ext.model;
 public class SpanSample extends ScalarSample {
     private static final long serialVersionUID = 1321554416280077368L;
     
-    private long startTimestamp;
-    private long finishTimestamp;
+    private long startTimestampMs;
+    private long finishTimestampMs;
     
-    public long getStartTimestamp() {
-        return startTimestamp;
+    public long getStartTimestampMs() {
+        return startTimestampMs;
     }
     
-    public void setStartTimestamp(long startTimestamp) {
-        this.startTimestamp = startTimestamp;
+    public void setStartTimestampMs(long startTimestampMs) {
+        this.startTimestampMs = startTimestampMs;
     }
     
-    public long getFinishTimestamp() {
-        return finishTimestamp;
+    public long getFinishTimestampMs() {
+        return finishTimestampMs;
     }
     
-    public void setFinishTimestamp(long finishTimestamp) {
-        this.finishTimestamp = finishTimestamp;
+    public void setFinishTimestampMs(long finishTimestampMs) {
+        this.finishTimestampMs = finishTimestampMs;
     }
 }
