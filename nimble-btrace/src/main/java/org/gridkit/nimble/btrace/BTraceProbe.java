@@ -36,7 +36,6 @@ public class BTraceProbe implements Callable<Void> {
     private BTraceClientSource clientSource;
     
     private BTraceSamplerFactoryProvider factoryProvider;
-    private SamplerFactory missedSamplerFactory;
     
     private Map<String, SampleStoreProcessor> processors = new HashMap<String, SampleStoreProcessor>();
     
@@ -57,7 +56,7 @@ public class BTraceProbe implements Callable<Void> {
             
             return null;
         } catch (Exception e) {
-            log.error("Error while executing BTraceProbe for pid " + pid + " with settings " + settings, e);
+            log.error(F("Error while executing BTrace probe for pid %d with settings %s", pid, settings), e);
             throw e;
         }
     }
@@ -81,27 +80,31 @@ public class BTraceProbe implements Callable<Void> {
     }
 
     private class SampleStoreProcessor {        
-        private SamplerFactory samplerFactory;
+        private SamplerFactory userSamplerFactory;
         
         private Map<String, RateSampler> rateSamplers = new HashMap<String, RateSampler>();
         
-        private PointSampler missedSampler;
+        private RateSampler receivedSampler;
+        private RateSampler missedSampler;
         
         private long lastSeqNum = RingBuffer.START_ID - 1;
         
         public SampleStoreProcessor(String sampleStore) {
-            this.samplerFactory = new CachingSamplerFactory(
-                factoryProvider.getReceivedSampleFactory(pid, settings.getScriptClass(), sampleStore)
+            this.userSamplerFactory = new CachingSamplerFactory(
+                factoryProvider.getUserSampleFactory(pid, settings.getScriptClass(), sampleStore)
             );
             
-            this.missedSampler = getMissedSamplerFactory().getPointSampler(sampleStore);
+            SamplerFactory probeSamplerFactory = factoryProvider.getProbeSamplerFactory(pid, settings.getScriptClass(), sampleStore);
+
+            this.receivedSampler = new RateSampler(probeSamplerFactory.getSpanSampler(BTraceMeasure.SAMPLE_TYPE_RECEIVED));
+            this.missedSampler = new RateSampler(probeSamplerFactory.getSpanSampler(BTraceMeasure.SAMPLE_TYPE_MISSED));
         }
         
         public void process(SampleStoreContents contents) {
             for (ScalarSample sample : contents.getSamples()) {
                 submit(sample);
             }
-            submitMissed(contents);
+            submit(contents);
         }
         
         private void submit(ScalarSample rawSample) {       
@@ -114,14 +117,13 @@ public class BTraceProbe implements Callable<Void> {
             }
         }
 
-        private void submitMissed(SampleStoreContents contents) {
+        private void submit(SampleStoreContents contents) {
             int missed = calculateMissed(contents);
             
-            if (missed > 0) {
-                missedSampler.write(missed, System.nanoTime());
-            } else if (missed < 0) {
-                throw new IllegalStateException();
-            }
+            long timestampNs = System.nanoTime();
+            
+            missedSampler.write(missed, timestampNs);
+            receivedSampler.write(contents.getSamples().size(), timestampNs);
         }
         
         private int calculateMissed(SampleStoreContents contents) {
@@ -139,13 +141,13 @@ public class BTraceProbe implements Callable<Void> {
         }
         
         public void submitScalar(ScalarSample sample) {            
-            ScalarSampler sampler = samplerFactory.getScalarSampler(sample.getKey());
+            ScalarSampler sampler = userSamplerFactory.getScalarSampler(sample.getKey());
             
             sampler.write(sample.getValue().doubleValue());
         }
 
         public void submitSpan(SpanSample sample) {            
-            SpanSampler sampler = samplerFactory.getSpanSampler(sample.getKey());
+            SpanSampler sampler = userSamplerFactory.getSpanSampler(sample.getKey());
             
             long startTsNs = TimeUnit.MILLISECONDS.toNanos(sample.getStartTimestampMs());
             long finishTsNs = TimeUnit.MILLISECONDS.toNanos(sample.getFinishTimestampMs());
@@ -160,20 +162,20 @@ public class BTraceProbe implements Callable<Void> {
                 RateSampler sampler = getRateSampler(sample.getKey());
                 sampler.write(sample.getValue().doubleValue(), ts);
             } else {
-                PointSampler sampler = samplerFactory.getPointSampler(sample.getKey());
+                PointSampler sampler = userSamplerFactory.getPointSampler(sample.getKey());
                 
                 if (sample.isDuration()) {
                     double durationS = sample.getValue().doubleValue() / TimeUnit.SECONDS.toNanos(1);
                     sampler.write(durationS, ts);
                 } else {
-                    sampler.write(sample.getValue().doubleValue(), sample.getTimestampMs());
+                    sampler.write(sample.getValue().doubleValue(), ts);
                 }
             }
         }
         
         private RateSampler getRateSampler(String samplerKey) {         
             if (!rateSamplers.containsKey(samplerKey)) {
-                rateSamplers.put(samplerKey, new RateSampler(samplerFactory.getSpanSampler(samplerKey)));
+                rateSamplers.put(samplerKey, new RateSampler(userSamplerFactory.getSpanSampler(samplerKey)));
             }
             
             return rateSamplers.get(samplerKey);
@@ -203,15 +205,7 @@ public class BTraceProbe implements Callable<Void> {
     public void setFactoryProvider(BTraceSamplerFactoryProvider factoryProvider) {
         this.factoryProvider = factoryProvider;
     }
-    
-    private SamplerFactory getMissedSamplerFactory() {
-        if (missedSamplerFactory == null) {
-            missedSamplerFactory = factoryProvider.getMissedSamplerFactory(pid, settings.getScriptClass());
-        }
         
-        return missedSamplerFactory;
-    }
-    
     private SampleStoreProcessor getProcessor(String sampleStore) {
         if (!processors.containsKey(sampleStore)) {
             processors.put(sampleStore, new SampleStoreProcessor(sampleStore));

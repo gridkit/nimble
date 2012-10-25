@@ -9,22 +9,49 @@ import org.gridkit.nimble.metering.ScalarSampler;
 import org.gridkit.nimble.metering.SpanSampler;
 
 public class SchemeSamplerFactory implements SamplerFactory {
-    private final SampleSchema schema;
-    private final String samplerKeyName;
+    private final SampleSchema globalSchema;
+    private final String samplerKey;
     
-    public SchemeSamplerFactory(SampleSchema schema, String samplerKeyName) {
-        this.schema = schema.createDerivedScheme();
-        this.samplerKeyName = samplerKeyName;
+    public SchemeSamplerFactory(SampleSchema schema, String samplerKey) {
+        this.globalSchema = schema.createDerivedScheme();
+        this.samplerKey = samplerKey;
     }
 
     @Override
     public ScalarSampler getScalarSampler(String key) {
-        SampleSchema samplerSchema = schema.createDerivedScheme();
+        SampleSchema schema = globalSchema.createDerivedScheme();
         
-        samplerSchema.setStatic(samplerKeyName, key);
-        samplerSchema.declareDynamic(Measure.MEASURE, double.class);
+        schema.setStatic(samplerKey, key);
+        schema.declareDynamic(Measure.MEASURE, double.class);
         
-        final SampleFactory factory = samplerSchema.createFactory();
+        return newScalarSampler(key, schema);
+    }
+
+    @Override
+    public PointSampler getPointSampler(String key) {
+        SampleSchema schema = globalSchema.createDerivedScheme();
+        
+        schema.setStatic(samplerKey, key);
+        schema.declareDynamic(Measure.MEASURE, double.class);
+        schema.declareDynamic(Measure.TIMESTAMP, long.class);
+        
+        return newPointSampler(key, schema);
+    }
+
+    @Override
+    public SpanSampler getSpanSampler(String key) {
+        SampleSchema schema = globalSchema.createDerivedScheme();
+        
+        schema.setStatic(samplerKey, key);
+        schema.declareDynamic(Measure.MEASURE, double.class);
+        schema.declareDynamic(Measure.TIMESTAMP, long.class);
+        schema.declareDynamic(Measure.END_TIMESTAMP, long.class);
+        
+        return newSpanSampler(key, schema);
+    }
+
+    protected ScalarSampler newScalarSampler(String key, SampleSchema schema) {
+        final SampleFactory factory = schema.createFactory();
         
         return new ScalarSampler() {
             @Override
@@ -37,16 +64,9 @@ public class SchemeSamplerFactory implements SamplerFactory {
             }
         };
     }
-
-    @Override
-    public PointSampler getPointSampler(String key) {
-        SampleSchema samplerSchema = schema.createDerivedScheme();
-        
-        samplerSchema.setStatic(samplerKeyName, key);
-        samplerSchema.declareDynamic(Measure.MEASURE, double.class);
-        samplerSchema.declareDynamic(Measure.TIMESTAMP, long.class);
-        
-        final SampleFactory factory = samplerSchema.createFactory();
+    
+    protected PointSampler newPointSampler(String key, SampleSchema schema) {
+        final SampleFactory factory = schema.createFactory();
         
         return new PointSampler() {
             @Override
@@ -60,17 +80,9 @@ public class SchemeSamplerFactory implements SamplerFactory {
             }
         };
     }
-
-    @Override
-    public SpanSampler getSpanSampler(String key) {
-        SampleSchema samplerSchema = schema.createDerivedScheme();
-        
-        samplerSchema.setStatic(samplerKeyName, key);
-        samplerSchema.declareDynamic(Measure.MEASURE, double.class);
-        samplerSchema.declareDynamic(Measure.TIMESTAMP, long.class);
-        samplerSchema.declareDynamic(Measure.END_TIMESTAMP, long.class);
-        
-        final SampleFactory factory = samplerSchema.createFactory();
+    
+    protected SpanSampler newSpanSampler(String key, SampleSchema schema) {
+        final SampleFactory factory = schema.createFactory();
         
         return new SpanSampler() {
             @Override

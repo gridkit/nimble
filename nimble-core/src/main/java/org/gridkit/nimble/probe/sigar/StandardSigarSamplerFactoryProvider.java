@@ -19,10 +19,8 @@ public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryP
         
         schema.setStatic(SigarMeasure.PROBE_KEY, SigarMeasure.PROC_MEM_PROBE);
         schema.setStatic(SigarMeasure.PID_KEY, pid);
-        
-        postprocessSchema(schema);
-        
-        return new SchemeSamplerFactory(schema, SigarMeasure.MEASURE_KEY);
+                
+        return newProcSampleFactory(pid, schema);
     }
 
     @Override
@@ -32,9 +30,7 @@ public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryP
         schema.setStatic(SigarMeasure.PROBE_KEY, SigarMeasure.PROC_CPU_PROBE);
         schema.setStatic(SigarMeasure.PID_KEY, pid);
         
-        postprocessSchema(schema);
-        
-        return new SchemeSamplerFactory(schema, SigarMeasure.MEASURE_KEY);
+        return newProcSampleFactory(pid, schema);
     }
 
     @Override
@@ -44,9 +40,7 @@ public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryP
         schema.setStatic(SigarMeasure.PROBE_KEY, SigarMeasure.SYS_NET_PROBE);
         schema.setStatic(SigarMeasure.NET_INTERFACE_KEY, interfaceName);
         
-        postprocessSchema(schema);
-        
-        return new SchemeSamplerFactory(schema, SigarMeasure.MEASURE_KEY);
+        return newNetInterfaceSampleFactory(interfaceName, schema);
     }
 
     @Override
@@ -55,9 +49,7 @@ public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryP
         
         schema.setStatic(SigarMeasure.PROBE_KEY, SigarMeasure.SYS_CPU_PROBE);
         
-        postprocessSchema(schema);
-        
-        return new SchemeSamplerFactory(schema, SigarMeasure.MEASURE_KEY);
+        return newSysSampleFactory(schema);
     }
 
     @Override
@@ -65,14 +57,24 @@ public class StandardSigarSamplerFactoryProvider implements SigarSamplerFactoryP
         SampleSchema schema = globalSchema.createDerivedScheme();
         
         schema.setStatic(SigarMeasure.PROBE_KEY, SigarMeasure.SYS_MEM_PROBE);
-        
-        postprocessSchema(schema);
-        
+                
+        return newSysSampleFactory(schema);
+    }
+    
+    protected SamplerFactory newProcSampleFactory(long pid, SampleSchema schema) {
         return new SchemeSamplerFactory(schema, SigarMeasure.MEASURE_KEY);
     }
     
-    protected void postprocessSchema(SampleSchema schema) {
-        
+    protected SamplerFactory newNetInterfaceSampleFactory(String interfaceName, SampleSchema schema) {
+        return new SchemeSamplerFactory(schema, SigarMeasure.MEASURE_KEY);
+    }
+    
+    protected SamplerFactory newSysSampleFactory(SampleSchema schema) {
+        return new SchemeSamplerFactory(schema, SigarMeasure.MEASURE_KEY);
+    }
+    
+    protected SampleSchema getGlobalSchema() {
+        return globalSchema;
     }
     
     @Override

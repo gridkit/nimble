@@ -14,39 +14,43 @@ public class StandardBTraceSamplerFactoryProvider implements BTraceSamplerFactor
     private SampleSchema globalSchema;
 
     @Override
-    public SamplerFactory getReceivedSampleFactory(long pid, Class<?> scriptClass, String sampleStore) {
+    public SamplerFactory getUserSampleFactory(long pid, Class<?> scriptClass, String sampleStore) {
         SampleSchema schema = globalSchema.createDerivedScheme();
         
         schema.setStatic(BTraceMeasure.PID_KEY, pid);
-        schema.setStatic(BTraceMeasure.TYPE_KEY, BTraceMeasure.TYPE_RECEIVED);
         schema.setStatic(BTraceMeasure.SCRIPT_KEY, scriptClass.getName());
         schema.setStatic(BTraceMeasure.STORE_KEY, sampleStore);
-
-        postprocessSchema(schema);
+        schema.setStatic(BTraceMeasure.SAMPLE_TYPE_KEY, BTraceMeasure.SAMPLE_TYPE_USER);
         
-        return new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_KEY);
+        return newUserSampleFactory(pid, scriptClass, sampleStore, schema);
     }
 
     @Override
-    public SamplerFactory getMissedSamplerFactory(long pid, Class<?> scriptClass) {
+    public SamplerFactory getProbeSamplerFactory(long pid, Class<?> scriptClass, String sampleStore) {
         SampleSchema schema = globalSchema.createDerivedScheme();
         
         schema.setStatic(BTraceMeasure.PID_KEY, pid);
-        schema.setStatic(BTraceMeasure.TYPE_KEY, BTraceMeasure.TYPE_MISSED);
         schema.setStatic(BTraceMeasure.SCRIPT_KEY, scriptClass.getName());
-
-        postprocessSchema(schema);
-        
-        return new SchemeSamplerFactory(schema, BTraceMeasure.STORE_KEY);
+        schema.setStatic(BTraceMeasure.STORE_KEY, sampleStore);
+                
+        return newProbeSamplerFactory(pid, scriptClass, sampleStore, schema);
     }
-
+    
+    protected SamplerFactory newUserSampleFactory(long pid, Class<?> scriptClass, String sampleStore, SampleSchema schema) {
+        return new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_KEY);
+    }
+    
+    protected SamplerFactory newProbeSamplerFactory(long pid, Class<?> scriptClass, String sampleStore, SampleSchema schema) {
+        return new SchemeSamplerFactory(schema, BTraceMeasure.SAMPLE_TYPE_KEY);
+    }
+    
+    protected SampleSchema getGlobalSchema() {
+        return globalSchema;
+    }
+    
     @Override
     public BTraceSamplerFactoryProvider attach(MeteringDriver metering) {
         this.globalSchema = metering.getSchema();
         return this;
-    }
-    
-    protected void postprocessSchema(SampleSchema schema) {
-
     }
 }
