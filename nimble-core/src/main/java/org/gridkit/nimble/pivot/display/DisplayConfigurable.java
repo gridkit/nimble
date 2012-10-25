@@ -1,7 +1,9 @@
 package org.gridkit.nimble.pivot.display;
 
-interface WithUnits {
+interface DisplayConfigurable {
 
 	public void setUnits(UnitDeco units);
+	
+	public void setCaption(String caption);
 	
 }

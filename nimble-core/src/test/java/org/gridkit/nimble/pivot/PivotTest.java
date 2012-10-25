@@ -100,12 +100,16 @@ public class PivotTest {
 		
 		PivotPrinter2 p2 = new PivotPrinter2();
 		p2.dumpUnprinted();
-		p2.add(DisplayFactory.attribute("Name", Measure.NAME));
-		p2.add(DisplayFactory.distributionStats(Measure.MEASURE));
-		p2.add(DisplayFactory.genericStats(ATTR_A, CommonStats.FREQUENCY, CommonStats.DURATION));
-		p2.add(DisplayFactory.decorated("[A=0] %s", DisplayFactory.genericStats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT), "A=0"));
-		p2.add(DisplayFactory.decorated("[A=1] %s", DisplayFactory.genericStats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT), "A=1"));
 		
+		DisplayBuilder.with(p2)
+			.metricName()
+			.distributionStats().caption("%s (ms)").asMillis()
+			.frequency(ATTR_A)
+			.duration(ATTR_A)
+			.decorated("A=0").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("[A=0] %s")
+			.decorated("A=1").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("[A=1] %s")
+		;
+					
 		new PrettyPrinter().print(System.out, p2.print(reporter.getReader()));
 		
 		System.out.println("\n");

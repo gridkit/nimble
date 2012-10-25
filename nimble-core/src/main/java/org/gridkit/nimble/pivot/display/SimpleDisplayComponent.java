@@ -6,7 +6,7 @@ import java.util.Map;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.pivot.SampleExtractor;
 
-public class SimpleDisplayComponent implements DisplayComponent, WithUnits {
+public class SimpleDisplayComponent implements DisplayComponent, DisplayConfigurable {
 
 	private String caption;
 	private SampleExtractor extractor;
@@ -35,6 +35,11 @@ public class SimpleDisplayComponent implements DisplayComponent, WithUnits {
 			extract = formater.format(extract);
 		}
 		return Collections.singletonMap(caption, extract);
+	}
+
+	@Override
+	public void setCaption(String caption) {
+		this.caption = caption;
 	}
 
 	public void setUnits(UnitDeco units) {

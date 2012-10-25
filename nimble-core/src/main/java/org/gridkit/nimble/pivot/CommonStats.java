@@ -19,8 +19,8 @@ public class CommonStats {
 	public static final StatAppraisal DURATION = StatAppraisal.DURATION;
 	public static final StatAppraisal FREQUENCY = StatAppraisal.FREQUENCY;
 	
-	public static final StatAppraisal[] DISTRIBUTION_STATS = {COUNT, MEAN, STD_DEV, MIN, MAX, SUM}; 
-	public static final StatAppraisal[] FREQUENCY_STATS = {COUNT, FREQUENCY, SUM, DURATION};
+	public static final StatAppraisal[] DISTRIBUTION_STATS = {MEAN, STD_DEV, MIN, MAX}; 
+	public static final StatAppraisal[] FREQUENCY_STATS = {FREQUENCY, DURATION};
 	
 	public enum StatAppraisal {
 		
@@ -89,7 +89,7 @@ public class CommonStats {
 			@Override
 			public double transalte(UnitDeco deco) {
 				switch(deco.getType()) {
-				case NUMERATOR: return deco.getMultiplier();
+				case NUMERATOR: return deco.getMultiplier() * deco.getMultiplier();
 				case DENOMINATOR: return 1;
 				default: throw new Error();
 				}

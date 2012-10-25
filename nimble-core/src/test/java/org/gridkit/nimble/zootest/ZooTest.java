@@ -8,7 +8,6 @@ import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
-import org.gridkit.nimble.metering.DisrtibutedMetering;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
@@ -78,17 +77,23 @@ public class ZooTest {
 		
 		DisplayBuilder.with(printer)
 			.hostname()
-			.nodename()
-			.level("sigar-cpu-stats").constant("Source", "SIGAR")
-			.level("sigar-cpu-stats").attribute("Name", SigarMeasure.MEASURE_KEY)
-			.level("sigar-cpu-stats").attribute("PID", SigarMeasure.PID_KEY)
-			.level("sigar-cpu-stats").frequencyStats()
-			.level("jmx-cpu-stats").constant("Source", "JMX")
-			.level("jmx-cpu-stats").measureName("Name")
-			.level("jmx-cpu-stats").frequencyStats()
-			.level("run-stats.*").constant("Source", "Task")
-			.level("run-stats.*").measureName("Name")
-			.level("run-stats.*").distributionStats().asMillis();
+			.nodeName();
+		
+		DisplayBuilder.with(printer, "sigar-cpu-stats")
+			.constant("Source", "SIGAR")
+			.attribute("Name", SigarMeasure.MEASURE_KEY)
+			.attribute("PID", SigarMeasure.PID_KEY)
+			.frequency().caption("CPU");
+		
+		DisplayBuilder.with(printer, "jmx-cpu-stats")
+			.constant("Source", "JMX")
+			.metricName("Name")
+			.frequency().caption("CPU");
+		
+		DisplayBuilder.with(printer, "run-stats")
+			.level("stats").constant("Source", "Task")
+			.level("stats").metricName("Name")
+			.level("stats").distributionStats().asMillis();
 			
 		PrettyPrinter pp = new PrettyPrinter();		
 		pp.print(System.out, printer.print(reader));
