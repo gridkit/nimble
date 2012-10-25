@@ -30,9 +30,20 @@
 
         <dependency>
             <groupId>net.java.btrace</groupId>
+            <artifactId>btrace-boot</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.btrace</groupId>
             <artifactId>ext-default</artifactId>
         </dependency>
-        
+
+        <dependency>
+            <groupId>com.sun</groupId>
+            <artifactId>tools</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>

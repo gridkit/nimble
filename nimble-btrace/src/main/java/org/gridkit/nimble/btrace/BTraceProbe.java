@@ -9,6 +9,7 @@ import net.java.btrace.client.Client;
 
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.model.PointSample;
+import org.gridkit.nimble.btrace.ext.model.SampleStoreContents;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.nimble.btrace.ext.model.SpanSample;
 import org.gridkit.nimble.metering.PointSampler;
@@ -37,7 +38,7 @@ public class BTraceProbe implements Callable<Void> {
         try {            
             Client client = getClient();
     
-            PollSamplesCmdResult result = clientOps.poll(
+            PollSamplesCmdResult result = clientOps.pollSamples(
                 client, Collections.<Class<?>>singleton(settings.getScriptClass()), timeoutMs
             );
             
@@ -51,8 +52,8 @@ public class BTraceProbe implements Callable<Void> {
     }
     
     private void submit(PollSamplesCmdResult result) {
-        for (PollSamplesCmdResult.Element element : result.getElements()) {
-            for (ScalarSample sample : element.getSamples()) {
+        for (SampleStoreContents contents : result.getData()) {
+            for (ScalarSample sample : contents.getSamples()) {
                 submit(sample);
             }
         }

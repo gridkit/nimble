@@ -14,16 +14,27 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipException;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.JUnitCore;
 
 public class BTraceTestRun {
-    public static void main(String[] args) throws Exception {
+    @BeforeClass
+    public static void beforeClass() throws Exception {
         byte[] bytes = jarFiles("../nimble-btrace/target/classes", "../nimble-btrace/target/test-classes", "../nimble-btrace/src/main/resources");
         File jar = new File("target/nimble-btrace.jar");
         write(jar, bytes);
         addJarToClasspath(jar);
-        
-        JUnitCore.main("org.gridkit.nimble.btrace.BTraceDriverTest");
+    }
+    
+    @Test
+    public void BTraceClientFactoryTest() throws Exception {
+        JUnitCore.runClasses(Class.forName("org.gridkit.nimble.btrace.BTraceClientFactoryTest"));
+    }
+    
+    @Test
+    public void BTraceDriverTest() throws Exception {
+        JUnitCore.runClasses(Class.forName("org.gridkit.nimble.btrace.BTraceDriverTest"));
     }
     
     private static byte[] jarFiles(String... files) throws IOException {

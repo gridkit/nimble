@@ -2,6 +2,7 @@ package org.gridkit.nimble.btrace;
 
 import java.io.Serializable;
 import java.net.ServerSocket;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -69,20 +70,20 @@ public class BTraceClientFactoryTest {
             
             submit(client, clazz);
     
-            Assert.assertTrue(clientOps.ping(client, OP_TIMEOUT_MS));
+            Assert.assertTrue(ping(client));
             
-            Thread.sleep(1000); // wait for print
-            
-            //final String sampleStoreName = ThreadCountScript.THREAD_COUNT_STORE;
-            //Assert.assertTrue(result.containsKey(sampleStoreName));
-            //Assert.assertTrue(result.get(sampleStoreName).getSamples().size() > 0);
-                    
+            Thread.sleep(1000);
+                                
             exit(client);
         } finally {
             node.shutdown();
         }
     }
 
+    private static boolean ping(Client client) throws Exception {
+        return clientOps.pollState(client, Collections.<Class<?>>emptySet(), OP_TIMEOUT_MS).getData().isEmpty();
+    }
+    
     @Test
     public void connect() throws Exception {
         simple_connect(ThreadCountScript.class);
@@ -122,8 +123,8 @@ public class BTraceClientFactoryTest {
             submit(client1, ThreadCountScript.class);
             submit(client2, ThreadCountScript.class);
     
-            Assert.assertTrue(clientOps.ping(client1, OP_TIMEOUT_MS));
-            Assert.assertTrue(clientOps.ping(client2, OP_TIMEOUT_MS));
+            Assert.assertTrue(ping(client1));
+            Assert.assertTrue(ping(client2));
             
             exit(client1);
             exit(client2);

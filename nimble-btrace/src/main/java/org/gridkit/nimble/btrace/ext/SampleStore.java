@@ -6,11 +6,11 @@ import java.util.List;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 
 public class SampleStore {
-    private final String name;
+    private final String storeName;
     private final RingBuffer<ScalarSample> buffer;
     
-    public SampleStore(String name, int capacity) {
-        this.name = name;
+    public SampleStore(String storeName, int capacity) {
+        this.storeName = storeName;
         this.buffer = new RingBuffer<ScalarSample>(capacity);
     }
     
@@ -32,7 +32,11 @@ public class SampleStore {
         return result;
     }
 
-    public String getName() {
-        return name;
+    public String getStoreName() {
+        return storeName;
+    }
+    
+    public long getNextSeqNum() {
+        return buffer.getWriteCounter();
     }
 }

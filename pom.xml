@@ -127,13 +127,7 @@
                 <scope>system</scope>
                 <systemPath>${java.home}/../lib/tools.jar</systemPath>
             </dependency>
-            
-            <dependency>
-                <groupId>net.java.btrace</groupId>
-                <artifactId>core-api</artifactId>
-                <version>${btrace.version}</version>
-            </dependency>
-            
+                        
             <dependency>
                 <groupId>net.java.btrace</groupId>
                 <artifactId>client</artifactId>
@@ -149,6 +143,18 @@
             <dependency>
                 <groupId>net.java.btrace</groupId>
                 <artifactId>btrace-agent</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>btrace-boot</artifactId>
                 <version>${btrace.version}</version>
                 <exclusions>
                     <exclusion>
