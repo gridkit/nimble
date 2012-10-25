@@ -1,19 +1,26 @@
 package org.gridkit.nimble.print;
 
 import java.io.PrintStream;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import org.gridkit.nimble.util.Pair;
 
-// TODO add sorting priority to columns
 public abstract class TablePrinter {
     private DecimalFormat decFormat = new DecimalFormat("0.00");
+    private DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH-mm-ss"); 
+    {
+    	dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
     private Object nullValue = "";
     private boolean printHead = true;
     
@@ -85,7 +92,10 @@ public abstract class TablePrinter {
             return toString(nullValue);
         } else if (value instanceof Double || value instanceof Float) {
             return decFormat.format(value);
-        } else {
+        } else if (value instanceof Date) {
+        	return dateFormat.format(value);
+        }
+        else {
             return value.toString();
         }
     }

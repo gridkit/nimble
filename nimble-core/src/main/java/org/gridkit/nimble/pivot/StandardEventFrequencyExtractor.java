@@ -8,6 +8,8 @@ import org.gridkit.nimble.statistics.FrequencySummary;
 
 public class StandardEventFrequencyExtractor extends FrequencySummary.Values implements EventFrequencyExtractor, Serializable {
 
+	private static final long serialVersionUID = 20121025L;
+	
 	private final SampleExtractor weight;
 	
 	public StandardEventFrequencyExtractor(SampleExtractor weight) {
@@ -23,14 +25,20 @@ public class StandardEventFrequencyExtractor extends FrequencySummary.Values imp
 			w = 1;
 		}
 		else {
-			w = asDouble(weight.extract(reader));
+			Object val = weight.extract(reader);
+			w = val == null ? 1 : asDouble(val);
 		}
 		total = w;
-		first = asDouble(reader.get(Measure.TIMESTAMP));
-		last = first;
-		Object s = reader.get(Measure.END_TIMESTAMP);
-		if (s != null) {
-			last = asDouble(s);
+		try {
+			first = asDouble(reader.get(Measure.TIMESTAMP));
+			last = first;
+			Object s = reader.get(Measure.END_TIMESTAMP);
+			if (s != null) {
+				last = asDouble(s);
+			}
+		}
+		catch(NullPointerException e) {
+			throw new IllegalArgumentException("Cannot process sample " + reader.keySet() + " missing time bounds");
 		}
 		
 		return this;

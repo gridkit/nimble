@@ -8,6 +8,7 @@ import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
+import org.gridkit.nimble.metering.DisrtibutedMetering;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
@@ -16,9 +17,11 @@ import org.gridkit.nimble.metering.SampleWriter;
 import org.gridkit.nimble.metering.SpanSamplerTemplate;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
+import org.gridkit.nimble.pivot.Extractors;
 import org.gridkit.nimble.pivot.Filters;
 import org.gridkit.nimble.pivot.Pivot;
 import org.gridkit.nimble.pivot.PivotPrinter;
+import org.gridkit.nimble.pivot.PivotReporter;
 import org.gridkit.nimble.pivot.display.DisplayBuilder;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
@@ -63,7 +66,7 @@ public class ZooTest {
 		
 		scenario.play(cloud);
 		
-		print(metrics.getReporter().getReader());
+		print(metrics.getReporter());
 				
 		System.out.println();
 //		PivotDumper.dump(metrics.getReporter());
@@ -71,7 +74,7 @@ public class ZooTest {
 		System.out.println("Done");
 	}
 
-	public void print(SampleReader reader) {
+	public void print(PivotReporter repoter) {
 		PivotPrinter2 printer = new PivotPrinter2();
 		printer.dumpUnprinted();
 		
@@ -94,10 +97,37 @@ public class ZooTest {
 			.level("stats").constant("Source", "Task")
 			.level("stats").metricName("Name")
 			.level("stats").distributionStats().asMillis();
+
+		System.out.println("\n");
 			
 		PrettyPrinter pp = new PrettyPrinter();		
-		pp.print(System.out, printer.print(reader));
+		pp.print(System.out, printer.print(repoter.getReader()));
 		
+		PivotPrinter2 cpuOnly = new PivotPrinter2();
+		cpuOnly.filter("sigar-cpu-stats", "jmx-cpu-stats");
+		cpuOnly.sortBy(Extractors.field(DisrtibutedMetering.NODENAME));
+		cpuOnly.sortByColumn("Name");
+		
+		DisplayBuilder.with(cpuOnly)
+			.nodeName();
+	
+		DisplayBuilder.with(cpuOnly, "sigar-cpu-stats")
+			.constant("Source", "SIGAR")
+			.attribute("Name", SigarMeasure.MEASURE_KEY)
+			.attribute("PID", SigarMeasure.PID_KEY)
+			.frequency().caption("CPU");
+	
+		DisplayBuilder.with(cpuOnly, "jmx-cpu-stats")
+			.constant("Source", "JMX")
+			.metricName("Name")
+			.frequency().caption("CPU");
+		
+		System.out.println("\n");
+		
+		pp = new PrettyPrinter();		
+		pp.print(System.out,cpuOnly.print(repoter.getReader()));
+
+		System.out.println("\n");
 	}
 	
 	@Test

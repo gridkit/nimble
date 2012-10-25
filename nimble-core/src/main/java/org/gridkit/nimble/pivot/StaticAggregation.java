@@ -6,6 +6,8 @@ import org.gridkit.nimble.metering.SampleReader;
 
 public class StaticAggregation<V> implements Aggregation<V>, Serializable {
 
+	private static final long serialVersionUID = 20121025L;
+	
 	private final V value;
 	
 	public StaticAggregation(V value) {

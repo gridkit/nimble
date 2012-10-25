@@ -17,8 +17,8 @@ public class Extractors {
 		return new ConstExtractor(value);
 	}
 	
-    public static SampleExtractor durationMs() {
-        return new DurationExtractor(1000);
+    public static SampleExtractor duration() {
+        return new DurationExtractor();
     }
 	
 	public static class FieldExtractor implements SampleExtractor {
@@ -57,18 +57,15 @@ public class Extractors {
 
         private static final long serialVersionUID = 3939066356481747214L;
 
-        private final double scale;
-
-        public DurationExtractor(double scale) {
-            this.scale = scale;
+        public DurationExtractor() {
         }
 
         @Override
         public Object extract(SampleReader sample) {
-            double startTs = (Double)sample.get(Measure.TIMESTAMP);
-            double finishTs = (Double)sample.get(Measure.END_TIMESTAMP);
+            double startTs = ((Number)sample.get(Measure.TIMESTAMP)).doubleValue();
+            double finishTs = ((Number)sample.get(Measure.END_TIMESTAMP)).doubleValue();
                         
-            return (finishTs - startTs) * scale;
+            return (finishTs - startTs);
         }
     }
 }

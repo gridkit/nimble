@@ -42,6 +42,9 @@ public abstract class DisplayBuilder {
 			else if (scope != null) {
 				s += "." + scope;
 			}
+			else {
+				s += ".**";
+			}
 			
 			printer.add(s, dc);
 		}
@@ -245,12 +248,12 @@ public abstract class DisplayBuilder {
 			this.component = component;
 		}
 		
-		public DisplayBuilder as(UnitDeco deco) {
+		public ForLevelDisplayBuider as(UnitDeco deco) {
 			component.setUnits(deco);
 			return this;
 		}
 		
-		public DisplayBuilder asMillis() {
+		public ForLevelDisplayBuider asMillis() {
 			return as(Units.MILLIS);
 		}		
 	}

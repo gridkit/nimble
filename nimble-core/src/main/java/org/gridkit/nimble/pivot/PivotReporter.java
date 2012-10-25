@@ -9,9 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.gridkit.nimble.metering.SampleReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PivotReporter implements SampleAccumulator {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(PivotReporter.class);
+	
 	public static final LevelKey LEVEL_KEY = LevelKey.LEVEL_KEY;
 	private static enum LevelKey {
 		LEVEL_KEY;
@@ -148,14 +152,24 @@ public class PivotReporter implements SampleAccumulator {
 	private void processAggregations(LevelSummary summary, SingleSampleReader reader) {
 		summary.ensureAggregations();
 		for(Object key: summary.aggregations.keySet()) {
-			summary.aggregations.get(key).addSamples(reader);
+			try {
+				summary.aggregations.get(key).addSamples(reader);
+			}
+			catch(Exception e) {
+				LOGGER.warn("Error processing sample " + e.toString());
+			}
 		}
 		if (summary.info.captureStatics) {
 			for(Object key: reader.keySet()) {
 				if (!summary.aggregations.containsKey(key)) {
 					ConstantAggregation agg = new ConstantAggregation(Extractors.field(key));
-					agg.addSamples(reader);
-					summary.aggregations.put(key, agg);
+					try {
+						agg.addSamples(reader);
+						summary.aggregations.put(key, agg);
+					}
+					catch(Exception e) {
+						LOGGER.warn("Error processing sample " + e.toString());
+					}
 				}
 			}
 		}

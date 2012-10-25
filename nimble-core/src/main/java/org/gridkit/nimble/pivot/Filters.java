@@ -26,6 +26,13 @@ public class Filters {
 		}
 		return new AndFilter(filters);
 	}
+
+	public static SampleFilter or(SampleFilter... filters) {
+		if (filters.length == 0) {
+			return FalseFilter.FALSE;
+		}
+		return new OrFilter(filters);
+	}
 	
 	public static SampleFilter in(Object key, Collection<? extends Object> values) {
 	    return new InFilter(Extractors.field(key), values);
@@ -118,6 +125,27 @@ public class Filters {
 		}
 	}
 
+	public static class OrFilter implements SampleFilter, Serializable {
+		
+		private static final long serialVersionUID = 20121014L;
+		
+		private final SampleFilter[] filters;
+		
+		public OrFilter(SampleFilter[] filters) {
+			this.filters = filters;
+		}
+		
+		@Override
+		public boolean match(SampleReader sample) {
+			for(SampleFilter f: filters) {
+				if (f.match(sample)) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
 	public static class InFilter extends ExtractorFilter {
 	    
         private static final long serialVersionUID = 1112015125669341187L;
@@ -145,6 +173,18 @@ public class Filters {
 		@Override
 		public boolean match(SampleReader sample) {
 			return true;
+		}
+	}
+
+	public static enum FalseFilter implements SampleFilter, Serializable {
+		
+		FALSE
+		
+		;
+		
+		@Override
+		public boolean match(SampleReader sample) {
+			return false;
 		}
 	}
 }
