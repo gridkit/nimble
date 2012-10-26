@@ -3,12 +3,11 @@ package org.gridkit.nimble.probe.sigar;
 import static org.gridkit.nimble.util.StringOps.F;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.probe.RateSampler;
 import org.gridkit.nimble.probe.SamplerFactory;
-import org.gridkit.nimble.statistics.TimeUtils;
+import org.gridkit.nimble.util.Seconds;
 import org.hyperic.sigar.ProcTime;
 
 public class ProcCpuProbe extends SigarHolder implements Callable<Void> {            
@@ -28,13 +27,13 @@ public class ProcCpuProbe extends SigarHolder implements Callable<Void> {
     
     @Override
     public Void call() throws Exception {
-        long timestamp = System.nanoTime();
+        double timestampS = Seconds.currentTime();
 
         ProcTime procTime = getSigar().getProcTime(pid);
 
-        userSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(procTime.getUser())), timestamp);
-        systemSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(procTime.getSys())), timestamp);
-        totalSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(procTime.getTotal())), timestamp);
+        userSampler.write(Seconds.fromMillis(procTime.getUser()), timestampS);
+        systemSampler.write(Seconds.fromMillis(procTime.getSys()), timestampS);
+        totalSampler.write(Seconds.fromMillis(procTime.getTotal()), timestampS);
         
         return null;
     }

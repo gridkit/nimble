@@ -21,5 +21,4 @@ public class TimeUtils {
 	public static double toSeconds(double nanos) {
 		return nanos / S;
 	}
-
 }

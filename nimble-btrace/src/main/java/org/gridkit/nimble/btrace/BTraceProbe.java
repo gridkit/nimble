@@ -7,13 +7,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import net.java.btrace.client.Client;
 
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.RingBuffer;
+import org.gridkit.nimble.btrace.ext.model.DurationSample;
 import org.gridkit.nimble.btrace.ext.model.PointSample;
+import org.gridkit.nimble.btrace.ext.model.RateSample;
 import org.gridkit.nimble.btrace.ext.model.SampleStoreContents;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.nimble.btrace.ext.model.SpanSample;
@@ -23,6 +24,7 @@ import org.gridkit.nimble.metering.SpanSampler;
 import org.gridkit.nimble.probe.CachingSamplerFactory;
 import org.gridkit.nimble.probe.RateSampler;
 import org.gridkit.nimble.probe.SamplerFactory;
+import org.gridkit.nimble.util.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,10 +84,10 @@ public class BTraceProbe implements Callable<Void> {
     private class SampleStoreProcessor {        
         private SamplerFactory userSamplerFactory;
         
-        private Map<String, RateSampler> rateSamplers = new HashMap<String, RateSampler>();
+        private Map<String, PointSampler> rateSamplers = new HashMap<String, PointSampler>();
         
-        private RateSampler receivedSampler;
-        private RateSampler missedSampler;
+        private PointSampler receivedSampler;
+        private PointSampler missedSampler;
         
         private long lastSeqNum = RingBuffer.START_ID - 1;
         
@@ -108,10 +110,14 @@ public class BTraceProbe implements Callable<Void> {
         }
         
         private void submit(ScalarSample rawSample) {       
-            if (rawSample instanceof PointSample) {
-                submitPoint((PointSample)rawSample);
-            } else if (rawSample instanceof SpanSample) {
+            if (rawSample instanceof SpanSample) {
                 submitSpan((SpanSample)rawSample);
+            } else if (rawSample instanceof DurationSample) {
+                submitDuration((DurationSample)rawSample);
+            } else if (rawSample instanceof RateSample) {
+                submitRate((RateSample)rawSample);
+            } else if (rawSample instanceof PointSample) {
+                submitPoint((PointSample)rawSample);
             } else {
                 submitScalar(rawSample);
             }
@@ -120,10 +126,10 @@ public class BTraceProbe implements Callable<Void> {
         private void submit(SampleStoreContents contents) {
             int missed = calculateMissed(contents);
             
-            long timestampNs = System.nanoTime();
+            double timestampS = Seconds.currentTime();
             
-            missedSampler.write(missed, timestampNs);
-            receivedSampler.write(contents.getSamples().size(), timestampNs);
+            missedSampler.write(missed, timestampS);
+            receivedSampler.write(contents.getSamples().size(), timestampS);
         }
         
         private int calculateMissed(SampleStoreContents contents) {
@@ -149,31 +155,38 @@ public class BTraceProbe implements Callable<Void> {
         public void submitSpan(SpanSample sample) {            
             SpanSampler sampler = userSamplerFactory.getSpanSampler(sample.getKey());
             
-            long startTsNs = TimeUnit.MILLISECONDS.toNanos(sample.getStartTimestampMs());
-            long finishTsNs = TimeUnit.MILLISECONDS.toNanos(sample.getFinishTimestampMs());
+            double timestampS = Seconds.fromMillis(sample.getTimestampMs());
+            double durationS = Seconds.fromNanos(sample.getDurationNs());
             
-            sampler.write(sample.getValue().doubleValue(), startTsNs, finishTsNs);
+            sampler.write(sample.getValue().doubleValue(), timestampS, durationS);
+        }
+        
+        public void submitRate(RateSample sample) {
+            PointSampler sampler = getRateSampler(sample.getKey());
+            
+            double timestampS = Seconds.fromMillis(sample.getTimestampMs());
+            
+            sampler.write(sample.getValue().doubleValue(), timestampS);
+        }
+        
+        public void submitDuration(DurationSample sample) {
+            SpanSampler sampler = userSamplerFactory.getSpanSampler(sample.getKey());
+            
+            double timestampS = Seconds.fromMillis(sample.getTimestampMs());
+            double durationS = Seconds.fromNanos(sample.getValue().doubleValue());
+            
+            sampler.write(1.0 , timestampS - durationS, durationS);
         }
 
         public void submitPoint(PointSample sample) {
-            long ts = TimeUnit.MILLISECONDS.toNanos(sample.getTimestampMs());
+            PointSampler sampler = userSamplerFactory.getPointSampler(sample.getKey());
             
-            if (sample.isRate()) {
-                RateSampler sampler = getRateSampler(sample.getKey());
-                sampler.write(sample.getValue().doubleValue(), ts);
-            } else {
-                PointSampler sampler = userSamplerFactory.getPointSampler(sample.getKey());
-                
-                if (sample.isDuration()) {
-                    double durationS = sample.getValue().doubleValue() / TimeUnit.SECONDS.toNanos(1);
-                    sampler.write(durationS, ts);
-                } else {
-                    sampler.write(sample.getValue().doubleValue(), ts);
-                }
-            }
+            double timestampS = Seconds.fromMillis(sample.getTimestampMs());
+            
+            sampler.write(sample.getValue().doubleValue(), timestampS);
         }
         
-        private RateSampler getRateSampler(String samplerKey) {         
+        private PointSampler getRateSampler(String samplerKey) {         
             if (!rateSamplers.containsKey(samplerKey)) {
                 rateSamplers.put(samplerKey, new RateSampler(userSamplerFactory.getSpanSampler(samplerKey)));
             }

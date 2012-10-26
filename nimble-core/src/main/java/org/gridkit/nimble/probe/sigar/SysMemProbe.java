@@ -6,6 +6,7 @@ import java.util.concurrent.Callable;
 
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.probe.SamplerFactory;
+import org.gridkit.nimble.util.Seconds;
 import org.hyperic.sigar.Mem;
 
 public class SysMemProbe extends SigarHolder implements Callable<Void> {    
@@ -27,16 +28,16 @@ public class SysMemProbe extends SigarHolder implements Callable<Void> {
     
     @Override
     public Void call() throws Exception {
-        long timestamp = System.nanoTime();
+        double timestampS = Seconds.currentTime();
         
         Mem mem = getSigar().getMem();
         
-        ramSampler.write(mem.getRam(), timestamp);
-        usedSampler.write(mem.getUsed(), timestamp);
-        freeSampler.write(mem.getFree(), timestamp);
-        actualUsedSampler.write(mem.getActualUsed(), timestamp);
-        actualFreeSampler.write(mem.getActualFree(), timestamp);
-        totalSampler.write(mem.getTotal(), timestamp);
+        ramSampler.write(mem.getRam(), timestampS);
+        usedSampler.write(mem.getUsed(), timestampS);
+        freeSampler.write(mem.getFree(), timestampS);
+        actualUsedSampler.write(mem.getActualUsed(), timestampS);
+        actualFreeSampler.write(mem.getActualFree(), timestampS);
+        totalSampler.write(mem.getTotal(), timestampS);
         
         return null;
     }

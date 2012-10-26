@@ -2,18 +2,15 @@ package org.gridkit.nimble.metering;
 
 import java.io.Serializable;
 
-import org.gridkit.nimble.statistics.TimeUtils;
-
 public class SpanSamplerTemplate extends AbstractSamplerTemplate<SpanSampler> implements SpanSampler, Serializable {
 
 	private static final long serialVersionUID = 20121023L;
 
-	
 	@Override
-	public void write(double value, long nanoStart, long nanoFinish) {
+	public void write(double value, double timestampS, double durationS) {
 		factory.newSample()
-			.set(timestampKey, TimeUtils.normalize(nanoStart))
-			.set(endTimestampKey, TimeUtils.normalize(nanoFinish))
+			.set(timestampKey, timestampS)
+			.set(endTimestampKey, timestampS + durationS)
 			.set(measureKey, value)
 			.submit();
 	}

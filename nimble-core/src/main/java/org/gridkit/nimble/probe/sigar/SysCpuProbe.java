@@ -3,12 +3,11 @@ package org.gridkit.nimble.probe.sigar;
 import static org.gridkit.nimble.util.StringOps.F;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.probe.RateSampler;
 import org.gridkit.nimble.probe.SamplerFactory;
-import org.gridkit.nimble.statistics.TimeUtils;
+import org.gridkit.nimble.util.Seconds;
 import org.hyperic.sigar.Cpu;
 
 public class SysCpuProbe extends SigarHolder implements Callable<Void> {    
@@ -36,19 +35,19 @@ public class SysCpuProbe extends SigarHolder implements Callable<Void> {
     
     @Override
     public Void call() throws Exception {
-        long timestamp = System.nanoTime();
+        double timestampS = Seconds.currentTime();
         
         Cpu cpu = getSigar().getCpu();
         
-        userSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getUser())), timestamp);
-        systemSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getSys())), timestamp);
-        niceSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getNice())), timestamp);
-        idleSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getIdle())), timestamp);
-        waitSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getWait())), timestamp);
-        irqSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getIrq())), timestamp);
-        softirqSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getSoftIrq())), timestamp);
-        stolenSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getStolen())), timestamp);
-        totalSampler.write(TimeUtils.toSeconds(TimeUnit.MILLISECONDS.toNanos(cpu.getTotal())), timestamp);
+        userSampler.write(Seconds.fromMillis(cpu.getUser()), timestampS);
+        systemSampler.write(Seconds.fromMillis(cpu.getSys()), timestampS);
+        niceSampler.write(Seconds.fromMillis(cpu.getNice()), timestampS);
+        idleSampler.write(Seconds.fromMillis(cpu.getIdle()), timestampS);
+        waitSampler.write(Seconds.fromMillis(cpu.getWait()), timestampS);
+        irqSampler.write(Seconds.fromMillis(cpu.getIrq()), timestampS);
+        softirqSampler.write(Seconds.fromMillis(cpu.getSoftIrq()), timestampS);
+        stolenSampler.write(Seconds.fromMillis(cpu.getStolen()), timestampS);
+        totalSampler.write(Seconds.fromMillis(cpu.getTotal()), timestampS);
 
         return null;
     }

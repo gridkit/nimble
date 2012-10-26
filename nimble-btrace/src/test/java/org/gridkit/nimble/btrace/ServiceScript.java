@@ -5,6 +5,7 @@ import net.java.btrace.annotations.Duration;
 import net.java.btrace.annotations.Kind;
 import net.java.btrace.annotations.OnMethod;
 import net.java.btrace.annotations.Location;
+import net.java.btrace.ext.Time;
 
 import org.gridkit.nimble.btrace.ext.Nimble;
 import org.gridkit.nimble.btrace.ext.SampleStore;
@@ -15,6 +16,6 @@ public class ServiceScript {
     
     @OnMethod(clazz="org.gridkit.nimble.btrace.BTraceDriverTest$Service", method="serve", location=@Location(value=Kind.RETURN))
     public static void serve(@Duration long dur) {
-        Nimble.sample("serveCall", serveStore, dur);
+        Nimble.duration("serveCall", serveStore, dur, Time.millis());
     }
 }

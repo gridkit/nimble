@@ -7,6 +7,7 @@ import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.metering.SampleWriter;
 import org.gridkit.nimble.metering.ScalarSampler;
 import org.gridkit.nimble.metering.SpanSampler;
+import org.gridkit.nimble.util.Seconds;
 
 public class SchemeSamplerFactory implements SamplerFactory {
     private final SampleSchema globalSchema;
@@ -70,11 +71,11 @@ public class SchemeSamplerFactory implements SamplerFactory {
         
         return new PointSampler() {
             @Override
-            public void write(double value, long nanotimestamp) {
+            public void write(double value, double timestampS) {
                 SampleWriter sample = factory.newSample();
                 
                 sample.set(Measure.MEASURE, value);
-                sample.setTimestamp(nanotimestamp);
+                sample.setTimestamp((long)Seconds.toNanos(timestampS));
                 
                 sample.submit();
             }
@@ -86,11 +87,14 @@ public class SchemeSamplerFactory implements SamplerFactory {
         
         return new SpanSampler() {
             @Override
-            public void write(double value, long nanoStart, long nanoFinish) {
+            public void write(double value, double timestampS, double durationS) {
                 SampleWriter sample = factory.newSample();
                 
+                long timestampNs = (long)Seconds.toNanos(timestampS);
+                long durationNs = (long)Seconds.toNanos(durationS);
+                
                 sample.set(Measure.MEASURE, value);
-                sample.setTimeBounds(nanoStart, nanoFinish);
+                sample.setTimeBounds(timestampNs, timestampNs + durationNs);
                 
                 sample.submit();
             }

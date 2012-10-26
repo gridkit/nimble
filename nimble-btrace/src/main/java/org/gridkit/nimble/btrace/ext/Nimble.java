@@ -8,7 +8,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import net.java.btrace.api.extensions.BTraceExtension;
 
+import org.gridkit.nimble.btrace.ext.model.DurationSample;
 import org.gridkit.nimble.btrace.ext.model.PointSample;
+import org.gridkit.nimble.btrace.ext.model.RateSample;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.nimble.btrace.ext.model.SpanSample;
 
@@ -44,7 +46,7 @@ public class Nimble {
         return clazz.substring(0, index);
     }
 
-    public static void sample(String key, SampleStore store, Number value) {
+    public static void scalar(String key, SampleStore store, Number value) {
         ScalarSample sample = new ScalarSample();
         
         sample.setKey(key);
@@ -54,28 +56,26 @@ public class Nimble {
     }
     
     public static void duration(String key, SampleStore store, long durationNs, long timestampMs) {
-        PointSample sample = new PointSample();
+        DurationSample sample = new DurationSample();
         
         sample.setKey(key);
         sample.setValue(durationNs);
         sample.setTimestampMs(timestampMs);
-        sample.setDuration(true);
         
         store.add(sample);
     }
     
     public static void rate(String key, SampleStore store, Number value, long timestampMs) {
-        PointSample sample = new PointSample();
+        RateSample sample = new RateSample();
         
         sample.setKey(key);
         sample.setValue(value);
         sample.setTimestampMs(timestampMs);
-        sample.setRate(true);
         
         store.add(sample);
     }
     
-    public static void sample(String key, SampleStore store, Number value, long timestampMs) {
+    public static void point(String key, SampleStore store, Number value, long timestampMs) {
         PointSample sample = new PointSample();
         
         sample.setKey(key);
@@ -85,13 +85,13 @@ public class Nimble {
         store.add(sample);
     }
 
-    public static void sample(String key, SampleStore store, Number value, long startTimestampMs, long finishTimestampMs) {
+    public static void span(String key, SampleStore store, Number value, long timestampMs, long durationNs) {
         SpanSample sample = new SpanSample();
         
         sample.setKey(key);
         sample.setValue(value);
-        sample.setStartTimestampMs(startTimestampMs);
-        sample.setFinishTimestampMs(finishTimestampMs);
+        sample.setTimestampMs(timestampMs);
+        sample.setDurationNs(durationNs);
         
         store.add(sample);
     }

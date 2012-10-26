@@ -7,7 +7,7 @@ public class RateSampler implements PointSampler {
     private final SpanSampler delegate;
 
     private double prevValue;
-    private long prevTimestamp;
+    private double prevTimestampS;
     
     private boolean firstStored = false;
 
@@ -16,14 +16,14 @@ public class RateSampler implements PointSampler {
     }
 
     @Override
-    public void write(double value, long nanotimestamp) {        
+    public void write(double value, double timestampS) {        
         if (firstStored) {
-            delegate.write(value - prevValue, prevTimestamp, nanotimestamp);
+            delegate.write(value - prevValue, prevTimestampS, timestampS - prevTimestampS);
         } else {
             firstStored = true;
         }
         
         prevValue = value;
-        prevTimestamp = nanotimestamp;
+        prevTimestampS = timestampS;
     }
 }

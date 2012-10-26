@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.probe.RateSampler;
 import org.gridkit.nimble.probe.SamplerFactory;
+import org.gridkit.nimble.util.Seconds;
 import org.hyperic.sigar.NetInterfaceStat;
 
 public class NetInterfaceProbe extends SigarHolder implements Callable<Void> {     
@@ -38,19 +39,19 @@ public class NetInterfaceProbe extends SigarHolder implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        long timestamp = System.nanoTime();
+        double timestampS = Seconds.currentTime();
         
         NetInterfaceStat stats = getSigar().getNetInterfaceStat(interfaceName);
         
-        rxBytes.write(stats.getRxBytes(), timestamp);
-        rxPackets.write(stats.getRxPackets(), timestamp);
-        rxErrors.write(stats.getRxErrors(), timestamp);
-        rxDropped.write(stats.getRxDropped(), timestamp);
+        rxBytes.write(stats.getRxBytes(), timestampS);
+        rxPackets.write(stats.getRxPackets(), timestampS);
+        rxErrors.write(stats.getRxErrors(), timestampS);
+        rxDropped.write(stats.getRxDropped(), timestampS);
         
-        txBytes.write(stats.getTxBytes(), timestamp);
-        txPackets.write(stats.getTxPackets(), timestamp);
-        txErrors.write(stats.getTxErrors(), timestamp);
-        txDropped.write(stats.getTxDropped(), timestamp);
+        txBytes.write(stats.getTxBytes(), timestampS);
+        txPackets.write(stats.getTxPackets(), timestampS);
+        txErrors.write(stats.getTxErrors(), timestampS);
+        txDropped.write(stats.getTxDropped(), timestampS);
         
         return null;
     }

@@ -15,7 +15,7 @@ public class ThreadCountScript {
     
     @OnTimer(50)
     public static void reportThreadCount() {
-        Nimble.sample("threadCount", threadCount, Threads.threadCount(), Time.millis());
+        Nimble.point("threadCount", threadCount, Threads.threadCount(), Time.millis());
     }
     
     @OnTimer(1000)
