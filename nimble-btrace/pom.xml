@@ -20,6 +20,11 @@
     
         <dependency>
             <groupId>net.java.btrace</groupId>
+            <artifactId>core-api</artifactId>
+        </dependency>
+    
+        <dependency>
+            <groupId>net.java.btrace</groupId>
             <artifactId>client</artifactId>
         </dependency>
 

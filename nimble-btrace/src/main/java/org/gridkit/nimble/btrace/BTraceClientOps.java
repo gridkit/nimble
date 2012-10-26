@@ -45,7 +45,7 @@ public class BTraceClientOps {
 
     }
     
-    public PollSamplesCmdResult pollSamples(Client client, final Collection<Class<?>> classes, long timeoutMs) throws InterruptedException, IOException, TimeoutException {
+    public PollSamplesCmdResult pollSamples(Client client, final Collection<Class<?>> classes, long timeoutMs) throws InterruptedException, IOException {
         AbstractCommand.Initializer<PollSamplesCmd> initializer = new AbstractCommand.Initializer<PollSamplesCmd>() {
             @Override
             public void init(PollSamplesCmd cmd) {
@@ -62,15 +62,11 @@ public class BTraceClientOps {
         PollSamplesCmdResult result = (PollSamplesCmdResult)client.getCommChannel()
                                                                   .sendCommand(PollSamplesCmd.class, initializer)
                                                                   .get(timeoutMs);
-
-        if (result == null) {
-            throw new TimeoutException("Failed to wait " + timeoutMs + " (ms) to poll results");
-        }
         
         return result;
     }
 
-    public boolean clearSamples(Client client, final Collection<Class<?>> classes, long timeoutMs) throws InterruptedException, IOException, TimeoutException {
+    public boolean clearSamples(Client client, final Collection<Class<?>> classes, long timeoutMs) throws InterruptedException, IOException {
         AbstractCommand.Initializer<ClearSamplesCmd> initializer = new AbstractCommand.Initializer<ClearSamplesCmd>() {
             @Override
             public void init(ClearSamplesCmd cmd) {
@@ -87,10 +83,6 @@ public class BTraceClientOps {
         Boolean result = (Boolean)client.getCommChannel()
                                         .sendCommand(ClearSamplesCmd.class, initializer)
                                         .get(timeoutMs);
-
-        if (result == null) {
-            throw new TimeoutException("Failed to wait " + timeoutMs + " (ms) to poll results");
-        }
         
         return result;
     }
