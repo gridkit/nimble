@@ -7,7 +7,7 @@ import java.util.Map;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.pivot.CommonStats;
 import org.gridkit.nimble.pivot.SampleExtractor;
-import org.gridkit.nimble.statistics.Summary;
+import org.gridkit.nimble.statistics.SummaryAggregation;
 
 public class StatsDisplayComponent implements DisplayComponent, DisplayConfigurable {
 
@@ -30,10 +30,10 @@ public class StatsDisplayComponent implements DisplayComponent, DisplayConfigura
 	@Override
 	public Map<String, Object> display(SampleReader reader) {
 		Object x = extractor.extract(reader);
-		if (x instanceof Summary) {
+		if (x instanceof SummaryAggregation) {
 			Map<String, Object> result = new LinkedHashMap<String, Object>();
 			
-			Summary ss = (Summary) x;
+			SummaryAggregation ss = (SummaryAggregation) x;
 			for(CommonStats.StatAppraisal m: appraisals) {
 				Object extract = m.extract(ss);
 				if (extract != null && deco != null) {

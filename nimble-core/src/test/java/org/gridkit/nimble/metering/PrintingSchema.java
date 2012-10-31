@@ -75,9 +75,16 @@ public class PrintingSchema implements SampleSchema {
         }
         
         @Override
+		public SampleWriter setTimeAndDuration(long startNs, long durationNs) {
+        	attrs.put(Measure.TIMESTAMP, TimeUtils.normalize(startNs));
+        	attrs.put(Measure.DURATION, TimeUtils.toSeconds(durationNs));
+			return null;
+		}
+
+		@Override
 		public SampleWriter setTimeBounds(long start, long finish) {
         	attrs.put(Measure.TIMESTAMP, TimeUtils.normalize(start));
-        	attrs.put(Measure.END_TIMESTAMP, TimeUtils.normalize(finish));
+        	attrs.put(Measure.DURATION, TimeUtils.toSeconds(finish - start));
 			return this;
 		}
 

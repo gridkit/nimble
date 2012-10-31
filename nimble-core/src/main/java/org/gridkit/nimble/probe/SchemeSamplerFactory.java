@@ -45,8 +45,8 @@ public class SchemeSamplerFactory implements SamplerFactory {
         
         schema.setStatic(samplerKey, key);
         schema.declareDynamic(Measure.MEASURE, double.class);
-        schema.declareDynamic(Measure.TIMESTAMP, long.class);
-        schema.declareDynamic(Measure.END_TIMESTAMP, long.class);
+        schema.declareDynamic(Measure.TIMESTAMP, double.class);
+        schema.declareDynamic(Measure.DURATION, double.class);
         
         return newSpanSampler(key, schema);
     }

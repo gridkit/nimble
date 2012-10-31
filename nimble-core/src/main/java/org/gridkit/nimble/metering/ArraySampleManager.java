@@ -239,9 +239,16 @@ public class ArraySampleManager implements SampleReader {
 		}
 
 		@Override
-		public SampleWriter setTimeBounds(long start, long finish) {
-			internalSet(Measure.TIMESTAMP, TimeUtils.normalize(start));
-			internalSet(Measure.END_TIMESTAMP, TimeUtils.normalize(finish));
+		public SampleWriter setTimeAndDuration(long startNs, long durationNs) {
+			internalSet(Measure.TIMESTAMP, TimeUtils.normalize(startNs));
+			internalSet(Measure.DURATION, TimeUtils.toSeconds(durationNs));
+			return this;
+		}
+		
+		@Override
+		public SampleWriter setTimeBounds(long startNs, long finishNs) {
+			internalSet(Measure.TIMESTAMP, TimeUtils.normalize(startNs));
+			internalSet(Measure.DURATION, TimeUtils.toSeconds(finishNs - startNs));
 			return this;
 		}
 

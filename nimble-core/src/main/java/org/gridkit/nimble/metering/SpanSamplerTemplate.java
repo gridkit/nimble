@@ -10,7 +10,7 @@ public class SpanSamplerTemplate extends AbstractSamplerTemplate<SpanSampler> im
 	public void write(double value, double timestampS, double durationS) {
 		factory.newSample()
 			.set(timestampKey, timestampS)
-			.set(endTimestampKey, timestampS + durationS)
+			.set(durationKey, durationS)
 			.set(measureKey, value)
 			.submit();
 	}
@@ -36,12 +36,12 @@ public class SpanSamplerTemplate extends AbstractSamplerTemplate<SpanSampler> im
 	}
 
 	@Override
-	public Object getEndTimestampKey() {
-		return super.getEndTimestampKey();
+	public Object getDurationKey() {
+		return super.getDurationKey();
 	}
 
 	@Override
-	public void setEndTimestampKey(Object endTimestampKey) {
-		super.setEndTimestampKey(endTimestampKey);
+	public void setDurationKey(Object durationKey) {
+		super.setDurationKey(durationKey);
 	}
 }

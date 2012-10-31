@@ -30,7 +30,7 @@ public class PivotTest {
 					.group(Measure.NAME)
 						.level("")
 							.calcDistribution(Measure.MEASURE)
-							.calcFrequency(ATTR_A, 1)
+							.calcFrequency(Measure.MEASURE)
 							.pivot();
 		
 		pivotLevel
@@ -94,9 +94,10 @@ public class PivotTest {
 		
 		DisplayBuilder.with(p2)
 			.metricName()
+			.count()
 			.distributionStats().caption("%s (ms)").asMillis()
-			.frequency(ATTR_A)
-			.duration(ATTR_A)
+			.frequency()
+			.duration()
 			.decorated("A=0").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("[A=0] %s")
 			.decorated("A=1").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("[A=1] %s")
 		;

@@ -8,7 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.statistics.Summary;
+import org.gridkit.nimble.statistics.SummaryAggregation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +88,7 @@ public class PivotReporter implements SampleAccumulator {
 	public Map<Object, Object> getRowData(LevelPath path) {
 		LevelSummary ls = data.get(path);
 		if (ls != null && ls.aggregations != null) {
-			return ls.getData();
+			return ls.getUnrefinedData();
 		}
 		else {
 			return null;
@@ -198,7 +201,7 @@ public class PivotReporter implements SampleAccumulator {
 		private boolean captureStatics;
 		private boolean pivoted;
 		private List<LevelInfo> levels;
-		private Map<Object, Pivot.Aggregator> aggregators;
+		private Map<Object, Pivot.AggregationFactory> aggregators;
 	}
 	
 	protected static class LevelSummary {
@@ -249,7 +252,7 @@ public class PivotReporter implements SampleAccumulator {
 			}
 		}
 
-		Map<Object, Object> getData() {
+		Map<Object, Object> getUnrefinedData() {
 			if (isGroupping()) {
 				return Collections.emptyMap();
 			}
@@ -262,12 +265,39 @@ public class PivotReporter implements SampleAccumulator {
 			}
 		}
 
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		Map<Object, Object> getRefinedData() {
+			if (isGroupping()) {
+				return Collections.emptyMap();
+			}
+			else {
+				Map<Object, Object> data = new LinkedHashMap<Object, Object>();
+				for(Object key: aggregations.keySet()) {
+					data.put(key, aggregations.get(key).getResult());
+					if (key instanceof AggregationKey) {
+						Aggregation<?> ag = (Aggregation<?>) aggregations.get(key);
+						Object m = ((AggregationKey) key).getMeasureKey();
+						Class<? extends Summary> t = ((AggregationKey) key).getSummaryType();
+						
+						SummaryAggregation sa = (SummaryAggregation) data.get(Measure.summary(m));
+						if (sa == null) {
+							sa = new SummaryAggregation();
+							data.put(Measure.summary(m), sa);
+						}
+						
+						sa.addAggregation(t, (Aggregation)ag);
+					}
+				}
+				return data;
+			}
+		}
+
 		Map<Object, Object> getDataWithPivot() {
 			if (isGroupping()) {
 				return Collections.emptyMap();
 			}
 			else {
-				Map<Object, Object> data = getData();
+				Map<Object, Object> data = getRefinedData();
 				if (sublevels != null) {
 					for(LevelSummary sub: sublevels.values()) {
 						if (sub.info.pivoted) {
@@ -285,10 +315,27 @@ public class PivotReporter implements SampleAccumulator {
 			return levelId == null || String.valueOf(levelId).length() == 0;
 		}
 		
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		private void dumpData(Map<Object, Object> data, List<Object> deco) {
 			if (aggregations != null) {
 				for(Object key: aggregations.keySet()) {
 					data.put(new Decorated(deco, key), aggregations.get(key).getResult());
+					
+					if (key instanceof AggregationKey) {
+						Aggregation<?> ag = (Aggregation<?>) aggregations.get(key);
+						Object m = ((AggregationKey) key).getMeasureKey();
+						Class<? extends Summary> t = ((AggregationKey) key).getSummaryType();
+						
+						Decorated summaryKey = new Decorated(deco, Measure.summary(m));
+						SummaryAggregation sa = (SummaryAggregation) data.get(summaryKey);
+						if (sa == null) {
+							sa = new SummaryAggregation();
+							data.put(summaryKey, sa);
+						}
+						
+						sa.addAggregation(t, (Aggregation)ag);
+					}
+
 				}
 			}
 			if (sublevels != null) {

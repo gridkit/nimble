@@ -6,9 +6,11 @@ public interface SampleWriter {
 	public SampleWriter setMeasure(double measure);
 
 	/** Short cut for {code}set(Measure.TIMESTAMP, timestamp){code} */
-	public SampleWriter setTimestamp(long timestamp);
+	public SampleWriter setTimestamp(long timestampNs);
 	
-	public SampleWriter setTimeBounds(long start, long finish);
+	public SampleWriter setTimeAndDuration(long startNs, long durationNs);
+
+	public SampleWriter setTimeBounds(long startNs, long finishNs);
 	
 	public SampleWriter set(Object key, int value);
 

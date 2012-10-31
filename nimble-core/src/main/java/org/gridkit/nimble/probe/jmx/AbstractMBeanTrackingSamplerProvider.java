@@ -54,7 +54,7 @@ public abstract class AbstractMBeanTrackingSamplerProvider implements MeteringAw
 		cs = cs.createDerivedScheme();
 		
 		cs.declareDynamic(Measure.TIMESTAMP, double.class);		
-		cs.declareDynamic(Measure.END_TIMESTAMP, double.class);
+		cs.declareDynamic(Measure.DURATION, double.class);
 		cs.freeze();
 		
 		return new MBeanSampler(cs, connection, getMBeanPatternForConnection(connection));

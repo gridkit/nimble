@@ -3,9 +3,9 @@ package org.gridkit.nimble.pivot;
 import org.gridkit.nimble.pivot.display.UnitDeco;
 import org.gridkit.nimble.statistics.DistributionSummary;
 import org.gridkit.nimble.statistics.FrequencySummary;
-import org.gridkit.nimble.statistics.Summary;
 import org.gridkit.nimble.statistics.Summary.CountSummary;
 import org.gridkit.nimble.statistics.Summary.SumSummary;
+import org.gridkit.nimble.statistics.SummaryAggregation;
 
 public class CommonStats {
 
@@ -26,8 +26,9 @@ public class CommonStats {
 		
 		COUNT() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof CountSummary ? ((CountSummary)summary).getN() : null;
+			public Object extract(SummaryAggregation summary) {
+				CountSummary cs = summary.getSummary(CountSummary.class);
+				return cs == null ? null : cs.getN();
 			}
 			
 			@Override
@@ -42,8 +43,9 @@ public class CommonStats {
 		},
 		MEAN() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getMean() : null;
+			public Object extract(SummaryAggregation summary) {
+				DistributionSummary ds = summary.getSummary(DistributionSummary.class);
+				return ds == null ? null : ds.getMean();
 			}
 
 			@Override
@@ -62,8 +64,9 @@ public class CommonStats {
 		},
 		STD_DEV() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getStandardDeviation() : null;
+			public Object extract(SummaryAggregation summary) {
+				DistributionSummary ds = summary.getSummary(DistributionSummary.class);
+				return ds == null ? null : ds.getStandardDeviation();
 			}
 			
 			@Override
@@ -82,8 +85,9 @@ public class CommonStats {
 		},
 		VARIANCE() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getVariance() : null;
+			public Object extract(SummaryAggregation summary) {
+				DistributionSummary ds = summary.getSummary(DistributionSummary.class);
+				return ds == null ? null : ds.getVariance();
 			}
 			
 			@Override
@@ -102,8 +106,9 @@ public class CommonStats {
 		},
 		MIN() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getMin() : null;
+			public Object extract(SummaryAggregation summary) {
+				DistributionSummary ds = summary.getSummary(DistributionSummary.class);
+				return ds == null ? null : ds.getMin();
 			}
 			
 			@Override
@@ -122,8 +127,9 @@ public class CommonStats {
 		},
 		MAX() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof DistributionSummary ? ((DistributionSummary)summary).getMax() : null;
+			public Object extract(SummaryAggregation summary) {
+				DistributionSummary ds = summary.getSummary(DistributionSummary.class);
+				return ds == null ? null : ds.getMax();
 			}
 			
 			@Override
@@ -142,8 +148,9 @@ public class CommonStats {
 		},
 		SUM() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof SumSummary ? ((SumSummary)summary).getSum() : null;
+			public Object extract(SummaryAggregation summary) {
+				SumSummary ss = summary.getSummary(SumSummary.class);
+				return ss == null ? null : ss.getSum();
 			}
 			
 			@Override
@@ -162,8 +169,9 @@ public class CommonStats {
 		},
 		DURATION() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof FrequencySummary ? ((FrequencySummary)summary).getDuration() : null;
+			public Object extract(SummaryAggregation summary) {
+				FrequencySummary fs = summary.getSummary(FrequencySummary.class);
+				return fs == null ? null : fs.getDuration();
 			}
 			
 			@Override
@@ -182,8 +190,9 @@ public class CommonStats {
 		},
 		FREQUENCY() {
 			@Override
-			public Object extract(Summary summary) {
-				return summary instanceof FrequencySummary ? ((FrequencySummary)summary).getWeigthedFrequency() : null;
+			public Object extract(SummaryAggregation summary) {
+				FrequencySummary fs = summary.getSummary(FrequencySummary.class);
+				return fs == null ? null : fs.getWeigthedFrequency();
 			}
 
 			@Override
@@ -203,7 +212,7 @@ public class CommonStats {
 		
 		;
 		
-		public abstract Object extract(Summary summary);
+		public abstract Object extract(SummaryAggregation summary);
 		
 		public abstract double transalte(UnitDeco deco);
 	}

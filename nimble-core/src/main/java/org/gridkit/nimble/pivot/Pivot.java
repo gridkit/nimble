@@ -41,7 +41,7 @@ public class Pivot {
 		private List<SampleFilter> levelFilters = new ArrayList<SampleFilter>();
 		private SampleExtractor groupBy;
 		private List<Level> sublevels = new ArrayList<Level>();
-		private Map<Object, Aggregator> aggregators = new LinkedHashMap<Object, Pivot.Aggregator>();
+		private Map<Object, AggregationFactory> aggregators = new LinkedHashMap<Object, Pivot.AggregationFactory>();
 		
 		{
 			levels.add(this);
@@ -80,30 +80,41 @@ public class Pivot {
 		}
 
 		public Level calcDistribution(Object key) {
-			Aggregator agg = PivotHelper.createGaussianAggregator(Extractors.field(key));
-			addAggregator(key, agg);
+			AggregationFactory agg = PivotHelper.createGaussianAggregator(Extractors.field(key));
+			addAggregator(AggregationKey.distribution(key), agg);
 			return this;
 		}
 		
         public Level calcDistribution(Object key, SampleExtractor extractor) {
-            Aggregator agg = PivotHelper.createGaussianAggregator(extractor);
-            addAggregator(key, agg);
+            AggregationFactory agg = PivotHelper.createGaussianAggregator(extractor);
+            addAggregator(AggregationKey.distribution(key), agg);
             return this;
         }
 
-		private Aggregator addAggregator(Object key, Aggregator agg) {
+		private AggregationFactory addAggregator(Object key, AggregationFactory agg) {
 			return aggregators.put(key, agg);
 		}
 
 		public Level calcFrequency(Object key) {
-			Aggregator agg = PivotHelper.createFrequencyAggregator(Extractors.field(key));
-			addAggregator(key, agg);
+			AggregationFactory agg = PivotHelper.createFrequencyAggregator(Extractors.constant(1));
+			addAggregator(AggregationKey.frequency(key), agg);
 			return this;
 		}
 
 		public Level calcFrequency(Object key, double weight) {
-			Aggregator agg = PivotHelper.createFrequencyAggregator(Extractors.constant(weight));
-			addAggregator(key, agg);
+			AggregationFactory agg = PivotHelper.createFrequencyAggregator(Extractors.constant(weight));
+			addAggregator(AggregationKey.frequency(key), agg);
+			return this;
+		}
+
+		public Level calcWeightedFrequency(Object key, Object weigthKey) {
+			calcWeightedFrequency(key, Extractors.field(weigthKey));
+			return this;
+		}
+
+		public Level calcWeightedFrequency(Object key, SampleExtractor extractor) {
+			AggregationFactory agg = PivotHelper.createFrequencyAggregator(extractor);
+			addAggregator(AggregationKey.frequency(key), agg);
 			return this;
 		}
 
@@ -143,7 +154,7 @@ public class Pivot {
 			return Collections.unmodifiableList(sublevels);
 		}
 		
-		public Map<Object, Aggregator> getAggregators() {
+		public Map<Object, AggregationFactory> getAggregators() {
 			return Collections.unmodifiableMap(aggregators);
 		}
 				
@@ -156,7 +167,7 @@ public class Pivot {
 		}
 	}
 	
-	public interface Aggregator extends Serializable {
+	public interface AggregationFactory extends Serializable {
 		public Aggregation<?> newAggregation();
 	}
 }

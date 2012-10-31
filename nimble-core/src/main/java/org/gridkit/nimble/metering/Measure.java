@@ -7,84 +7,31 @@ public enum Measure {
 	NAME,
 	MEASURE,
 	/**
-	 * Timestamp for single even or interval end for time intervals
+	 * Timestamp for single even or start of interval for time spanning events
 	 */
 	TIMESTAMP,
-	END_TIMESTAMP,
+	/**
+	 * Duration of event for time spanning even
+	 */
+	DURATION,
 	
 	;
 	
-	public static Freq freq(Object key) {
-		return new Freq(key);
-	}
-
-	public static Distinct distinct(Object key) {
-		return new Distinct(key);
-	}
-
-	public static Distrib distrib(Object key) {
-		return new Distrib(key);
+	public static final Summary MEASURE_SUMMARY = new Summary(MEASURE);
+	public static final Summary DURATION_SUMMARY = new Summary(DURATION);
+	
+	public static Summary summary(Object key) {
+		return new Summary(key);
 	}
 	
-	public static class Freq implements Serializable {
-		
-		private static final long serialVersionUID = 20121023L;
-		
-		private final Object key;
-
-		public Freq(Object key) {
-			super();
-			this.key = key;
-		}
-
-		public Object getKey() {
-			return key;
-		}
-		
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((key == null) ? 0 : key.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Freq other = (Freq) obj;
-			if (key == null) {
-				if (other.key != null)
-					return false;
-			} else if (!key.equals(other.key))
-				return false;
-			return true;
-		}
-
-		@Override
-		public String toString() {
-			return "Freq[" + key + "]" ;
-		}
-	}	
-
-	public static class Distinct implements Serializable {
+	public static class Summary implements Serializable {
 		
 		private static final long serialVersionUID = 20121023L;
 		
 		private final Object key;
 		
-		public Distinct(Object key) {
-			super();
+		public Summary(	Object key) {
 			this.key = key;
-		}
-		
-		public Object getKey() {
-			return key;
 		}
 
 		@Override
@@ -103,7 +50,7 @@ public enum Measure {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			Distinct other = (Distinct) obj;
+			Summary other = (Summary) obj;
 			if (key == null) {
 				if (other.key != null)
 					return false;
@@ -112,30 +59,10 @@ public enum Measure {
 			return true;
 		}
 
-		@Override
-		public String toString() {
-			return "Distinct[" + key + "]" ;
-		}
-	}	
 
-	public static class Distrib implements Serializable {
-		
-		private static final long serialVersionUID = 20121023L;
-		
-		private final Object key;
-		
-		public Distrib(Object key) {
-			super();
-			this.key = key;
-		}
-		
-		public Object getKey() {
-			return key;
-		}
-		
 		@Override
 		public String toString() {
-			return "Distrib[" + key + "]" ;
+			return "Summary[" + key + "]";
 		}
 	}	
 }

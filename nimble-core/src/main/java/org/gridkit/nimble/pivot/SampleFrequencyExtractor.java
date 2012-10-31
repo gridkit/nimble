@@ -6,13 +6,13 @@ import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.statistics.FrequencySummary;
 
-public class StandardEventFrequencyExtractor extends FrequencySummary.Values implements EventFrequencyExtractor, Serializable {
+public class SampleFrequencyExtractor extends FrequencySummary.Values implements EventFrequencyExtractor, Serializable {
 
 	private static final long serialVersionUID = 20121025L;
 	
 	private final SampleExtractor weight;
 	
-	public StandardEventFrequencyExtractor(SampleExtractor weight) {
+	public SampleFrequencyExtractor(SampleExtractor weight) {
 		super(0, 0, 0, 0);
 		this.weight = weight;
 	}
@@ -31,10 +31,12 @@ public class StandardEventFrequencyExtractor extends FrequencySummary.Values imp
 		total = w;
 		try {
 			first = asDouble(reader.get(Measure.TIMESTAMP));
-			last = first;
-			Object s = reader.get(Measure.END_TIMESTAMP);
-			if (s != null) {
-				last = asDouble(s);
+			Object s = reader.get(Measure.DURATION);
+			if (s == null) {
+				last = first;
+			}
+			else {
+				last = first + asDouble(s);
 			}
 		}
 		catch(NullPointerException e) {

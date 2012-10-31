@@ -28,19 +28,19 @@ public class DisplayFactory {
 	}
 
 	public static StatsDisplayComponent genericStats(Object key, CommonStats.StatAppraisal... stats) {
-		return new StatsDisplayComponent(Extractors.field(key), stats);
+		return new StatsDisplayComponent(Extractors.summary(key), stats);
 	}
 
 	public static StatsDisplayComponent genericStats(String captionFormat, Object key, CommonStats.StatAppraisal... stats) {
-		return new StatsDisplayComponent(captionFormat, Extractors.field(key), stats);
+		return new StatsDisplayComponent(captionFormat, Extractors.summary(key), stats);
 	}
 	
 	public static StatsDisplayComponent distributionStats(Object key) {
-		return new StatsDisplayComponent(Extractors.field(key), CommonStats.DISTRIBUTION_STATS);
+		return new StatsDisplayComponent(Extractors.summary(key), CommonStats.DISTRIBUTION_STATS);
 	}
 
 	public static StatsDisplayComponent frequencyStats(Object key) {
-		return new StatsDisplayComponent(Extractors.field(key), CommonStats.FREQUENCY_STATS);
+		return new StatsDisplayComponent(Extractors.summary(key), CommonStats.FREQUENCY_STATS);
 	}
 	
 	public static DisplayComponent decorated(String captionFormat, DisplayComponent component, Object... deco) {

@@ -4,23 +4,23 @@ import java.io.Serializable;
 
 class PivotHelper {
 
-	public static Pivot.Aggregator createGaussianAggregator(SampleExtractor extractor) {
+	public static Pivot.AggregationFactory createGaussianAggregator(SampleExtractor extractor) {
 		return new DistributionAggregator(extractor);
 	}
 	
-	public static Pivot.Aggregator createFrequencyAggregator(SampleExtractor extractor) {
-		return new FrequencyAggregator(new StandardEventFrequencyExtractor(extractor));
+	public static Pivot.AggregationFactory createFrequencyAggregator(SampleExtractor extractor) {
+		return new FrequencyAggregator(new SampleFrequencyExtractor(extractor));
 	}
 
-	public static Pivot.Aggregator createConstantAggregator(final SampleExtractor extractor) {
+	public static Pivot.AggregationFactory createConstantAggregator(final SampleExtractor extractor) {
 		return new ConstantAggregator(extractor);
 	}
 
-	public static Pivot.Aggregator createStaticValue(final Object value) {
+	public static Pivot.AggregationFactory createStaticValue(final Object value) {
 		return new StaticValue(value);
 	}
 		
-	private static final class ConstantAggregator implements Pivot.Aggregator, Serializable {
+	private static final class ConstantAggregator implements Pivot.AggregationFactory, Serializable {
 
 		private static final long serialVersionUID = 20121014L;
 		
@@ -36,7 +36,7 @@ class PivotHelper {
 		}
 	}
 
-	private static final class StaticValue implements Pivot.Aggregator, Serializable {
+	private static final class StaticValue implements Pivot.AggregationFactory, Serializable {
 
 		private static final long serialVersionUID = 20121014L;
 		
@@ -52,7 +52,7 @@ class PivotHelper {
 		}
 	}
 	
-	private static class DistributionAggregator implements Pivot.Aggregator, Serializable {
+	private static class DistributionAggregator implements Pivot.AggregationFactory, Serializable {
 
 		private static final long serialVersionUID = 20121010L;
 		
@@ -68,7 +68,7 @@ class PivotHelper {
 		}		
 	}
 	
-	private static class FrequencyAggregator implements Pivot.Aggregator, Serializable {
+	private static class FrequencyAggregator implements Pivot.AggregationFactory, Serializable {
 		
 		private static final long serialVersionUID = 20121014L;
 		

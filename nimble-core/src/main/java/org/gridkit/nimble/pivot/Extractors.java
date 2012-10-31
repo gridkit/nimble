@@ -9,6 +9,18 @@ public class Extractors {
 		return new FieldExtractor(key);
 	}
 
+	public static SampleExtractor measure() {
+		return new FieldExtractor(Measure.MEASURE);
+	}
+
+	public static SampleExtractor duartion() {
+		return new FieldExtractor(Measure.DURATION);
+	}
+
+	public static SampleExtractor summary(Object key) {
+		return new FieldExtractor(Measure.summary(key));
+	}
+
 	public static SampleExtractor constant(double value) {
 		return new ConstExtractor(value);
 	}
@@ -16,10 +28,6 @@ public class Extractors {
 	public static SampleExtractor constant(Object value) {
 		return new ConstExtractor(value);
 	}
-	
-    public static SampleExtractor duration() {
-        return new DurationExtractor();
-    }
 	
 	public static class FieldExtractor implements SampleExtractor {
 
@@ -52,20 +60,4 @@ public class Extractors {
 			return value;
 		}
 	}
-	
-	public static class DurationExtractor implements SampleExtractor {
-
-        private static final long serialVersionUID = 3939066356481747214L;
-
-        public DurationExtractor() {
-        }
-
-        @Override
-        public Object extract(SampleReader sample) {
-            double startTs = ((Number)sample.get(Measure.TIMESTAMP)).doubleValue();
-            double finishTs = ((Number)sample.get(Measure.END_TIMESTAMP)).doubleValue();
-                        
-            return (finishTs - startTs);
-        }
-    }
 }

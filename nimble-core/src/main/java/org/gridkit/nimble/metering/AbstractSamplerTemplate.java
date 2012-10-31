@@ -15,7 +15,7 @@ public abstract class AbstractSamplerTemplate<T> implements MeteringAware<T>, Se
 	private final Map<Object, Object> statics = new HashMap<Object, Object>();
 	protected Object measureKey = Measure.MEASURE;
 	protected Object timestampKey = Measure.TIMESTAMP;
-	protected Object endTimestampKey = Measure.END_TIMESTAMP;
+	protected Object durationKey = Measure.DURATION;
 	
 	protected SampleSchema schema;
 	protected SampleFactory factory;
@@ -39,8 +39,8 @@ public abstract class AbstractSamplerTemplate<T> implements MeteringAware<T>, Se
 		if (timestampKey != null) {
 			ss.declareDynamic(timestampKey, double.class);
 		}
-		if (endTimestampKey != null) {
-			ss.declareDynamic(endTimestampKey, double.class);
+		if (durationKey != null) {
+			ss.declareDynamic(durationKey, double.class);
 		}
 		schema = ss;
 		
@@ -67,11 +67,11 @@ public abstract class AbstractSamplerTemplate<T> implements MeteringAware<T>, Se
 		this.timestampKey = timestampKey;
 	}
 
-	protected Object getEndTimestampKey() {
-		return endTimestampKey;
+	protected Object getDurationKey() {
+		return durationKey;
 	}
 
-	protected void setEndTimestampKey(Object endTimestampKey) {
-		this.endTimestampKey = endTimestampKey;
+	protected void setDurationKey(Object durationKey) {
+		this.durationKey = durationKey;
 	}
 }

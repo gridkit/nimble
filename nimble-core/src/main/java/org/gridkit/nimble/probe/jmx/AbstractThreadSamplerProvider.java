@@ -42,7 +42,7 @@ public abstract class AbstractThreadSamplerProvider implements MeteringAware<Jmx
 		cs = cs.createDerivedScheme();
 		
 		cs.declareDynamic(Measure.TIMESTAMP, double.class);		
-		cs.declareDynamic(Measure.END_TIMESTAMP, double.class);
+		cs.declareDynamic(Measure.DURATION, double.class);
 		cs.freeze();
 		
 		return new ThreadSampler(cs);
@@ -114,6 +114,10 @@ public abstract class AbstractThreadSamplerProvider implements MeteringAware<Jmx
 
 		public SampleWriter setTimestamp(long timestamp) {
 			return delegate.setTimestamp(timestamp);
+		}
+
+		public SampleWriter setTimeAndDuration(long startNs, long durationNs) {
+			return delegate.setTimeAndDuration(startNs, durationNs);
 		}
 
 		public SampleWriter setTimeBounds(long start, long finish) {
