@@ -87,7 +87,7 @@ public class RuntimeMXStruct extends MXStruct implements RuntimeMXBean {
 	@Override
 	@AttrName("BootClassPathSupported")
 	public boolean isBootClassPathSupported() {
-		return super.getMXAttr();
+		return (Boolean)super.getMXAttr();
 	}
 	
 	@Override
@@ -105,13 +105,13 @@ public class RuntimeMXStruct extends MXStruct implements RuntimeMXBean {
 	@Override
 	@AttrName("Uptime")
 	public long getUptime() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 	
 	@Override
 	@AttrName("StartTime")
 	public long getStartTime() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 	
 	@Override
