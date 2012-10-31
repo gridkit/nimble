@@ -43,8 +43,9 @@ class JmxThreadProbeImpl extends TimerTask implements JmxThreadProbe, Serializab
 		ensureConnection();
 		SamplerActivity act = new SamplerActivity(samplerCount);
 		for(ConnectionInfo ci: connections) {
-			ci.samplers = Arrays.copyOf(ci.samplers, samplerCount + 1);
-			ci.samplers[samplerCount] = samplerProvider.getSink().getSampler(ci.connection);
+			JavaThreadStatsSampler[] samplers = Arrays.copyOf(ci.samplers, samplerCount + 1);
+			samplers[samplerCount] = samplerProvider.getSink().getSampler(ci.connection);
+			ci.samplers = samplers;
 		}
 		++samplerCount;
 		++liveSamplers;
@@ -144,7 +145,7 @@ class JmxThreadProbeImpl extends TimerTask implements JmxThreadProbe, Serializab
 		
 		MBeanServerConnection connection;
 		JmxThreadTracker tracker;
-		JavaThreadStatsSampler[] samplers;
+		volatile JavaThreadStatsSampler[] samplers;
 		
 	}
 }

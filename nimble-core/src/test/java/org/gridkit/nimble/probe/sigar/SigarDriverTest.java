@@ -12,8 +12,6 @@ import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Pivot;
-import org.gridkit.nimble.pivot.PivotPrinter;
-import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.util.concurrent.Barriers;
 import org.gridkit.util.concurrent.BlockingBarrier;
@@ -33,23 +31,24 @@ public class SigarDriverTest {
         
         pivot.root().group(MeteringDriver.NODE).group(SigarMeasure.PROBE_KEY).group(SigarMeasure.MEASURE_KEY)
             .level("stats")
-                .show()
-                .display(MeteringDriver.NODE)
-                .display(SigarMeasure.MEASURE_KEY)
-                .calcFrequency(Measure.MEASURE)
-                .displayThroughput(Measure.MEASURE);
+//                .show()
+//                .display(MeteringDriver.NODE)
+//                .display(SigarMeasure.MEASURE_KEY)
+                .calcFrequency(Measure.MEASURE);
+//                .displayThroughput(Measure.MEASURE);
         
         PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 1024);
         
         Scenario scenario = createTestScenario(metrics);
         
         scenario.play(cloud);
-        
-        PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
-        
-        PrettyPrinter pp = new PrettyPrinter();
-        
-        pp.print(System.out, printer);
+
+        // TODO use new reporting
+//        PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
+//        
+//        PrettyPrinter pp = new PrettyPrinter();
+//        
+//        pp.print(System.out, printer);
         
         System.out.println("Done");
         

@@ -37,14 +37,11 @@ public class Pivot {
 		private int levelId = levels.size();
 		private String name;
 		private boolean pivoted;
-		private boolean visible;
 		private boolean captureStatics;
 		private List<SampleFilter> levelFilters = new ArrayList<SampleFilter>();
 		private SampleExtractor groupBy;
 		private List<Level> sublevels = new ArrayList<Level>();
 		private Map<Object, Aggregator> aggregators = new LinkedHashMap<Object, Pivot.Aggregator>();
-		private List<DisplayFunction> displayFunctions = new ArrayList<DisplayFunction>();
-		private List<Object> displayOrder = new ArrayList<Object>();
 		
 		{
 			levels.add(this);
@@ -57,7 +54,6 @@ public class Pivot {
 			sublevel.pivoted = this.pivoted;
 			
 			sublevels.add(sublevel);
-			displayOrder.add(sublevel);
 			
 			return sublevel;
 		}
@@ -120,47 +116,13 @@ public class Pivot {
 			aggregators.put(key, PivotHelper.createStaticValue(value));
 			return this;
 		}
-		
-		public Level display(Object key) {
-			DisplayFunction df = PivotHelper.displayField(key);
-			addDisplayFunction(df);
-			return this;
-		}
-
-		public Level displayDistribution(Object key) {
-			DisplayFunction df = PivotHelper.displayDistributionStats(key);
-			addDisplayFunction(df);
-			return this;
-		}
-
-		public Level displayThroughput(Object key) {
-			DisplayFunction df = PivotHelper.displayFrequency(key.toString(), key);
-			addDisplayFunction(df);
-			return this;			
-		}
-		
-		public Level displayDistribution(Object key, CommonStats.StatAppraisal... measures) {
-			DisplayFunction df = PivotHelper.displayDistributionStats(key, measures);
-			addDisplayFunction(df);
-			return this;
-		}
-		
-		private void addDisplayFunction(DisplayFunction df) {
-			displayFunctions.add(df);
-			displayOrder.add(df);
-		}
-		
+				
 		public Level pivot() {
 			Level level = level("");
 			level.pivoted = true;
 			return level;
 		}
 
-		public Level show() {
-			visible = true;
-			return this;
-		}
-		
 		public int getId() {
 			return levelId;
 		}
@@ -184,32 +146,11 @@ public class Pivot {
 		public Map<Object, Aggregator> getAggregators() {
 			return Collections.unmodifiableMap(aggregators);
 		}
-		
-		public List<DisplayFunction> getAllDisplayFunction() {
-			List<DisplayFunction> functions = new ArrayList<DisplayFunction>();
-			collectDisplayFunctions(functions);
-			return functions;
-		}
-		
-		private void collectDisplayFunctions(List<DisplayFunction> functions) {
-			if (parent != null) {
-				parent.collectDisplayFunctions(functions);
-			}
-			functions.addAll(displayFunctions);
-		}
-
-		public List<Object> getDisplayOrder() {
-			return Collections.unmodifiableList(displayOrder);
-		}
-		
+				
 		public boolean shouldCaptureStatics() {
 			return captureStatics;
 		}
 		
-		public boolean isVisible() {
-			return visible;
-		}
-
 		public boolean isPivoted() {
 			return pivoted;
 		}

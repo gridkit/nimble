@@ -1,12 +1,13 @@
 package org.gridkit.nimble.probe.jmx;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,7 +214,7 @@ public abstract class MXStruct implements Cloneable {
 			}
 			else {
 				List<Object> x = new ArrayList<Object>();
-				for(Object o : (Collection<?>)val) {
+				for(Object o : iterate(val)) {
 					x.add(elementConverter == null ? o : elementConverter.convert(o));
 				}
 				return x;
@@ -245,34 +246,38 @@ public abstract class MXStruct implements Cloneable {
 			}
 			else {
 				Map<Object, Object> x = new LinkedHashMap<Object, Object>();
-				if (keyAttr != null) {
-					// folded map
-					for(Object o : (Collection<?>)val) {
-						CompositeData cdata = (CompositeData) o;
-						Object key = cdata.get(keyAttr);
-						Object v = valueAttr == null ? cdata : cdata.get(valueAttr);
-						if (elementConverter != null) {
-							v = elementConverter.convert(v);
-						}
-						x.put(key, v);
+				for(Object o : iterate(val)) {
+					CompositeData cdata = (CompositeData) o;
+					Object key = cdata.get(keyAttr);
+					Object v = valueAttr == null ? cdata : cdata.get(valueAttr);
+					if (elementConverter != null) {
+						v = elementConverter.convert(v);
 					}
-				}
-				else {
-					// natural map
-					for(Map.Entry<?, ?> e: ((Map<?, ?>)val).entrySet()) {
-						Object key = e.getValue();
-						Object v = valueAttr == null ? e.getValue() : ((CompositeData)e.getValue()).get(valueAttr);
-						if (elementConverter != null) {
-							v = elementConverter.convert(v);
-						}
-						x.put(key, v);
-					}
+					x.put(key, v);
 				}
 				return x;
 			}
 		}
 	}
 	
+	private static Iterable<?> iterate(Object val) {
+		if (val instanceof Object[]) {
+			return Arrays.asList((Object[])val);
+		}
+		else if (val instanceof Collection) {
+			return (Collection<?>)val;
+		}
+		else if (val instanceof Map) {
+			return ((Map<?, ?>)val).values();
+		}
+		else if (val == null) {
+			return Collections.emptyList();
+		}
+		else {
+			throw new IllegalArgumentException("Cannot iterate: " + val);
+		}
+	}
+
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + ":" + data.toString();
@@ -295,7 +300,7 @@ public abstract class MXStruct implements Cloneable {
 	
 	@Retention(RetentionPolicy.RUNTIME)
 	protected @interface AsMap {
-		String key() default "";
+		String key() default "key";
 		String val() default "";
 		Class<?> type() default Void.class;
 	}

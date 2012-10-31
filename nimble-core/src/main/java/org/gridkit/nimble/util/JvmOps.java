@@ -35,6 +35,9 @@ import com.sun.tools.attach.VirtualMachineDescriptor;
 public class JvmOps {
     private static final Logger log = LoggerFactory.getLogger(JvmOps.class);
     
+    private static long ATTACH_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
+    private static long VM_LIST_EXPIRY = TimeUnit.SECONDS.toMillis(1);
+    
     static {
         try {
             String javaHome = System.getProperty("java.home");
@@ -112,7 +115,7 @@ public class JvmOps {
     }
     
     public static synchronized List<VirtualMachineDescriptor> listVms() {
-    	if (vmList == null || vmListTimestamp + TimeUnit.SECONDS.toNanos(5) < System.nanoTime()) {
+    	if (vmList == null || vmListTimestamp + TimeUnit.MILLISECONDS.toNanos(VM_LIST_EXPIRY) < System.nanoTime()) {
     		System.out.println("Listing JVM processes ...");
     		vmList = VirtualMachine.list();
     		vmListTimestamp = System.nanoTime();
@@ -146,7 +149,15 @@ public class JvmOps {
     	
         return result;
     }
-    
+
+    public static VirtualMachineDescriptor getDescriptor(long pid) {
+    	for(VirtualMachineDescriptor vmd: listVms()) {
+    		if (vmd.id().equals(String.valueOf(pid))) {
+    			return vmd;
+    		}
+    	}
+    	return null;
+    }
     
     public static Properties getProps(VirtualMachineDescriptor desc) {
         try {
@@ -198,7 +209,6 @@ public class JvmOps {
    	}
 	
 	private static VirtualMachine attach(final VirtualMachineDescriptor vmd)	throws AttachNotSupportedException, IOException {
-//		System.out.println("Attaching: " + vmd.id() + "/" + vmd.displayName());
 		FutureTask<VirtualMachine> vmf = new FutureTask<VirtualMachine>(new Callable<VirtualMachine>() {
 			@Override
 			public VirtualMachine call() throws Exception {
@@ -209,7 +219,7 @@ public class JvmOps {
 		attacher.setDaemon(true);
 		attacher.start();
 		try {
-			return vmf.get(1, TimeUnit.SECONDS);
+			return vmf.get(ATTACH_TIMEOUT, TimeUnit.MILLISECONDS);
 		} catch (Exception e) {
 			IOException er;
 			if (e instanceof ExecutionException) {

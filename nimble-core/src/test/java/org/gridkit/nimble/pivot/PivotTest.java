@@ -9,7 +9,6 @@ import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.pivot.display.DisplayBuilder;
-import org.gridkit.nimble.pivot.display.DisplayFactory;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.statistics.FrequencySummary;
@@ -30,27 +29,19 @@ public class PivotTest {
 				.level("test-metrics")
 					.group(Measure.NAME)
 						.level("")
-						    .show()
 							.calcDistribution(Measure.MEASURE)
 							.calcFrequency(ATTR_A, 1)
-							.display(Measure.NAME)
-							.displayDistribution(Measure.MEASURE)
-							.displayThroughput(ATTR_A)
-								.pivot();
+							.pivot();
 		
 		pivotLevel
 			.level("A=0")
 			.filter(ATTR_A, 0)
-			.calcDistribution(Measure.MEASURE)
-			.show()
-			.displayDistribution(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT);
+			.calcDistribution(Measure.MEASURE);
 
 		pivotLevel
 			.level("A=1")
 			.filter(ATTR_A, 1)
-			.calcDistribution(Measure.MEASURE)
-			.show()
-			.displayDistribution(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT);
+			.calcDistribution(Measure.MEASURE);
 		
 		
 		ArraySampleManager asm1 = new ArraySampleManager(100);
@@ -114,20 +105,11 @@ public class PivotTest {
 		
 		System.out.println("\n");
 		
-		print(pv, reporter);
-		
 		System.out.println("\nDone");
 		
 	}
 
-	private void print(Pivot pv, DistributedPivotReporter reporter) {
-		PrettyPrinter pp = new PrettyPrinter();
-		
-		PivotPrinter printer = new PivotPrinter(pv, reporter);
-		
-		pp.print(System.out, printer);
-	}
-
+	@SuppressWarnings("unused")
 	private void dump(SampleReader reader) {
 		if (reader.isReady() || reader.next()) {
 			while(true) {

@@ -2,9 +2,6 @@ package org.gridkit.nimble.pivot;
 
 import java.io.Serializable;
 
-import org.gridkit.nimble.metering.SampleReader;
-import org.gridkit.nimble.statistics.FrequencySummary;
-
 class PivotHelper {
 
 	public static Pivot.Aggregator createGaussianAggregator(SampleExtractor extractor) {
@@ -21,26 +18,6 @@ class PivotHelper {
 
 	public static Pivot.Aggregator createStaticValue(final Object value) {
 		return new StaticValue(value);
-	}
-
-	public static DisplayFunction displayField(Object key) {
-		return new SimpleDisplayFunction(key.toString(), Extractors.field(key));
-	}
-
-	public static DisplayFunction displayDistributionStats(Object key) {
-		return new DisplayDistributionFunction(Extractors.field(key), CommonStats.DISTRIBUTION_STATS);
-	}
-
-	public static DisplayFunction displayDistributionStats(Object key, CommonStats.StatAppraisal... params) {
-		return new DisplayDistributionFunction(Extractors.field(key), params);
-	}
-	
-	public static DisplayFunction displayFrequency(Object key) {
-		return new FrequencyDisplayFunction("Freq.", Extractors.field(key));
-	}
-
-	public static DisplayFunction displayFrequency(String caption, Object key) {
-	    return new FrequencyDisplayFunction(caption, Extractors.field(key));
 	}
 		
 	private static final class ConstantAggregator implements Pivot.Aggregator, Serializable {
@@ -105,38 +82,5 @@ class PivotHelper {
 		public Aggregation<?> newAggregation() {
 			return new FrequencyAggregation(extractor);
 		}				
-	}
-	
-	private static class SimpleDisplayFunction implements DisplayFunction {
-		
-		private final String caption;
-		private final SampleExtractor extrator;
-		
-		public SimpleDisplayFunction(String caption, SampleExtractor extrator) {
-			this.caption = caption;
-			this.extrator = extrator;
-		}
-
-		@Override
-		public void getDisplayValue(CellPrinter printer, SampleReader level) {
-			printer.addCell(caption, extrator.extract(level));
-			
-		}
-	}
-
-	private static class FrequencyDisplayFunction implements DisplayFunction {
-		
-		private final String caption;
-		private final SampleExtractor extrator;
-		
-		public FrequencyDisplayFunction(String caption, SampleExtractor extrator) {
-			this.caption = caption;
-			this.extrator = extrator;
-		}
-		
-		@Override
-		public void getDisplayValue(CellPrinter printer, SampleReader level) {
-			printer.addCell(caption, ((FrequencySummary)extrator.extract(level)).getWeigthedFrequency());			
-		}
-	}
+	}	
 }

@@ -8,38 +8,43 @@ import org.gridkit.nimble.driver.ExecutionDriver;
 import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
-import org.gridkit.nimble.metering.DisrtibutedMetering;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
-import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.metering.SampleWriter;
 import org.gridkit.nimble.metering.SpanSamplerTemplate;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
-import org.gridkit.nimble.pivot.Extractors;
 import org.gridkit.nimble.pivot.Filters;
 import org.gridkit.nimble.pivot.Pivot;
-import org.gridkit.nimble.pivot.PivotPrinter;
 import org.gridkit.nimble.pivot.PivotReporter;
 import org.gridkit.nimble.pivot.display.DisplayBuilder;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
+import org.gridkit.nimble.probe.SamplerFactory;
 import org.gridkit.nimble.probe.jmx.AbstractMBeanTrackingSamplerProvider;
 import org.gridkit.nimble.probe.jmx.AbstractThreadSamplerProvider;
+import org.gridkit.nimble.probe.jmx.AttachMBeanConnector;
 import org.gridkit.nimble.probe.jmx.JmxProbeFactory;
 import org.gridkit.nimble.probe.jmx.JmxThreadProbe;
-import org.gridkit.nimble.probe.jmx.LocalMBeanConnector;
-import org.gridkit.nimble.probe.sigar.Sigar;
+import org.gridkit.nimble.probe.jmx.MBeanConnector;
+import org.gridkit.nimble.probe.jmx.struct.RuntimeMXStruct;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.nimble.probe.sigar.SigarMeasure;
+import org.gridkit.nimble.probe.sigar.StandardSigarSamplerFactoryProvider;
+import org.gridkit.nimble.sensor.JvmMatcher.PatternJvmMatcher;
+import org.gridkit.nimble.util.JvmOps;
 import org.gridkit.vicluster.ViManager;
 import org.junit.After;
 import org.junit.Test;
 
+import com.sun.tools.attach.VirtualMachineDescriptor;
+
 public class ZooTest {
 
+	private static Object NODE_NAME = "NODE_NAME";
+	
 	private enum ZooMetrics {
 		RUNMETRICS,
 		THREAD_STATS,
@@ -91,6 +96,7 @@ public class ZooTest {
 		DisplayBuilder.with(printer, "jmx-cpu-stats")
 			.constant("Source", "JMX")
 			.metricName("Name")
+			.attribute("PID", NODE_NAME)
 			.frequency().caption("CPU");
 		
 		DisplayBuilder.with(printer, "run-stats")
@@ -105,19 +111,17 @@ public class ZooTest {
 		
 		PivotPrinter2 cpuOnly = new PivotPrinter2();
 		cpuOnly.filter("sigar-cpu-stats", "jmx-cpu-stats");
-		cpuOnly.sortBy(Extractors.field(DisrtibutedMetering.NODENAME));
-		cpuOnly.sortByColumn("Name");
+		cpuOnly.sortByColumn("Node", "Source", "Name");
 		
-		DisplayBuilder.with(cpuOnly)
-			.nodeName();
-	
 		DisplayBuilder.with(cpuOnly, "sigar-cpu-stats")
+			.attribute("Node", NODE_NAME)
 			.constant("Source", "SIGAR")
 			.attribute("Name", SigarMeasure.MEASURE_KEY)
 			.attribute("PID", SigarMeasure.PID_KEY)
 			.frequency().caption("CPU");
 	
 		DisplayBuilder.with(cpuOnly, "jmx-cpu-stats")
+			.attribute("Node", NODE_NAME)
 			.constant("Source", "JMX")
 			.metricName("Name")
 			.frequency().caption("CPU");
@@ -141,14 +145,7 @@ public class ZooTest {
 		Scenario scenario = createComplexDependencyTestScenario(metrics);
 		
 		scenario.play(cloud);
-		
-		PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
-		
-		PrettyPrinter pp = new PrettyPrinter();		
-		pp.print(System.out, printer);
-		System.out.println();
-//		PivotDumper.dump(metrics.getReporter());
-		
+				
 		System.out.println("Done");
 	}
 
@@ -162,22 +159,16 @@ public class ZooTest {
 					.group(MeteringDriver.NODE)
 						.group(Measure.NAME)
 							.level("stats")
-								.show()
-								.display(MeteringDriver.NODE)
-								.display(Measure.NAME)
-								.calcDistribution(Measure.MEASURE)
-								.displayDistribution(Measure.MEASURE);
+								.calcDistribution(Measure.MEASURE);
 		pivot.root()
 			.level("jmx-cpu-stats")
 				.filter(Filters.notNull(ZooMetrics.THREAD_STATS))
 					.group(MeteringDriver.HOSTNAME)
 						.group(MeteringDriver.NODE)
-							.group(Measure.NAME)
-								.level("")
-									.show()
-									.display(MeteringDriver.NODE)
-									.display(Measure.NAME)
-									.calcFrequency(Measure.MEASURE);
+							.group(NODE_NAME)
+								.group(Measure.NAME)
+									.level("")
+										.calcFrequency(Measure.MEASURE);
 		
 		pivot.root()
 			.level("sigar-cpu-stats")
@@ -187,9 +178,9 @@ public class ZooTest {
 						.group(SigarMeasure.PROBE_KEY)
 							.group(SigarMeasure.MEASURE_KEY)
 								.group(SigarMeasure.PID_KEY)
-									.level("")
-										.show()
-										.calcFrequency(Measure.MEASURE);
+									.group(NODE_NAME)
+										.level("")
+											.calcFrequency(Measure.MEASURE);
 		
 		return pivot;
 	}
@@ -209,9 +200,13 @@ public class ZooTest {
         
         PidProvider provider = sigar.newPtqlPidProvider("Exe.Name.ct=java");
 
-        sigar.monitorProcCpu(provider, metering.bind(Sigar.defaultReporter()));
+        sigar.monitorProcCpu(provider, metering.bind(new SigarCpuSamplerProvider()));
 
-        JmxThreadProbe probe = sb.deploy("**", JmxProbeFactory.newThreadProbe(new LocalMBeanConnector()));
+        PatternJvmMatcher matcher = new PatternJvmMatcher();
+        matcher.matchProp("vinode.name", "node1.*");
+//        MBeanConnector connector = new LocalMBeanConnector();
+        MBeanConnector connector = new AttachMBeanConnector(matcher);
+		JmxThreadProbe probe = sb.deploy("node22", JmxProbeFactory.newThreadProbe(connector));
         probe.addSampler(metering.bind(new TotalCpuSamplerProvider()));
         probe.addSampler(metering.bind(new FilteredCpuSamplerProvider()));
 		
@@ -289,8 +284,10 @@ public class ZooTest {
 
 		@Override
 		protected SampleSchema configureConnectionSchema(MBeanServerConnection connection, SampleSchema root) {
+			RuntimeMXStruct rmx = RuntimeMXStruct.get(connection);
 			SampleSchema deriv = root.createDerivedScheme();
 			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
+			deriv.setStatic(NODE_NAME, rmx.getSystemProperties().get("vinode.name"));
 			deriv.declareDynamic(Measure.MEASURE, double.class);
 			return deriv;
 		}
@@ -306,8 +303,10 @@ public class ZooTest {
 		
 		@Override
 		protected SampleSchema configureConnectionSchema(MBeanServerConnection connection, SampleSchema root) {
+			RuntimeMXStruct rmx = RuntimeMXStruct.get(connection);
 			SampleSchema deriv = root.createDerivedScheme();
 			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
+			deriv.setStatic(NODE_NAME, rmx.getSystemProperties().get("vinode.name"));
 			deriv.setStatic(Measure.NAME, "pool*");
 			deriv.declareDynamic(Measure.MEASURE, double.class);
 			return deriv;
@@ -333,6 +332,33 @@ public class ZooTest {
 
 		@Override
 		protected void report(SampleFactory factory, MBeanContext ctx) {
+		}		
+	}
+	
+	private static class SigarCpuSamplerProvider extends StandardSigarSamplerFactoryProvider {
+
+		@Override
+		public SamplerFactory getProcCpuSampleFactory(long pid) {
+	        SampleSchema schema = getGlobalSchema().createDerivedScheme();
+	        
+	        String nodename = "pid:" + pid;
+	        try {
+	        	VirtualMachineDescriptor vmd = JvmOps.getDescriptor(pid);
+	        	if (vmd != null) {
+	        		nodename = JvmOps.getProps(vmd).getProperty("vinode.name");
+	        	}
+	        }
+	        catch(Exception e) {
+	        	// ignore
+	        }
+	        
+	        System.err.println("Node name: " + nodename);
+	        
+	        schema.setStatic(SigarMeasure.PROBE_KEY, SigarMeasure.PROC_CPU_PROBE);
+	        schema.setStatic(SigarMeasure.PID_KEY, pid);
+	        schema.setStatic(NODE_NAME, nodename);
+	        
+	        return newProcSampleFactory(pid, schema);
 		}		
 	}
 }
