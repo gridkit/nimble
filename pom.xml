@@ -35,7 +35,9 @@
     </scm>
 
     <modules>
+        <module>nimble-api</module>
         <module>nimble-core</module>
+        <module>jvm-attach-api</module>
         <module>nimble-btrace</module>
         <module>nimble-btrace-test</module>
     </modules>
