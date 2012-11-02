@@ -2,7 +2,7 @@ package org.gridkit.nimble.metering;
 
 import java.io.Serializable;
 
-public enum Measure {
+public enum Measure implements SampleKey {
 		
 	NAME,
 	MEASURE,

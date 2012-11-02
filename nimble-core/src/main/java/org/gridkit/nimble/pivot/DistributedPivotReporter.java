@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.metering.SampleSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +18,7 @@ public class DistributedPivotReporter extends PivotReporter {
 	
 	private StatsReceiver receiver = new StatsReceiver() {		
 		@Override
-		public void accumulate(Map<LevelPath, Map<Object, Object>> subaggregate) {
+		public void accumulate(Map<LevelPath, Map<?, ?>> subaggregate) {
 			DistributedPivotReporter.this.accumulate(subaggregate);			
 		}
 	};
@@ -30,11 +31,11 @@ public class DistributedPivotReporter extends PivotReporter {
 		return new SlaveReporter(summary.info, receiver);
 	}
 
-	synchronized void accumulate(Map<LevelPath, Map<Object, Object>> subaggregate) {
+	synchronized void accumulate(Map<LevelPath, Map<?, ?>> subaggregate) {
 		LOGGER.debug("Receive " + subaggregate.size() + " rows from slave");
-		for(Map.Entry<LevelPath, Map<Object, Object>> row: subaggregate.entrySet()) {
+		for(Map.Entry<LevelPath, Map<?, ?>> row: subaggregate.entrySet()) {
 			LevelPath path = row.getKey();
-			Map<Object, Object> stats = row.getValue();
+			Map<?, ?> stats = row.getValue();
 			ensurePath(path);
 			LevelSummary ls = data.get(path);
 			merge(ls, stats);
@@ -53,19 +54,23 @@ public class DistributedPivotReporter extends PivotReporter {
 		}		
 	}
 
-	private void merge(LevelSummary ls, Map<Object, Object> stats) {
-		ls.ensureAggregations();
-		for(Object key: ls.aggregations.keySet()) {
-			if (stats.containsKey(key)) {
-				ls.aggregations.get(key).addAggregate(stats.get(key));
+	private void merge(LevelSummary ls, Map<?, ?> stats) {
+		if (ls.isVerbatim()) {
+			ls.samples.addSamples(((SampleSet)stats.get(SampleSet.class)).reader());
+		}
+		else {
+			ls.ensureAggregations();
+			for(Object key: ls.aggregations.keySet()) {
+				if (stats.containsKey(key)) {
+					ls.aggregations.get(key).addAggregate(stats.get(key));
+				}
 			}
 		}
 	}
 
-
 	private interface StatsReceiver extends Remote {
 		
-		public void accumulate(Map<LevelPath, Map<Object, Object>> subaggregate);
+		public void accumulate(Map<LevelPath, Map<?, ?>> subaggregate);
 		
 	}
 	
@@ -91,9 +96,9 @@ public class DistributedPivotReporter extends PivotReporter {
 
 		@Override
 		public void flush() {
-			Map<LevelPath, Map<Object, Object>> aggregate = new HashMap<LevelPath, Map<Object,Object>>();
+			Map<LevelPath, Map<?, ?>> aggregate = new HashMap<LevelPath, Map<?,?>>();
 			for(LevelPath path : reporter.data.keySet()) {
-				Map<Object, Object> rowData = reporter.getRowData(path);
+				Map<?, ?> rowData = reporter.getRowData(path);
 				if (rowData != null) {
 					aggregate.put(path, rowData);
 				}

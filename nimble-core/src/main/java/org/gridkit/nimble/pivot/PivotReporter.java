@@ -8,10 +8,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.gridkit.nimble.metering.DeltaSampleWriter;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.metering.SampleSet;
+import org.gridkit.nimble.statistics.CombinedSummary;
 import org.gridkit.nimble.statistics.Summary;
-import org.gridkit.nimble.statistics.SummaryAggregation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,7 @@ public class PivotReporter implements SampleAccumulator {
 		li.filter = level.getFilter();
 		li.groupBy = level.getGroupping();
 		li.pivoted = level.isPivoted();
+		li.verbatim = level.isVerbatim();
 		li.aggregators = level.getAggregators();
 		li.captureStatics = level.shouldCaptureStatics();
 		li.levels = new ArrayList<PivotReporter.LevelInfo>();
@@ -56,7 +59,7 @@ public class PivotReporter implements SampleAccumulator {
 		return new LevelReader(LevelPath.root());		
 	}
 	
-	public List<LevelPath> listChildren(LevelPath path) {
+	protected List<LevelPath> listChildren(LevelPath path) {
 		if (path == null) {
 			new String();
 		}
@@ -85,13 +88,18 @@ public class PivotReporter implements SampleAccumulator {
 		}
 	}
 	
-	public Map<Object, Object> getRowData(LevelPath path) {
+	protected Map<?, ?> getRowData(LevelPath path) {
 		LevelSummary ls = data.get(path);
-		if (ls != null && ls.aggregations != null) {
-			return ls.getUnrefinedData();
+		if (ls.isVerbatim()) {
+			return Collections.singletonMap(SampleSet.class, ls.samples.createSampleSet());
 		}
 		else {
-			return null;
+			if (ls != null && ls.aggregations != null) {
+				return ls.getUnrefinedData();
+			}
+			else {
+				return null;
+			}
 		}
 	}
 	
@@ -153,25 +161,30 @@ public class PivotReporter implements SampleAccumulator {
 	}
 
 	private void processAggregations(LevelSummary summary, SingleSampleReader reader) {
-		summary.ensureAggregations();
-		for(Object key: summary.aggregations.keySet()) {
-			try {
-				summary.aggregations.get(key).addSamples(reader);
-			}
-			catch(Exception e) {
-				LOGGER.warn("Error processing sample " + e.toString());
-			}
+		if (summary.isVerbatim()) {
+			summary.samples.addSamples(reader);
 		}
-		if (summary.info.captureStatics) {
-			for(Object key: reader.keySet()) {
-				if (!summary.aggregations.containsKey(key)) {
-					ConstantAggregation agg = new ConstantAggregation(Extractors.field(key));
-					try {
-						agg.addSamples(reader);
-						summary.aggregations.put(key, agg);
-					}
-					catch(Exception e) {
-						LOGGER.warn("Error processing sample " + e.toString());
+		else {
+			summary.ensureAggregations();
+			for(Object key: summary.aggregations.keySet()) {
+				try {
+					summary.aggregations.get(key).addSamples(reader);
+				}
+				catch(Exception e) {
+					LOGGER.warn("Error processing sample " + e.toString());
+				}
+			}
+			if (summary.info.captureStatics) {
+				for(Object key: reader.keySet()) {
+					if (!summary.aggregations.containsKey(key)) {
+						ConstantAggregation agg = new ConstantAggregation(Extractors.field(key));
+						try {
+							agg.addSamples(reader);
+							summary.aggregations.put(key, agg);
+						}
+						catch(Exception e) {
+							LOGGER.warn("Error processing sample " + e.toString());
+						}
 					}
 				}
 			}
@@ -200,6 +213,7 @@ public class PivotReporter implements SampleAccumulator {
 		private SampleExtractor groupBy;
 		private boolean captureStatics;
 		private boolean pivoted;
+		private boolean verbatim;
 		private List<LevelInfo> levels;
 		private Map<Object, Pivot.AggregationFactory> aggregators;
 	}
@@ -211,6 +225,7 @@ public class PivotReporter implements SampleAccumulator {
 		Map<Object, Aggregation<Object>> aggregations;
 		Map<Object, LevelSummary> sublevels;
 		Map<Object, LevelSummary> subgroups;
+		DeltaSampleWriter samples; // raw samples;
 		
 		public LevelSummary(LevelSummary parent, LevelInfo level) {
 			this.info = level;
@@ -218,6 +233,7 @@ public class PivotReporter implements SampleAccumulator {
 			aggregations = null;
 			sublevels = null;
 			subgroups = info.groupBy == null ? null : new HashMap<Object, LevelSummary>();
+			samples = info.verbatim ? new DeltaSampleWriter() : null;
 		}
 
 		public LevelSummary(LevelSummary parent, Object groupId) {
@@ -227,6 +243,10 @@ public class PivotReporter implements SampleAccumulator {
 		
 		boolean isGroupping() {
 			return subgroups != null;
+		}
+		
+		boolean isVerbatim() {
+			return samples != null;
 		}
 		
 		void ensureSublevels(PivotReporter parent) {
@@ -265,7 +285,7 @@ public class PivotReporter implements SampleAccumulator {
 			}
 		}
 
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings("rawtypes")
 		Map<Object, Object> getRefinedData() {
 			if (isGroupping()) {
 				return Collections.emptyMap();
@@ -279,13 +299,13 @@ public class PivotReporter implements SampleAccumulator {
 						Object m = ((AggregationKey) key).getMeasureKey();
 						Class<? extends Summary> t = ((AggregationKey) key).getSummaryType();
 						
-						SummaryAggregation sa = (SummaryAggregation) data.get(Measure.summary(m));
+						CombinedSummary sa = (CombinedSummary) data.get(Measure.summary(m));
 						if (sa == null) {
-							sa = new SummaryAggregation();
+							sa = new CombinedSummary();
 							data.put(Measure.summary(m), sa);
 						}
 						
-						sa.addAggregation(t, (Aggregation)ag);
+						sa.addAggregation(t, (Summary)((Aggregation)ag).getResult());
 					}
 				}
 				return data;
@@ -315,7 +335,7 @@ public class PivotReporter implements SampleAccumulator {
 			return levelId == null || String.valueOf(levelId).length() == 0;
 		}
 		
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings("rawtypes")
 		private void dumpData(Map<Object, Object> data, List<Object> deco) {
 			if (aggregations != null) {
 				for(Object key: aggregations.keySet()) {
@@ -327,13 +347,13 @@ public class PivotReporter implements SampleAccumulator {
 						Class<? extends Summary> t = ((AggregationKey) key).getSummaryType();
 						
 						Decorated summaryKey = new Decorated(deco, Measure.summary(m));
-						SummaryAggregation sa = (SummaryAggregation) data.get(summaryKey);
+						CombinedSummary sa = (CombinedSummary) data.get(summaryKey);
 						if (sa == null) {
-							sa = new SummaryAggregation();
+							sa = new CombinedSummary();
 							data.put(summaryKey, sa);
 						}
 						
-						sa.addAggregation(t, (Aggregation)ag);
+						sa.addAggregation(t, (Summary)((Aggregation)ag).getResult());
 					}
 
 				}
@@ -407,7 +427,7 @@ public class PivotReporter implements SampleAccumulator {
 
 		@Override
 		public boolean isReady() {
-			return currentRow != null;
+			return currentRow != null; 
 		}
 
 		@Override

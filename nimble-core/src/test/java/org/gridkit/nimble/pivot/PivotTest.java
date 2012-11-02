@@ -1,13 +1,19 @@
 package org.gridkit.nimble.pivot;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.gridkit.nimble.metering.ArraySampleManager;
+import org.gridkit.nimble.metering.DeltaSampleWriter;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.metering.SampleSet;
 import org.gridkit.nimble.pivot.display.DisplayBuilder;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
@@ -106,8 +112,31 @@ public class PivotTest {
 		
 		System.out.println("\n");
 		
+		DeltaSampleWriter dsw = new DeltaSampleWriter();
+		dsw.addSamples(reporter.getReader());
+		SampleSet dsr = reserialize(dsw.createSampleSet());
+		
+		new PrettyPrinter().print(System.out, p2.print(dsr.reader()));
+		
 		System.out.println("\nDone");
 		
+	}
+
+	private SampleSet reserialize(SampleSet set) {
+		try {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(bos);
+			oos.writeObject(set);
+			oos.close();
+			byte[] blob = bos.toByteArray();
+			System.out.println("Blob size: " + blob.length);
+			ByteArrayInputStream bis = new ByteArrayInputStream(blob);
+			ObjectInputStream ois = new ObjectInputStream(bis);
+			SampleSet set2 = (SampleSet) ois.readObject();
+			return set2;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@SuppressWarnings("unused")

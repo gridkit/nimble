@@ -1,6 +1,9 @@
 package org.gridkit.nimble.probe.sigar;
 
-public final class SigarMeasure {
+import org.gridkit.nimble.metering.SampleKey;
+
+public final class SigarMeasure implements SampleKey {
+	
     public static final String PROBE_KEY   = "sigar_probe";
     
     public static final String SYS_NET_PROBE  = "sysNet";

@@ -119,6 +119,7 @@ public class JvmOps {
     		System.out.println("Listing JVM processes ...");
     		vmList = VirtualMachine.list();
     		vmListTimestamp = System.nanoTime();
+    		System.out.println(vmList.size() + " JVM processes found");
     	}
         return new ArrayList<VirtualMachineDescriptor>(vmList);
     }

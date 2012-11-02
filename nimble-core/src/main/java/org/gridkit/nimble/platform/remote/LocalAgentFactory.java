@@ -19,7 +19,7 @@ public class LocalAgentFactory {
 		nodeProvider = new JvmNodeProvider(new LocalJvmProcessFactory());
 		config = new ViNodeConfig();
 		for(String option: options) {
-			JvmProps.setJvmArg(config, option);
+			JvmProps.addJvmArg(config, option);
 		}
 	}
 	

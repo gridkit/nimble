@@ -59,10 +59,16 @@ public class ZooTest {
 		cloud.shutdown();
 	}
 	
+//	@Test
+//	public void testMonitoringTwice() {
+//		testMonitoring();
+//		testMonitoring();
+//	}
+	
 	@Test
 	public void testMonitoring() {
 
-		cloud.nodes("node11", "node12", "node22");		
+		cloud.nodes("node11", "node12", "node13", "node14", "node22");		
 		
 		Pivot pivot = configurePivot();
 		PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 16 << 10);

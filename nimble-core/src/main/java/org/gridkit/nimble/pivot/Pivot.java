@@ -37,6 +37,7 @@ public class Pivot {
 		private int levelId = levels.size();
 		private String name;
 		private boolean pivoted;
+		private boolean verbatim;
 		private boolean captureStatics;
 		private List<SampleFilter> levelFilters = new ArrayList<SampleFilter>();
 		private SampleExtractor groupBy;
@@ -68,6 +69,12 @@ public class Pivot {
 			Level level = level("");
 			level.groupBy = extractor;			
 			return level;
+		}
+
+		public Level group(Object key, SampleExtractor extractor) {
+			Level group = group(extractor);
+			group.calcConstant(key, extractor);
+			return group;
 		}
 		
 		public Level filter(Object key, Object value) {
@@ -123,6 +130,11 @@ public class Pivot {
 			return this;
 		}
 
+		public Level calcConstant(Object key, SampleExtractor extractor) {
+			aggregators.put(key, PivotHelper.createConstantAggregator(extractor));
+			return this;
+		}
+
 		public Level setConstant(Object key, Object value) {
 			aggregators.put(key, PivotHelper.createStaticValue(value));
 			return this;
@@ -132,6 +144,20 @@ public class Pivot {
 			Level level = level("");
 			level.pivoted = true;
 			return level;
+		}
+
+		@SuppressWarnings("unused")
+		@Deprecated
+		private void verbatim(String name) {
+			Level level = level(name);
+			level.verbatim = true;
+		}
+
+		@SuppressWarnings("unused")
+		@Deprecated
+		private void verbatim() {
+			Level level = level(name);
+			level.verbatim = true;
 		}
 
 		public int getId() {
@@ -164,6 +190,10 @@ public class Pivot {
 		
 		public boolean isPivoted() {
 			return pivoted;
+		}
+
+		public boolean isVerbatim() {
+			return verbatim;
 		}
 	}
 	
