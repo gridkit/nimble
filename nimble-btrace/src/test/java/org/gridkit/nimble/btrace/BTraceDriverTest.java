@@ -4,12 +4,9 @@ import java.io.Serializable;
 
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
-import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.pivot.Pivot;
-import org.gridkit.nimble.pivot.PivotPrinter;
-import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.vicluster.ViManager;
@@ -31,12 +28,12 @@ public class BTraceDriverTest {
         Pivot pivot = new Pivot();
 
         pivot.root().group(MeteringDriver.NODE).group(BTraceMeasure.SAMPLE_KEY)
-             .level("stats")
-             .show()
-             .display(MeteringDriver.NODE)
-             .display(BTraceMeasure.SAMPLE_KEY)
-             .calcDistribution(Measure.MEASURE)
-             .displayDistribution(Measure.MEASURE);
+             .level("stats");
+             //.show()
+             //.display(MeteringDriver.NODE)
+             //.display(BTraceMeasure.SAMPLE_KEY)
+             //.calcDistribution(Measure.MEASURE)
+             //.displayDistribution(Measure.MEASURE);
         
         PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 1024);
         
@@ -44,11 +41,11 @@ public class BTraceDriverTest {
         
         scenario.play(cloud);
         
-        PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
+        //PivotPrinter printer = new PivotPrinter(pivot, metrics.getReporter());
         
-        PrettyPrinter pp = new PrettyPrinter();
+        //PrettyPrinter pp = new PrettyPrinter();
         
-        pp.print(System.out, printer);
+        //pp.print(System.out, printer);
         
         System.out.println("Done");
         

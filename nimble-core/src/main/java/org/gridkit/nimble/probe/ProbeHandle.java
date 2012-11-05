@@ -1,5 +1,6 @@
 package org.gridkit.nimble.probe;
 
-public interface ProbeHandle {
-    void stop();
+import org.gridkit.nimble.driver.Activity;
+
+public interface ProbeHandle extends Activity {
 }
