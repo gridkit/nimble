@@ -1,5 +1,6 @@
 package org.gridkit.nimble.execution;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -15,21 +16,31 @@ import org.slf4j.LoggerFactory;
 
 public class Execution {
     public static ExecutionDriver newDriver() {
-        return new ExecutionDriver() {
-            private final ExecutorService executor = Executors.newCachedThreadPool(
-                new NamedThreadFactory("ExecDriver", true, Thread.NORM_PRIORITY)
-            );
-            
-            @Override
-            public ExecHandle newExecution(ExecConfig config) {
-                return newExecHandle(config, executor); 
+        return new ExecutionDriverImpl();
+    }
+        
+    @SuppressWarnings("serial")
+    private static class ExecutionDriverImpl implements ExecutionDriver, Serializable {
+        private transient ExecutorService executor;
+        
+        @Override
+        public ExecHandle newExecution(ExecConfig config) {
+            return newExecHandle(config, getExecutor()); 
+        }
+        
+        @Override
+        public void shutdown() {
+            getExecutor().shutdown();
+        }
+        
+        private synchronized ExecutorService getExecutor() {
+            if (executor == null) {
+                executor = Executors.newCachedThreadPool(
+                    new NamedThreadFactory("ExecDriver", true, Thread.NORM_PRIORITY)
+                );
             }
-            
-            @Override
-            public void stop() {
-                executor.shutdown();
-            }
-        };
+            return executor;
+        }
     }
     
     public static ExecHandle newExecHandle(ExecConfig config, ExecutorService executor) {
@@ -226,7 +237,7 @@ public class Execution {
                 }
                 
                 try {
-                    task.execute();
+                    task.run();
                 } finally {
                     synchronized (lock) {
                         task = null;
@@ -257,13 +268,18 @@ public class Execution {
             return null;
         }
         
-        public void cancel(Future<Void> future) throws Exception {
+        public void cancel(final Future<Void> future) throws Exception {
             synchronized (lock) {
                 if (!canceled) {
                     canceled = true;
                     
                     if (task != null) {
-                        task.cancel(future);
+                        task.cancel(new Task.Interruptible() {
+                            @Override
+                            public void interrupt() {
+                                future.cancel(true);
+                            }
+                        });
                     } else {
                         future.cancel(true);
                     }

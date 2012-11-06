@@ -32,7 +32,7 @@ public class ExecutionTest {
         
         h2.join();
         
-        driver.stop();
+        driver.shutdown();
     }
     
     private static class PrintTask extends AbstractTask {
@@ -43,7 +43,7 @@ public class ExecutionTest {
         }
 
         @Override
-        public void execute() throws Exception {
+        public void run() throws Exception {
             System.err.println(msg);
         }
     }
