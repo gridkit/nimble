@@ -1,9 +1,11 @@
 package org.gridkit.nimble.execution;
 
+import java.util.Collection;
+
 import org.gridkit.util.concurrent.BlockingBarrier;
 
 public interface ExecConfig {
-    TaskProvider getProvider();
+    Collection<Task> getTasks();
     
     ExecCondition getCondition();
     

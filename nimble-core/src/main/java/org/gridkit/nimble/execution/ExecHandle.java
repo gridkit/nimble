@@ -1,11 +1,9 @@
 package org.gridkit.nimble.execution;
 
-public interface ExecHandle {
-    void start();
-    
-    void join();
-    
-    ExecHandle proceed(ExecConfig config);
+import org.gridkit.nimble.driver.Activity;
+
+public interface ExecHandle extends Activity {
+    ExecHandle start();
         
-    void stop();
+    ExecHandle proceed(ExecConfig config);
 }

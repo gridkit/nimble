@@ -8,12 +8,12 @@ public class ExecutionTest {
     @Test
     public void simple_test() {
         ExecConfig c1 = (new ExecConfigBuilder())
-                .provider(TaskProviders.loop(new PrintTask("one")))
+                .tasks(new PrintTask("one"))
                 .condition(ExecConditions.iterations(2))
                 .threads(2).continuous(false).build();
         
         ExecConfig c2 = (new ExecConfigBuilder())
-                .provider(TaskProviders.loop(new PrintTask("two"), new PrintTask("three")))
+                .tasks(new PrintTask("two"), new PrintTask("three"))
                 .condition(ExecConditions.duration(1, TimeUnit.MILLISECONDS))
                 .threads(1).continuous(false)
                 .build();

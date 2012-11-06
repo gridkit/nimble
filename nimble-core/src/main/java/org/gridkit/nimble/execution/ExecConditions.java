@@ -2,6 +2,7 @@ package org.gridkit.nimble.execution;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -20,6 +21,10 @@ public class ExecConditions {
         return new IterationsCondition(iterations);
     }
 
+    public static ExecCondition once(Collection<?> tasks) {
+        return iterations(tasks.size());
+    }
+    
     public static ExecCondition infinity() {
         return new ConstantCondition(true);
     }
@@ -38,40 +43,51 @@ public class ExecConditions {
     
     private static class DurationCondition implements ExecCondition, Serializable {
         private final long durationMs; 
-        private volatile Long startTsMs = null;
+        private long startTsMs;
         
         public DurationCondition(long durationMs) {
+            if (durationMs < 0) {
+                throw new IllegalArgumentException("durationMs < 0");
+            }
             this.durationMs = durationMs;
         }
 
         @Override
+        public void init() {
+            startTsMs = System.currentTimeMillis();
+        }
+        
+        @Override
         public boolean satisfied() {
-            if (startTsMs == null) {
-                startTsMs = System.currentTimeMillis();
-            }
-
             return (System.currentTimeMillis() - startTsMs) < durationMs;
         }
     }
     
     private static class IterationsCondition implements ExecCondition, Serializable {
-        private final AtomicLong iterationsRemain;
-
+        private final long iterations;
+        private AtomicLong iteration;
+        
         public IterationsCondition(long iterations) {
             if (iterations < 0) {
                 throw new IllegalArgumentException("iterations < 0");
             }
-            
-            this.iterationsRemain = new AtomicLong(iterations);
+            this.iterations = iterations;
         }
 
         @Override
+        public void init() {
+            iteration = new AtomicLong(0);
+        }
+        
+        @Override
         public boolean satisfied() {
-            return iterationsRemain.getAndDecrement() > 0;
+            long curIter = iteration.getAndIncrement();
+            
+            return curIter < iterations;
         }
     }
     
-    private static class ConstantCondition implements ExecCondition, Serializable {
+    private static class ConstantCondition extends AbstractCondition implements Serializable {
         private final boolean value;
 
         public ConstantCondition(boolean value) {
@@ -95,6 +111,13 @@ public class ExecConditions {
         }
         
         @Override
+        public void init() {
+            for (ExecCondition condition : conditions) {
+                condition.init();
+            }
+        }
+        
+        @Override
         public boolean satisfied() {
             for (ExecCondition condition : conditions) {
                 if (!condition.satisfied()) {
@@ -113,6 +136,13 @@ public class ExecConditions {
                 throw new IllegalArgumentException("conditions.isEmpty()");
             }
             this.conditions = conditions;
+        }
+        
+        @Override
+        public void init() {
+            for (ExecCondition condition : conditions) {
+                condition.init();
+            }
         }
         
         @Override

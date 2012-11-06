@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.nimble.util.NamedThreadFactory;
 import org.slf4j.Logger;
@@ -25,7 +26,7 @@ public class Execution {
         
         @Override
         public ExecHandle newExecution(ExecConfig config) {
-            return newExecHandle(config, getExecutor()); 
+            return Execution.newExecution(config, getExecutor()); 
         }
         
         @Override
@@ -43,7 +44,7 @@ public class Execution {
         }
     }
     
-    public static ExecHandle newExecHandle(ExecConfig config, ExecutorService executor) {
+    public static ExecHandle newExecution(ExecConfig config, ExecutorService executor) {
         return new Handle(config, executor);
     }
 
@@ -103,11 +104,15 @@ public class Execution {
           
         private BlockingQueue<Object> resultQueue = new LinkedBlockingQueue<Object>();
         
+        private List<Task> tasks;
+        private AtomicLong index = new AtomicLong(0);
+        
         public Handle(Context prevContext, ExecConfig config, ExecutorService executor) {
             this.context = new Context();
             this.prevContext = prevContext;
             this.config = config;
             this.executor = executor;
+            this.tasks = new ArrayList<Task>(config.getTasks());
         }
         
         public Handle(ExecConfig config, ExecutorService executor) {
@@ -115,7 +120,7 @@ public class Execution {
         }
         
         @Override
-        public void start() {
+        public ExecHandle start() {
             try {
                 startInternal();
                 resultQueue.add(new Object());
@@ -123,26 +128,31 @@ public class Execution {
                 resultQueue.add(e);
                 shutdown(e);
             }
+            return this;
         }
         
         // TODO add incremental start
         private void startInternal() throws Exception {
             prevContext.shutdown();
 
-            for (int i = 0; i < config.getThreads(); ++i) {
-                submitWorker();
+            if (!tasks.isEmpty()) {
+                config.getCondition().init();
+                
+                for (int i = 0; i < config.getThreads(); ++i) {
+                    submitWorker();
+                }
             }
         }
         
         private void submitWorker() {
-            Worker worker = new Worker(config, resultQueue);
+            Worker worker = new Worker(config, resultQueue, tasks, index);
             context.submit(worker, executor);
         }
 
         @Override
         public void join() {
             int resultsReceived = 0;
-            int resultsToJoin = config.getThreads() + 1;
+            int resultsToJoin = tasks.isEmpty() ? 1 : config.getThreads() + 1;
             
             while (resultsReceived < resultsToJoin) {
                 try {
@@ -159,6 +169,11 @@ public class Execution {
             }
         }
 
+        @Override
+        public ExecHandle proceed(ExecConfig config) {
+            return new Handle(context, config, executor);
+        }
+        
         @Override
         public void stop() {
             try {
@@ -188,11 +203,6 @@ public class Execution {
                 }
             }
         }
-
-        @Override
-        public ExecHandle proceed(ExecConfig config) {
-            return new Handle(context, config, executor);
-        }
     }
     
     private static class Worker implements Callable<Void> {
@@ -200,26 +210,34 @@ public class Execution {
         
         private final ExecConfig config;
         
+        private final List<Task> tasks;
+        private final AtomicLong index;
+
         private final BlockingQueue<Object> resultQueue;
+        
         private boolean resultSent = false;
         
         private Object lock = new Object();
         private Task task = null;
         private boolean canceled = false;
         
-        public Worker(ExecConfig config, BlockingQueue<Object> resultQueue) {
+        public Worker(ExecConfig config, BlockingQueue<Object> resultQueue, List<Task> tasks, AtomicLong index) {
             this.config = config;
             this.resultQueue = resultQueue;
+            this.tasks = tasks;
+            this.index = index;
         }
 
         public void callInternal() throws Exception  {
             while (true) {
-                if (!resultSent && !config.getCondition().satisfied()) {                    
-                    resultQueue.put(new Object());
-                    resultSent = true;
-                    
+                if (!config.getCondition().satisfied()) { 
                     if (!config.isContinuous()) {
                         return;
+                    }
+                    
+                    if (!resultSent) {
+                        resultQueue.add(new Object());
+                        resultSent = true;
                     }
                 }
                 
@@ -229,12 +247,8 @@ public class Execution {
                     if (canceled) {
                         return;
                     }
-                    task = config.getProvider().nextTask();
-                }
-                                
-                if (task == null) {
-                    return;
-                }
+                    task = tasks.get((int)(index.getAndIncrement() % tasks.size()));
+                }                
                 
                 try {
                     task.run();
@@ -250,21 +264,25 @@ public class Execution {
         }
         
         public Void call() throws Exception {
+            Object result = new Object();
+            
             try {
                 callInternal();
             } catch (Exception e) {
-                if (!resultSent) {
-                    if (e instanceof InterruptedException) {
-                        resultQueue.put(new Object());
-                    } else {
-                        resultQueue.put(e);
-                    }
-                } else {
-                    if (!(e instanceof InterruptedException)) {
+                if (!(e instanceof InterruptedException)) {
+                    result = e;
+                    if (resultSent) {
                         log.warn("Exception caught after task was reported as successful", e);
                     }
                 }
+            } finally {
+                synchronized (lock) {
+                    if (!resultSent) {
+                        resultQueue.add(result);
+                    }
+                }
             }
+            
             return null;
         }
         
@@ -277,7 +295,9 @@ public class Execution {
                         task.cancel(new Task.Interruptible() {
                             @Override
                             public void interrupt() {
-                                future.cancel(true);
+                                synchronized (lock) {
+                                    future.cancel(true); 
+                                }
                             }
                         });
                     } else {
