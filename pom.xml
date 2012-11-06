@@ -39,6 +39,7 @@
         <module>nimble-core</module>
         <module>grid-stats</module>
         <module>jvm-attach-api</module>
+        <module>probe-jmx</module>
         <module>nimble-btrace</module>
         <module>nimble-btrace-test</module>
     </modules>
