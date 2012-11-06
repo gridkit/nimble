@@ -1,9 +1,11 @@
 package org.gridkit.nimble.execution;
 
 public interface ExecHandle {
-    ExecHandle start();
+    void start();
     
-    ExecBuilder join();
+    void join();
+    
+    ExecHandle proceed(ExecConfig config);
         
     void stop();
 }

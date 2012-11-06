@@ -35,7 +35,7 @@ public class TaskProviders {
         }
         
         @Override
-        public Task nextTask() {
+        public Task nextTask() {            
             long nextIndex = index.getAndIncrement();
             
             if (tasks.isEmpty()) {
