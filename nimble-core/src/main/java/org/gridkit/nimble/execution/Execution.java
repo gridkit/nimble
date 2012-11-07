@@ -203,7 +203,7 @@ public class Execution {
             try {
                 run();
             } catch (Exception e) {
-                if (!done && !(e instanceof InterruptedException)) {
+                if (!done) {
                     throw e;
                 }
             }
@@ -234,7 +234,7 @@ public class Execution {
                         }
                         task.run();
                     } finally {
-                        Thread.interrupted(); // cleaning up thread interrupted status
+                        Thread.interrupted(); // clearing up thread's interrupted status
                         synchronized (lock) {
                             thread = null;
                             if (canceled) {
@@ -253,6 +253,7 @@ public class Execution {
                 canceled = true;
                 
                 if (thread != null) {
+                    future.cancel(false);
                     task.cancel(thread);
                 } else {
                     future.cancel(true);
