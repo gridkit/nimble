@@ -103,7 +103,7 @@ public class Pivot {
 		}
 
 		public Level calcFrequency(Object key) {
-			AggregationFactory agg = PivotHelper.createFrequencyAggregator(Extractors.constant(1));
+			AggregationFactory agg = PivotHelper.createFrequencyAggregator(Extractors.field(key));
 			addAggregator(AggregationKey.frequency(key), agg);
 			return this;
 		}
@@ -111,11 +111,6 @@ public class Pivot {
 		public Level calcFrequency(Object key, double weight) {
 			AggregationFactory agg = PivotHelper.createFrequencyAggregator(Extractors.constant(weight));
 			addAggregator(AggregationKey.frequency(key), agg);
-			return this;
-		}
-
-		public Level calcWeightedFrequency(Object key, Object weigthKey) {
-			calcWeightedFrequency(key, Extractors.field(weigthKey));
 			return this;
 		}
 

@@ -85,7 +85,7 @@ public interface FrequencySummary extends Summary, Summary.CountSummary, Summary
 		}
 		
 		public String toString() {
-			return "Summary{n: " + getN() + ", freq: " + getWeigthedFrequency() + ", duration: " + getDuration() + "}";
+			return "Summary{n: " + getN() + ", freq: " + getWeigthedFrequency() + ", total: " + getSum() + ", duration: " + getDuration() + "}";
 		}
 	}
 }

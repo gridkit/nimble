@@ -37,9 +37,9 @@ public class BTraceClientFactoryTest {
     @BeforeClass
     public static void beforeClass() {
         cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory()));
-        JvmProps.setJvmArg(cloud.node("**"), "-XX:MaxPermSize=512m");
-        JvmProps.setJvmArg(cloud.node("**"), "-Xmx512m");
-        JvmProps.setJvmArg(cloud.node("**"), "-XX:MaxDirectMemorySize=512m");
+        JvmProps.addJvmArg(cloud.node("**"), "-XX:MaxPermSize=512m");
+        JvmProps.addJvmArg(cloud.node("**"), "-Xmx512m");
+        JvmProps.addJvmArg(cloud.node("**"), "-XX:MaxDirectMemorySize=512m");
     }
 
     @AfterClass

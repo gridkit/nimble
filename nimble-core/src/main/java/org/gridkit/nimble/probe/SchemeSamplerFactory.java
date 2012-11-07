@@ -90,11 +90,8 @@ public class SchemeSamplerFactory implements SamplerFactory {
             public void write(double value, double timestampS, double durationS) {
                 SampleWriter sample = factory.newSample();
                 
-                long timestampNs = (long)Seconds.toNanos(timestampS);
-                long durationNs = (long)Seconds.toNanos(durationS);
-                
                 sample.set(Measure.MEASURE, value);
-                sample.setTimeBounds(timestampNs, timestampNs + durationNs);
+                sample.setTimeAndDuration(timestampS, durationS);
                 
                 sample.submit();
             }

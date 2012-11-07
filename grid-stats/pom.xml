@@ -14,11 +14,5 @@
 
     <dependencies>
 
-        <dependency>
-            <groupId>com.sun</groupId>
-            <artifactId>tools</artifactId>
-            <optional>true</optional>
-        </dependency>
-        
     </dependencies>
 </project>

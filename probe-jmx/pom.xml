@@ -13,6 +13,19 @@
     <name>${project.groupId}::${project.artifactId}</name>
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>jvm-attach-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>viconcurrent</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>            
+        </dependency>
     </dependencies>
 </project>

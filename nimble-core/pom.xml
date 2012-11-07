@@ -30,6 +30,16 @@
         
         <dependency>
             <groupId>org.gridkit.lab</groupId>
+            <artifactId>probe-jmx</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>jvm-attach-api</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
             <artifactId>telecontrol-ssh</artifactId>
         </dependency>
 
@@ -86,6 +96,16 @@
                     <groupId>junit</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        
+        <dependency>
+            <!-- TODO to be removed -->
+            <groupId>com.sun</groupId>
+            <artifactId>tools</artifactId>
+            <version>${tools-jar.version}</version>
+            <scope>system</scope>
+            <systemPath>${java.home}/../lib/tools.jar</systemPath>
+            <optional>true</optional>
         </dependency>
 		
 	</dependencies>

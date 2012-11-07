@@ -1,7 +1,11 @@
 package org.gridkit.nimble.zootest;
 
+import java.io.Serializable;
+
 import javax.management.MBeanServerConnection;
 
+import org.gridkit.lab.jvm.attach.PatternJvmMatcher;
+import org.gridkit.lab.util.jmx.mxstruct.common.RuntimeMXStruct;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
@@ -11,7 +15,6 @@ import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleSchema;
-import org.gridkit.nimble.metering.SampleWriter;
 import org.gridkit.nimble.metering.SpanSamplerTemplate;
 import org.gridkit.nimble.orchestration.Scenario;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
@@ -23,17 +26,17 @@ import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.SamplerFactory;
-import org.gridkit.nimble.probe.jmx.AbstractMBeanTrackingSamplerProvider;
-import org.gridkit.nimble.probe.jmx.AbstractThreadSamplerProvider;
 import org.gridkit.nimble.probe.jmx.AttachMBeanConnector;
-import org.gridkit.nimble.probe.jmx.JmxProbeFactory;
-import org.gridkit.nimble.probe.jmx.JmxThreadProbe;
 import org.gridkit.nimble.probe.jmx.MBeanConnector;
-import org.gridkit.nimble.probe.jmx.struct.RuntimeMXStruct;
+import org.gridkit.nimble.probe.jmx.threading.JavaThreadStatsSampler;
+import org.gridkit.nimble.probe.probe.JmxProbes;
+import org.gridkit.nimble.probe.probe.MetricsPollDriver;
+import org.gridkit.nimble.probe.probe.PollProbeHelper;
+import org.gridkit.nimble.probe.probe.SamplerPrototype;
+import org.gridkit.nimble.probe.probe.SchemaConfigurer;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.nimble.probe.sigar.SigarMeasure;
 import org.gridkit.nimble.probe.sigar.StandardSigarSamplerFactoryProvider;
-import org.gridkit.nimble.sensor.JvmMatcher.PatternJvmMatcher;
 import org.gridkit.nimble.util.JvmOps;
 import org.gridkit.vicluster.ViManager;
 import org.junit.After;
@@ -68,7 +71,8 @@ public class ZooTest {
 	@Test
 	public void testMonitoring() {
 
-		cloud.nodes("node11", "node12", "node13", "node14", "node22");		
+		cloud.nodes("node11", "node22");		
+//		cloud.nodes("node11", "node12", "node13", "node14", "node22");		
 		
 		Pivot pivot = configurePivot();
 		PivotMeteringDriver metrics = new PivotMeteringDriver(pivot, 16 << 10);
@@ -208,13 +212,17 @@ public class ZooTest {
 
         sigar.monitorProcCpu(provider, metering.bind(new SigarCpuSamplerProvider()));
 
+        MetricsPollDriver pollDriver = PollProbeHelper.deployDriver("node22", sb, metering);
+        
         PatternJvmMatcher matcher = new PatternJvmMatcher();
         matcher.matchProp("vinode.name", "node1.*");
-//        MBeanConnector connector = new LocalMBeanConnector();
         MBeanConnector connector = new AttachMBeanConnector(matcher);
-		JmxThreadProbe probe = sb.deploy("node22", JmxProbeFactory.newThreadProbe(connector));
-        probe.addSampler(metering.bind(new TotalCpuSamplerProvider()));
-        probe.addSampler(metering.bind(new FilteredCpuSamplerProvider()));
+
+        JmxProbes.deployJavaThreadProbe(pollDriver, connector, new NodeClassifier(), new TotalCpuSamplerProto());
+        
+//		JmxThreadProbe probe = sb.deploy("node22", JmxProbeFactory.newThreadProbe(connector));
+//        probe.addSampler(metering.bind(new TotalCpuSamplerProvider()));
+//        probe.addSampler(metering.bind(new FilteredCpuSamplerProvider()));
 		
 		sb.checkpoint("test-start");
 
@@ -285,60 +293,66 @@ public class ZooTest {
 		return scenario;
 	}	
 	
-	@SuppressWarnings("serial")
-	private static class TotalCpuSamplerProvider extends AbstractThreadSamplerProvider {
+	private static class NodeClassifier implements SchemaConfigurer<MBeanServerConnection>, Serializable {
 
 		@Override
-		protected SampleSchema configureConnectionSchema(MBeanServerConnection connection, SampleSchema root) {
-			RuntimeMXStruct rmx = RuntimeMXStruct.get(connection);
+		public SampleSchema configure(MBeanServerConnection target, SampleSchema root) {
+			RuntimeMXStruct rmx = RuntimeMXStruct.get(target);
 			SampleSchema deriv = root.createDerivedScheme();
-			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
 			deriv.setStatic(NODE_NAME, rmx.getSystemProperties().get("vinode.name"));
-			deriv.declareDynamic(Measure.MEASURE, double.class);
+			deriv.freeze();
 			return deriv;
-		}
-
-		@Override
-		protected void writeSample(SampleWriter writer, long threadId, double cpuTime, double userTime, double blockedTime, long blockedCount, double waitTime, long waitCount, long allocated) {
-			writer.setMeasure(cpuTime);
-		}
-	}
-
-	@SuppressWarnings("serial")
-	private static class FilteredCpuSamplerProvider extends AbstractThreadSamplerProvider {
-		
-		@Override
-		protected SampleSchema configureConnectionSchema(MBeanServerConnection connection, SampleSchema root) {
-			RuntimeMXStruct rmx = RuntimeMXStruct.get(connection);
-			SampleSchema deriv = root.createDerivedScheme();
-			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
-			deriv.setStatic(NODE_NAME, rmx.getSystemProperties().get("vinode.name"));
-			deriv.setStatic(Measure.NAME, "pool*");
-			deriv.declareDynamic(Measure.MEASURE, double.class);
-			return deriv;
-		}
-		
-		@Override
-		protected SampleSchema configureThreadSchema(String threadName, SampleSchema root) {
-			if (threadName.toLowerCase().startsWith("pool")) {
-				return root;
-			}
-			else {
-				return null;
-			}
-		}
-
-		@Override
-		protected void writeSample(SampleWriter writer, long threadId, double cpuTime, double userTime, double blockedTime, long blockedCount, double waitTime, long waitCount, long allocated) {
-			writer.setMeasure(cpuTime);
 		}
 	}
 	
-	private static class GcSamplerProvider extends AbstractMBeanTrackingSamplerProvider {
+	@SuppressWarnings("serial")
+	private static class TotalCpuSamplerProto implements SamplerPrototype<JavaThreadStatsSampler>, Serializable {
 
 		@Override
-		protected void report(SampleFactory factory, MBeanContext ctx) {
-		}		
+		public JavaThreadStatsSampler instantiate(SampleSchema schema) {
+			SampleSchema deriv = schema.createDerivedScheme();
+			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
+			deriv.declareDynamic(Measure.TIMESTAMP, double.class);
+			deriv.declareDynamic(Measure.DURATION, double.class);
+			deriv.declareDynamic(Measure.MEASURE, double.class);
+			final SampleFactory factory = deriv.createFactory();
+			
+			return new JavaThreadStatsSampler() {
+				@Override
+				public void report(long startNanos, long finishNanos, long threadId, String threadName, long cpuTime, long userTime, long blockedTime, long blockedCount, long waitTime, long waitCount, long allocated) {
+					factory.newSample()
+						.setTimeBounds(startNanos, finishNanos)
+						.setMeasure(cpuTime)
+						.submit();
+				}
+			};
+		}
+	}
+
+	@SuppressWarnings("serial")
+	private static class FilteredCpuSamplerProvider implements SamplerPrototype<JavaThreadStatsSampler>, Serializable {
+		
+		@Override
+		public JavaThreadStatsSampler instantiate(SampleSchema schema) {
+			SampleSchema deriv = schema.createDerivedScheme();
+			deriv.setStatic(ZooMetrics.THREAD_STATS, true);
+			deriv.declareDynamic(Measure.TIMESTAMP, double.class);
+			deriv.declareDynamic(Measure.DURATION, double.class);
+			deriv.declareDynamic(Measure.MEASURE, double.class);
+			final SampleFactory factory = deriv.createFactory();
+			
+			return new JavaThreadStatsSampler() {
+				@Override
+				public void report(long startNanos, long finishNanos, long threadId, String threadName, long cpuTime, long userTime, long blockedTime, long blockedCount, long waitTime, long waitCount, long allocated) {
+					if (threadName.startsWith("pool")) {
+						factory.newSample()
+							.setTimeBounds(startNanos, finishNanos)
+							.setMeasure(cpuTime)
+							.submit();
+					}
+				}
+			};
+		}
 	}
 	
 	private static class SigarCpuSamplerProvider extends StandardSigarSamplerFactoryProvider {

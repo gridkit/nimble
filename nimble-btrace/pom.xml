@@ -46,6 +46,9 @@
         <dependency>
             <groupId>com.sun</groupId>
             <artifactId>tools</artifactId>
+            <version>${tools-jar.version}</version>
+            <scope>system</scope>
+            <systemPath>${java.home}/../lib/tools.jar</systemPath>
             <optional>true</optional>
         </dependency>
         

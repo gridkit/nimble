@@ -76,9 +76,22 @@
     
     <dependencyManagement>
         <dependencies>
+
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>nimble-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>jvm-attach-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>probe-jmx</artifactId>
                 <version>${project.version}</version>
             </dependency>
         
@@ -99,7 +112,7 @@
                 <artifactId>viconcurrent</artifactId>
                 <version>${nanocloud.version}</version>
             </dependency>
-        
+
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
@@ -124,14 +137,6 @@
                 <version>${slf4j.version}</version>
             </dependency>
             
-            <dependency>
-                <groupId>com.sun</groupId>
-                <artifactId>tools</artifactId>
-                <version>${tools-jar.version}</version>
-                <scope>system</scope>
-                <systemPath>${java.home}/../lib/tools.jar</systemPath>
-            </dependency>
-
             <dependency>
                 <groupId>net.java.btrace</groupId>
                 <artifactId>core-api</artifactId>

@@ -36,7 +36,7 @@ public class PivotTest {
 					.group(Measure.NAME)
 						.level("")
 							.calcDistribution(Measure.MEASURE)
-							.calcFrequency(Measure.MEASURE)
+							.calcFrequency(Measure.MEASURE, 1)
 							.pivot();
 		
 		pivotLevel
