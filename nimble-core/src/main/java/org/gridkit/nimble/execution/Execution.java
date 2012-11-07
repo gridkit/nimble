@@ -203,7 +203,7 @@ public class Execution {
             try {
                 run();
             } catch (Exception e) {
-                if (!done) {
+                if (!done && !(e instanceof InterruptedException)) {
                     throw e;
                 }
             }
