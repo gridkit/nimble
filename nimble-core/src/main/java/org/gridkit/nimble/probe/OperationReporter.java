@@ -5,6 +5,9 @@ import java.util.Map;
 
 import org.gridkit.nimble.util.Seconds;
 
+/**
+ * Not thread safe class for reporting operations statistics
+ */
 public class OperationReporter {
     private final SamplerFactory factory;
 
@@ -34,5 +37,9 @@ public class OperationReporter {
         
         startTimesMs.remove(operation);
         startTimesNs.remove(operation);
+    }
+    
+    public void scalar(String key, double value) {
+        factory.getScalarSampler(key).write(value);
     }
 }

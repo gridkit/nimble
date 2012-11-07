@@ -9,12 +9,13 @@ import java.util.concurrent.Callable;
 import org.gridkit.util.concurrent.Barriers;
 import org.gridkit.util.concurrent.BlockingBarrier;
 
+// add task errors logging and safe tasks
 public class ExecConfigBuilder {
     protected Collection<Task> tasks = Collections.emptySet();
     protected ExecCondition condition = ExecConditions.infinity();
     protected BlockingBarrier barrier = Barriers.openBarrier();
-    protected boolean continuous = true;
-    protected int threads = 1;
+    protected boolean continuous = false;
+    protected boolean once = false;
     
     public ExecConfigBuilder tasks(Collection<Task> tasks) {
         this.tasks = tasks;
@@ -25,7 +26,7 @@ public class ExecConfigBuilder {
         this.tasks = new ArrayList<Task>(tasks.size());
         
         for (Runnable task : runnables) {
-            this.tasks.add(new RunnableAdapter(task));
+            this.tasks.add(new RunnableAdapter(task, true));
         }
         
         return this;
@@ -35,7 +36,7 @@ public class ExecConfigBuilder {
         this.tasks = new ArrayList<Task>(tasks.size());
         
         for (Callable<?> task : callables) {
-            this.tasks.add(new CallableAdapter(task));
+            this.tasks.add(new CallableAdapter(task, true));
         }
         
         return this;
@@ -63,23 +64,18 @@ public class ExecConfigBuilder {
         return this;
     }
     
-    public ExecConfigBuilder threads(int threads){
-        this.threads = threads;
-        return this;
-    }
-    
     public ExecConfigBuilder continuous(boolean continuous){
         this.continuous = continuous;
         return this;
     }
     
     public ExecConfigBuilder once() {
-        return condition(ExecConditions.once(tasks));
+        this.once = true;
+        return this;
     }
-    
+
     private boolean valid() {
-        return (tasks != null)   && (condition != null) && 
-               (barrier != null) && (threads > 0);
+        return (tasks != null) && (condition != null) && (barrier != null);
     }
     
     public ExecConfig build() {
@@ -90,10 +86,9 @@ public class ExecConfigBuilder {
         InternalExecConfig result = new InternalExecConfig();
         
         result.tasks = tasks;
-        result.condition = condition;
+        result.condition = once ? ExecConditions.once(tasks) : condition;
         result.barrier = barrier;
         result.continuous = continuous;
-        result.threads = threads;
 
         return result;
     }
@@ -103,7 +98,6 @@ public class ExecConfigBuilder {
         protected ExecCondition condition;
         protected BlockingBarrier barrier;
         protected boolean continuous;
-        protected int threads;
         
         @Override
         public Collection<Task> getTasks() {
@@ -121,11 +115,6 @@ public class ExecConfigBuilder {
         }
 
         @Override
-        public int getThreads() {
-            return threads;
-        }
-
-        @Override
         public boolean isContinuous() {
             return continuous;
         }
@@ -134,7 +123,8 @@ public class ExecConfigBuilder {
     private static class RunnableAdapter extends AbstractTask {
         private final Runnable delegate;
         
-        public RunnableAdapter(Runnable delegate) {
+        public RunnableAdapter(Runnable delegate, boolean interrupt) {
+            super(interrupt);
             this.delegate = delegate;
         }
 
@@ -142,12 +132,15 @@ public class ExecConfigBuilder {
         public void run() throws Exception {
             delegate.run();
         }
+        
+        
     }
     
     private static class CallableAdapter extends AbstractTask {
         private final Callable<?> delegate;
         
-        public CallableAdapter(Callable<?> delegate) {
+        public CallableAdapter(Callable<?> delegate, boolean interrupt) {
+            super(interrupt);
             this.delegate = delegate;
         }
 

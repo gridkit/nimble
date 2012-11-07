@@ -10,8 +10,6 @@ public interface ExecConfig {
     ExecCondition getCondition();
     
     BlockingBarrier getBarrier();
-    
-    int getThreads();
-    
+        
     boolean isContinuous();
 }

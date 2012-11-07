@@ -2,6 +2,7 @@ package org.gridkit.nimble.execution;
 
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.nimble.driver.Activity;
 import org.junit.Test;
 
 public class ExecutionTest {
@@ -10,35 +11,36 @@ public class ExecutionTest {
         ExecConfig c1 = (new ExecConfigBuilder())
                 .tasks(new PrintTask("one"))
                 .condition(ExecConditions.iterations(2))
-                .threads(2).continuous(false).build();
+                .continuous(false).build();
         
         ExecConfig c2 = (new ExecConfigBuilder())
                 .tasks(new PrintTask("two"), new PrintTask("three"))
                 .condition(ExecConditions.duration(1, TimeUnit.MILLISECONDS))
-                .threads(1).continuous(false)
+                .continuous(false)
                 .build();
         
         ExecutionDriver driver = Execution.newDriver();
         
-        ExecHandle h1 = driver.newExecution(c1);
+        TaskPool pool = driver.newTaskPool("TestTaskPool", 2);
         
-        h1.start();
+        Activity a1 = pool.exec(c1);
+
+        a1.join();
         
-        h1.join();
+        pool.setThreadsNumber(2);
         
-        ExecHandle h2 = h1.proceed(c2);
+        Activity a2 = pool.exec(c2);
+                
+        a2.join();
         
-        h2.start();
-        
-        h2.join();
-        
-        driver.shutdown();
+        pool.shutdown();
     }
     
     private static class PrintTask extends AbstractTask {
         private final String msg;
         
         public PrintTask(String msg) {
+            super(false);
             this.msg = msg;
         }
 

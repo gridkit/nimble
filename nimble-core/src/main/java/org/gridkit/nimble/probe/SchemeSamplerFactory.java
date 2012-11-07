@@ -14,7 +14,7 @@ public class SchemeSamplerFactory implements SamplerFactory {
     private final String samplerKey;
     
     public SchemeSamplerFactory(SampleSchema schema, String samplerKey) {
-        this.globalSchema = schema.createDerivedScheme();
+        this.globalSchema = schema;
         this.samplerKey = samplerKey;
     }
 

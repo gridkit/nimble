@@ -9,11 +9,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.util.NamedThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.gridkit.nimble.util.Pair;
 
 public class Execution {
     public static ExecutionDriver newDriver() {
@@ -22,156 +22,154 @@ public class Execution {
         
     @SuppressWarnings("serial")
     private static class ExecutionDriverImpl implements ExecutionDriver, Serializable {
-        private transient ExecutorService executor;
-        
         @Override
-        public ExecHandle newExecution(ExecConfig config) {
-            return Execution.newExecution(config, getExecutor()); 
+        public TaskPool newTaskPool(String name) {
+            return Execution.newTaskPool(name);
+        }
+
+        @Override
+        public TaskPool newTaskPool(String name, int threads) {
+            return Execution.newTaskPool(name, threads);
+        }
+    }
+    
+    public static TaskPool newTaskPool(String name) {
+        return new Pool(name);
+    }
+    
+    public static TaskPool newTaskPool(String name, int threads) {
+        return new Pool(name, threads);
+    }
+
+    private interface Semaphore {
+       void acquire() throws InterruptedException;
+       void release();
+    }
+    
+    private static class FakeSemaphore implements Semaphore {
+        @Override
+        public void acquire() throws InterruptedException {
+        }
+
+        @Override
+        public void release() {
+        }
+    }
+    
+    private static class JavaSemaphore implements Semaphore {
+        private final java.util.concurrent.Semaphore delegate;
+        
+        public JavaSemaphore(int permits) {
+            delegate = new java.util.concurrent.Semaphore(permits, true);
+        }
+
+        @Override
+        public void acquire() throws InterruptedException {
+            delegate.acquire();
+        }
+
+        @Override
+        public void release() {
+            delegate.release();
+        }
+    }
+    
+    private static class Pool implements TaskPool {
+        private final AtomicReference<Semaphore> semaphore = new AtomicReference<Semaphore>();
+        private final ExecutorService executor;
+
+        public Pool(String name) {
+            this.executor = Executors.newCachedThreadPool(
+                new NamedThreadFactory("ExecDriver", true, Thread.NORM_PRIORITY)
+            );
+            setThreadPerTask();
+        }
+        
+        public Pool(String name, int threads) {
+             this(name);
+             setThreadsNumber(threads);
+        }
+
+        @Override
+        public Activity exec(ExecConfig config) {
+            config.getCondition().init();
+            return new Handle(config, this);
+        }
+
+        @Override
+        public void setThreadsNumber(int threads) {
+            if (threads < 1) {
+                throw new IllegalArgumentException("threads < 1");
+            }
+            semaphore.set(new JavaSemaphore(threads));
+        }
+
+        @Override
+        public void setThreadPerTask() {
+            semaphore.set(new FakeSemaphore());
+        }
+
+        public Pair<Worker, Future<Void>> submit(Task task, ExecConfig config, BlockingQueue<Object> resultQueue) {
+            Worker worker = new Worker(config, resultQueue, task, semaphore);
+            return Pair.newPair(worker, executor.submit(worker));
         }
         
         @Override
         public void shutdown() {
-            getExecutor().shutdown();
-        }
-        
-        private synchronized ExecutorService getExecutor() {
-            if (executor == null) {
-                executor = Executors.newCachedThreadPool(
-                    new NamedThreadFactory("ExecDriver", true, Thread.NORM_PRIORITY)
-                );
-            }
-            return executor;
+            executor.shutdown();
         }
     }
     
-    public static ExecHandle newExecution(ExecConfig config, ExecutorService executor) {
-        return new Handle(config, executor);
-    }
-
-    private static class Context {
-        protected List<Worker> workers;
-        protected List<Future<Void>> futures;
+    // TODO handle multiple joins and stops
+    private static class Handle implements Activity {        
+        private final ExecConfig config;
+        private final BlockingQueue<Object> resultQueue = new LinkedBlockingQueue<Object>();
+        private final List<Pair<Worker, Future<Void>>> context = new ArrayList<Pair<Worker,Future<Void>>>();
+        
+        private final Object joinLock = new Object();
+        private final Object shutdownLock = new Object();
+        
+        protected Object joinResult = null;
         protected boolean shutdown = false;
         
-        protected Context() {
-            this.workers = new ArrayList<Worker>();
-            this.futures = new ArrayList<Future<Void>>();
-        }
-        
-        protected synchronized void submit(Worker worker, ExecutorService executor) {
-            if (shutdown) {
-                throw new IllegalStateException();
-            }
-            
-            Future<Void> future = executor.submit(worker);
-            
-            workers.add(worker);
-            futures.add(future);
-        }
-        
-        protected synchronized void shutdown() throws Exception {
-            if (!shutdown) {
-                Exception exception = null;
-                
-                for (int i = 0; i < workers.size(); ++i) {
-                    Worker worker = workers.get(i);
-                    Future<Void> future = futures.get(i);
-                    
-                    try {
-                        worker.cancel(future);
-                    } catch (Exception e) {
-                        if (exception == null) {
-                            exception = e;
-                        }
-                    }
-                }
-                
-                shutdown = true;
-                
-                if (exception != null) {
-                    throw exception;
-                }
-            }
-        }
-    }
-        
-    // TODO protect from incorrect call sequence of start, join, stop
-    private static class Handle implements ExecHandle {        
-        private Context context;
-        private Context prevContext;
-        private ExecConfig config;
-        private ExecutorService executor;
-          
-        private BlockingQueue<Object> resultQueue = new LinkedBlockingQueue<Object>();
-        
-        private List<Task> tasks;
-        private AtomicLong index = new AtomicLong(0);
-        
-        public Handle(Context prevContext, ExecConfig config, ExecutorService executor) {
-            this.context = new Context();
-            this.prevContext = prevContext;
+        public Handle(ExecConfig config, Pool pool) {
             this.config = config;
-            this.executor = executor;
-            this.tasks = new ArrayList<Task>(config.getTasks());
-        }
-        
-        public Handle(ExecConfig config, ExecutorService executor) {
-            this(new Context(), config, executor);
-        }
-        
-        @Override
-        public ExecHandle start() {
-            try {
-                startInternal();
-                resultQueue.add(new Object());
-            } catch (Exception e) {
-                resultQueue.add(e);
-                shutdown(e);
+            for (Task task : config.getTasks()) {
+                context.add(pool.submit(task, config, resultQueue));
             }
-            return this;
-        }
-        
-        // TODO add incremental start
-        private void startInternal() throws Exception {
-            prevContext.shutdown();
-
-            if (!tasks.isEmpty()) {
-                config.getCondition().init();
-                
-                for (int i = 0; i < config.getThreads(); ++i) {
-                    submitWorker();
-                }
-            }
-        }
-        
-        private void submitWorker() {
-            Worker worker = new Worker(config, resultQueue, tasks, index);
-            context.submit(worker, executor);
         }
 
         @Override
         public void join() {
-            int resultsReceived = 0;
-            int resultsToJoin = tasks.isEmpty() ? 1 : config.getThreads() + 1;
-            
-            while (resultsReceived < resultsToJoin) {
-                try {
-                    Object result = resultQueue.take();
-                    
-                    resultsReceived += 1;
-                    
-                    if (result instanceof Exception) {
-                        throw (Exception)result;
+            synchronized (joinLock) {
+                if (joinResult != null) {
+                    if (joinResult instanceof Exception) {
+                        throw new RuntimeException((Exception)joinResult);
+                    } else {
+                        return;
                     }
-                } catch (Exception e) {
-                    shutdown(e);
                 }
+                
+                int resultsReceived = 0;
+                int resultsToJoin = config.getTasks().size();
+                
+                while (resultsReceived < resultsToJoin) {
+                    try {
+                        Object result = resultQueue.take();
+                        
+                        resultsReceived += 1;
+                        
+                        if (result instanceof Exception) {
+                            throw (Exception)result;
+                        }
+                    } catch (Exception e) {
+                        joinResult = e;
+                        shutdown(e);
+                    }
+                }
+                
+                joinResult = new Object();
             }
-        }
-
-        @Override
-        public ExecHandle proceed(ExecConfig config) {
-            return new Handle(context, config, executor);
         }
         
         @Override
@@ -192,115 +190,149 @@ public class Execution {
             throw new RuntimeException(e1);
         }
         
-        private synchronized void shutdown() throws Exception {
-            try {
-                context.shutdown();
-            } finally {
-                try {
-                    prevContext.shutdown();
-                } finally {
-                    executor.shutdown();
+        private void shutdown() throws Exception {
+            synchronized (shutdownLock) {
+                if (shutdown) {
+                    return;
+                }
+                
+                Exception exception = null;
+                
+                for (int i = 0; i < context.size(); ++i) {
+                    Worker worker = context.get(i).getA();
+                    Future<Void> future = context.get(i).getB();
+                    
+                    try {
+                        worker.cancel(future);
+                    } catch (Exception e) {
+                        if (exception == null) {
+                            exception = e;
+                        }
+                    }
+                }
+                
+                shutdown = true;
+                
+                if (exception != null) {
+                    throw exception;
                 }
             }
         }
     }
     
-    private static class Worker implements Callable<Void> {
-        private static final Logger log = LoggerFactory.getLogger(Worker.class);
-        
+    private static class Worker implements Callable<Void> {        
         private final ExecConfig config;
-        
-        private final List<Task> tasks;
-        private final AtomicLong index;
-
         private final BlockingQueue<Object> resultQueue;
-        
+        private final Task task;
+        private final AtomicReference<Semaphore> semaphore;
+
+        private boolean continuous = false;
         private boolean resultSent = false;
-        
+
         private Object lock = new Object();
-        private Task task = null;
         private boolean canceled = false;
+        private boolean excecuted = false;
         
-        public Worker(ExecConfig config, BlockingQueue<Object> resultQueue, List<Task> tasks, AtomicLong index) {
+        public Worker(ExecConfig config, BlockingQueue<Object> resultQueue, Task task, AtomicReference<Semaphore> semaphore) {
             this.config = config;
             this.resultQueue = resultQueue;
-            this.tasks = tasks;
-            this.index = index;
+            this.task = task;
+            this.semaphore = semaphore;
         }
 
         public void callInternal() throws Exception  {
             while (true) {
-                if (!config.getCondition().satisfied()) { 
+                if (continuous || !config.getCondition().satisfied()) {
+                    success();
                     if (!config.isContinuous()) {
                         return;
-                    }
-                    
-                    if (!resultSent) {
-                        resultQueue.add(new Object());
-                        resultSent = true;
+                    } else {
+                        continuous = true;
                     }
                 }
-                
-                config.getBarrier().pass();
-                
-                synchronized (lock) {
-                    if (canceled) {
-                        return;
-                    }
-                    task = tasks.get((int)(index.getAndIncrement() % tasks.size()));
-                }                
-                
+
+                Semaphore semaphore = this.semaphore.get();
+                semaphore.acquire();
+
                 try {
-                    task.run();
-                } finally {
-                    synchronized (lock) {
-                        task = null;
-                        if (canceled) {
-                            return;
+                    config.getBarrier().pass();
+
+                    try {
+                        synchronized (lock) {
+                            if (canceled) {
+                                return;
+                            }
+                            excecuted = true;
+                        }
+                        task.run();
+                    } finally {
+                        synchronized (lock) {
+                            if (canceled) {
+                                return;
+                            }
+                            excecuted = false;
                         }
                     }
+                } finally {
+                    semaphore.release();
                 }
             }
         }
         
         public Void call() throws Exception {
-            Object result = new Object();
-            
             try {
                 callInternal();
+                success();
             } catch (Exception e) {
-                if (!(e instanceof InterruptedException)) {
-                    result = e;
-                    if (resultSent) {
-                        log.warn("Exception caught after task was reported as successful", e);
-                    }
-                }
-            } finally {
-                synchronized (lock) {
-                    if (!resultSent) {
-                        resultQueue.add(result);
-                    }
+                if (!isCanceled()) {
+                    error(e);
+                } else {
+                    success();
                 }
             }
-            
             return null;
+        }
+        
+        private void success() {
+            result(new Object());
+        }
+        
+        private void error(Exception e) {
+            result(e);
+        }
+        
+        private void result(Object result) {
+            if (!resultSent) {
+                synchronized (lock) {
+                    resultQueue.add(result);
+                }
+                resultSent = true;
+            }
+        }
+
+        private boolean isCanceled() {
+            synchronized (lock) {
+                return canceled;
+            }
         }
         
         public void cancel(final Future<Void> future) throws Exception {
             synchronized (lock) {
-                if (!canceled) {
-                    canceled = true;
-                    
-                    if (task != null) {
-                        task.cancel(new Task.Interruptible() {
-                            @Override
-                            public void interrupt() {
-                                synchronized (lock) {
-                                    future.cancel(true); 
-                                }
+                canceled = true;
+                
+                task.cancel(new Task.Interruptible() {
+                    @Override
+                    public void interrupt() {
+                        synchronized (lock) {
+                            if (excecuted) {
+                                future.cancel(true);
                             }
-                        });
-                    } else {
+                        }
+                    }
+                });
+                
+                synchronized (lock) {
+                    if (!excecuted) {
                         future.cancel(true);
                     }
                 }
