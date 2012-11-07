@@ -2,8 +2,8 @@ package org.gridkit.nimble.execution;
 
 import org.gridkit.nimble.driver.Activity;
 
-//TODO maybe introduce fixed and dynamic task pools
-public interface TaskPool {
+//TODO maybe introduce fixed and dynamic pools
+public interface ExecutionPool {
     Activity exec(ExecConfig config);
     
     void setThreadsNumber(int nThreads);

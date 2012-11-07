@@ -4,10 +4,10 @@ public interface ExecutionDriver {
     /**
      * @return thread per task pool
      */
-    public TaskPool newTaskPool(String name);
+    public ExecutionPool newExecutionPool(String name);
     
     /**
      * @return fixed number of threads pool
      */
-    public TaskPool newTaskPool(String name, int threads);
+    public ExecutionPool newExecutionPool(String name, int threads);
 }

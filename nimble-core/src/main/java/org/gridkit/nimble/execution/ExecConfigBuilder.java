@@ -80,13 +80,13 @@ public class ExecConfigBuilder {
         return this;
     }
     
-    public ExecConfigBuilder safe(boolean safe) {
-        this.safe = safe;
+    public ExecConfigBuilder safe() {
+        this.safe = true;
         return this;
     }
 
-    public ExecConfigBuilder logErrors(boolean logErrors) {
-        this.logErrors = logErrors;
+    public ExecConfigBuilder logErrors() {
+        this.logErrors = true;
         return this;
     }
     

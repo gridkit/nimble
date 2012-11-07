@@ -21,7 +21,7 @@ public class ExecutionTest {
         
         ExecutionDriver driver = Execution.newDriver();
         
-        TaskPool pool = driver.newTaskPool("TestTaskPool", 2);
+        ExecutionPool pool = driver.newExecutionPool("TestTaskPool", 2);
         
         Activity a1 = pool.exec(c1);
 

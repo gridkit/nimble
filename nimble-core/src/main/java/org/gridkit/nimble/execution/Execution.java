@@ -23,21 +23,21 @@ public class Execution {
     @SuppressWarnings("serial")
     private static class ExecutionDriverImpl implements ExecutionDriver, Serializable {
         @Override
-        public TaskPool newTaskPool(String name) {
-            return Execution.newTaskPool(name);
+        public ExecutionPool newExecutionPool(String name) {
+            return Execution.newExecutionPool(name);
         }
 
         @Override
-        public TaskPool newTaskPool(String name, int threads) {
-            return Execution.newTaskPool(name, threads);
+        public ExecutionPool newExecutionPool(String name, int threads) {
+            return Execution.newExecutionPool(name, threads);
         }
     }
     
-    public static TaskPool newTaskPool(String name) {
+    public static ExecutionPool newExecutionPool(String name) {
         return new Pool(name);
     }
     
-    public static TaskPool newTaskPool(String name, int threads) {
+    public static ExecutionPool newExecutionPool(String name, int threads) {
         return new Pool(name, threads);
     }
 
@@ -74,7 +74,7 @@ public class Execution {
         }
     }
     
-    private static class Pool implements TaskPool {
+    private static class Pool implements ExecutionPool {
         private final AtomicReference<Semaphore> semaphore = new AtomicReference<Semaphore>();
         private final ExecutorService executor;
 
