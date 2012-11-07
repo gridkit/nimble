@@ -28,8 +28,8 @@ public class Execution {
         }
 
         @Override
-        public ExecutionPool newExecutionPool(String name, int threads) {
-            return Execution.newExecutionPool(name, threads);
+        public ExecutionPool newExecutionPool(String name, int nTasks) {
+            return Execution.newExecutionPool(name, nTasks);
         }
     }
     
@@ -37,8 +37,8 @@ public class Execution {
         return new Pool(name);
     }
     
-    public static ExecutionPool newExecutionPool(String name, int threads) {
-        return new Pool(name, threads);
+    public static ExecutionPool newExecutionPool(String name, int nTasks) {
+        return new Pool(name, nTasks);
     }
 
     private interface Semaphore {
@@ -82,12 +82,12 @@ public class Execution {
             this.executor = Executors.newCachedThreadPool(
                 new NamedThreadFactory("ExecDriver", true, Thread.NORM_PRIORITY)
             );
-            setThreadPerTask();
+            unlimitConcurrentTasks();
         }
         
         public Pool(String name, int threads) {
              this(name);
-             setThreadsNumber(threads);
+             concurrentTasks(threads);
         }
 
         @Override
@@ -97,15 +97,15 @@ public class Execution {
         }
 
         @Override
-        public void setThreadsNumber(int threads) {
-            if (threads < 1) {
-                throw new IllegalArgumentException("threads < 1");
+        public void concurrentTasks(int nTasks) {
+            if (nTasks < 1) {
+                throw new IllegalArgumentException("nTasks < 1");
             }
-            semaphore.set(new JavaSemaphore(threads));
+            semaphore.set(new JavaSemaphore(nTasks));
         }
 
         @Override
-        public void setThreadPerTask() {
+        public void unlimitConcurrentTasks() {
             semaphore.set(new FakeSemaphore());
         }
 
@@ -226,7 +226,6 @@ public class Execution {
         private final Task task;
         private final AtomicReference<Semaphore> semaphore;
 
-        private boolean continuous = false;
         private boolean resultSent = false;
 
         private Object lock = new Object();
@@ -242,12 +241,10 @@ public class Execution {
 
         public void callInternal() throws Exception  {
             while (true) {
-                if (continuous || !config.getCondition().satisfied()) {
+                if (!resultSent && !config.getCondition().satisfied()) {
                     success();
-                    if (!config.isContinuous()) {
+                    if (!config.isManualShutdown()) {
                         return;
-                    } else {
-                        continuous = true;
                     }
                 }
 
@@ -256,7 +253,6 @@ public class Execution {
 
                 try {
                     config.getBarrier().pass();
-
                     try {
                         synchronized (lock) {
                             if (canceled) {

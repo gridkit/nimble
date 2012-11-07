@@ -9,5 +9,5 @@ public interface ExecutionDriver {
     /**
      * @return fixed number of threads pool
      */
-    public ExecutionPool newExecutionPool(String name, int threads);
+    public ExecutionPool newExecutionPool(String name, int nTasks);
 }

@@ -11,28 +11,25 @@ public class ExecutionTest {
         ExecConfig c1 = (new ExecConfigBuilder())
                 .tasks(new PrintTask("one"))
                 .condition(ExecConditions.iterations(2))
-                .continuous(false).build();
+                .build();
         
         ExecConfig c2 = (new ExecConfigBuilder())
                 .tasks(new PrintTask("two"), new PrintTask("three"))
                 .condition(ExecConditions.duration(1, TimeUnit.MILLISECONDS))
-                .continuous(false)
                 .build();
         
         ExecutionDriver driver = Execution.newDriver();
         
-        ExecutionPool pool = driver.newExecutionPool("TestTaskPool", 2);
+        ExecutionPool pool = driver.newExecutionPool("TestTaskPool");
         
         Activity a1 = pool.exec(c1);
 
         a1.join();
-        
-        pool.setThreadsNumber(2);
-        
+     
         Activity a2 = pool.exec(c2);
                 
         a2.join();
-        
+
         pool.shutdown();
     }
     

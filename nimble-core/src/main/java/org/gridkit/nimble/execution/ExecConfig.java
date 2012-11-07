@@ -11,5 +11,5 @@ public interface ExecConfig {
     
     BlockingBarrier getBarrier();
         
-    boolean isContinuous();
+    boolean isManualShutdown();
 }

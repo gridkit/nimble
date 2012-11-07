@@ -6,7 +6,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.Barriers;
 import org.gridkit.util.concurrent.BlockingBarrier;
@@ -17,7 +20,8 @@ public class ExecConfigBuilder {
     private List<Task> tasks = Collections.emptyList();
     private ExecCondition condition = ExecConditions.infinity();
     private BlockingBarrier barrier = Barriers.openBarrier();
-    private boolean continuous = false;
+    private Integer splits = null;
+    private boolean manualShutdown = false;
     private boolean once = false;
     private boolean safe = false;
     private boolean logErrors = false;
@@ -70,8 +74,19 @@ public class ExecConfigBuilder {
         return this;
     }
     
-    public ExecConfigBuilder continuous(boolean continuous){
-        this.continuous = continuous;
+    public ExecConfigBuilder rate(double opsPerSecond) {
+        return barrier(Barriers.speedLimit(opsPerSecond));
+    }
+    
+    public ExecConfigBuilder rate(double ops, TimeUnit unit) {
+        double unitNs = unit.toNanos(1);
+        double secondNs = TimeUnit.SECONDS.toNanos(1);
+        
+        return rate(ops * (secondNs / unitNs));
+    }
+    
+    public ExecConfigBuilder manualShutdown() {
+        this.manualShutdown = true;
         return this;
     }
     
@@ -90,6 +105,14 @@ public class ExecConfigBuilder {
         return this;
     }
     
+    public ExecConfigBuilder split(int splits) {
+        if (splits < 1) {
+            throw new IllegalArgumentException("splits < 1");
+        }
+        this.splits = splits;
+        return this;
+    }
+    
     private boolean valid() {
         return valid && (tasks != null) && (condition != null) && (barrier != null);
     }
@@ -100,6 +123,10 @@ public class ExecConfigBuilder {
         }
         
         InternalExecConfig result = new InternalExecConfig();
+        
+        result.condition = once ? ExecConditions.once(tasks) : condition;
+        result.barrier = barrier;
+        result.manualShutdown = manualShutdown;
         
         ListIterator<Task> iter = tasks.listIterator();
         while (iter.hasNext()) {
@@ -116,10 +143,16 @@ public class ExecConfigBuilder {
             iter.set(task);
         }
         
+        if (splits != null && tasks.size() < splits && tasks.size() > 0) {
+            BlockingQueue<Task> queue = new ArrayBlockingQueue<Task>(tasks.size(), true, tasks);
+            
+            tasks = new ArrayList<Task>(splits);
+            for (int t = 0; t < splits; ++t) {
+                tasks.add(new SplitTask(queue));
+            }
+        }
+        
         result.tasks = tasks;
-        result.condition = once ? ExecConditions.once(tasks) : condition;
-        result.barrier = barrier;
-        result.continuous = continuous;
 
         valid = false;
         
@@ -130,7 +163,7 @@ public class ExecConfigBuilder {
         protected Collection<Task> tasks;
         protected ExecCondition condition;
         protected BlockingBarrier barrier;
-        protected boolean continuous;
+        protected boolean manualShutdown;
         
         @Override
         public Collection<Task> getTasks() {
@@ -148,8 +181,8 @@ public class ExecConfigBuilder {
         }
 
         @Override
-        public boolean isContinuous() {
-            return continuous;
+        public boolean isManualShutdown() {
+            return manualShutdown;
         }
     }
     
@@ -268,6 +301,37 @@ public class ExecConfigBuilder {
         @Override
         public Object getDelegate() {
             return delegate;
+        }
+    }
+    
+    private static class SplitTask implements Task, DelegatingTask {
+        private final BlockingQueue<Task> tasks;
+        private volatile Task curTask;
+        
+        public SplitTask(BlockingQueue<Task> tasks) {
+            this.tasks = tasks;
+        }
+
+        @Override
+        public void run() throws Exception {
+            try {
+                curTask = tasks.take();
+                curTask.run();
+            } finally {
+                if (curTask != null) {
+                    tasks.add(curTask);
+                }
+            }
+        }
+
+        @Override
+        public void cancel(Interruptible thread) throws Exception {
+            curTask.cancel(thread);
+        }
+        
+        @Override
+        public Object getDelegate() {
+            return curTask;
         }
     }
 }
