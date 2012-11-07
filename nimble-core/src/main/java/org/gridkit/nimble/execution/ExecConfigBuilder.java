@@ -25,6 +25,7 @@ public class ExecConfigBuilder {
     private boolean once = false;
     private boolean safe = false;
     private boolean logErrors = false;
+    private boolean interrupt = false;
     private boolean valid = true;
     
     public ExecConfigBuilder tasks(Collection<Task> tasks) {
@@ -36,7 +37,7 @@ public class ExecConfigBuilder {
         this.tasks = new ArrayList<Task>(tasks.size());
         
         for (Runnable task : runnables) {
-            this.tasks.add(new RunnableAdapter(task, true));
+            this.tasks.add(new RunnableAdapter(task));
         }
         
         return this;
@@ -46,7 +47,7 @@ public class ExecConfigBuilder {
         this.tasks = new ArrayList<Task>(tasks.size());
         
         for (Callable<?> task : callables) {
-            this.tasks.add(new CallableAdapter(task, true));
+            this.tasks.add(new CallableAdapter(task));
         }
         
         return this;
@@ -90,18 +91,23 @@ public class ExecConfigBuilder {
         return this;
     }
     
-    public ExecConfigBuilder once() {
+    public ExecConfigBuilder runEachTaskOnce() {
         this.once = true;
         return this;
     }
     
-    public ExecConfigBuilder safe() {
+    public ExecConfigBuilder ignoreErrors() {
         this.safe = true;
         return this;
     }
 
     public ExecConfigBuilder logErrors() {
         this.logErrors = true;
+        return this;
+    }
+    
+    public ExecConfigBuilder interruptOnCancel() {
+        this.interrupt = true;
         return this;
     }
     
@@ -138,6 +144,10 @@ public class ExecConfigBuilder {
             
             if (safe) {
                 task = new SafeTask(task);
+            }
+            
+            if (interrupt) {
+                task = new InterruptingTask(task);
             }
             
             iter.set(task);
@@ -215,7 +225,7 @@ public class ExecConfigBuilder {
         }
 
         @Override
-        public void cancel(Interruptible thread) throws Exception {
+        public void cancel(Thread thread) throws Exception {
             try {
                 delegate.cancel(thread);
             } catch (Exception e) {
@@ -251,7 +261,7 @@ public class ExecConfigBuilder {
         }
 
         @Override
-        public void cancel(Interruptible thread) throws Exception {
+        public void cancel(Thread thread) throws Exception {
             try {
                 delegate.cancel(thread);
             } catch (Exception e) {
@@ -266,11 +276,10 @@ public class ExecConfigBuilder {
         }
     }
     
-    private static class RunnableAdapter extends AbstractTask implements DelegatingTask  {
+    private static class RunnableAdapter implements DelegatingTask  {
         private final Runnable delegate;
         
-        public RunnableAdapter(Runnable delegate, boolean interrupt) {
-            super(interrupt);
+        public RunnableAdapter(Runnable delegate) {
             this.delegate = delegate;
         }
 
@@ -280,22 +289,29 @@ public class ExecConfigBuilder {
         }
         
         @Override
+        public void cancel(Thread thread) throws Exception {            
+        }
+        
+        @Override
         public Object getDelegate() {
             return delegate;
         }
     }
     
-    private static class CallableAdapter extends AbstractTask implements DelegatingTask {
+    private static class CallableAdapter implements DelegatingTask {
         private final Callable<?> delegate;
         
-        public CallableAdapter(Callable<?> delegate, boolean interrupt) {
-            super(interrupt);
+        public CallableAdapter(Callable<?> delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public void run() throws Exception {
             delegate.call();
+        }
+        
+        @Override
+        public void cancel(Thread thread) throws Exception {            
         }
         
         @Override
@@ -325,13 +341,40 @@ public class ExecConfigBuilder {
         }
 
         @Override
-        public void cancel(Interruptible thread) throws Exception {
+        public void cancel(Thread thread) throws Exception {
             curTask.cancel(thread);
         }
         
         @Override
         public Object getDelegate() {
             return curTask;
+        }
+    }
+    
+    private static class InterruptingTask implements DelegatingTask {
+        private final Task delegate;
+        
+        public InterruptingTask(Task delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void run() throws Exception {
+            delegate.run();
+        }
+
+        @Override
+        public void cancel(Thread thread) throws Exception {
+            try {
+                delegate.cancel(thread);
+            } finally {
+                thread.interrupt();
+            }
+        }
+
+        @Override
+        public Object getDelegate() {
+            return delegate;
         }
     }
 }

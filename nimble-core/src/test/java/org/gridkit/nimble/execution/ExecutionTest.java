@@ -15,7 +15,7 @@ public class ExecutionTest {
         
         ExecConfig c2 = (new ExecConfigBuilder())
                 .tasks(new PrintTask("two"), new PrintTask("three"))
-                .condition(ExecConditions.duration(1, TimeUnit.MILLISECONDS))
+                .condition(ExecConditions.duration(2, TimeUnit.MILLISECONDS))
                 .build();
         
         ExecutionDriver driver = Execution.newDriver();

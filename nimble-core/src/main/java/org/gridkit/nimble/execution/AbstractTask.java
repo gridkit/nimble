@@ -8,7 +8,7 @@ public abstract class AbstractTask implements Task {
     }
 
     @Override
-    public void cancel(Interruptible thread) throws Exception {
+    public void cancel(Thread thread) throws Exception {
         if (interrupt) {
             thread.interrupt();
         }
