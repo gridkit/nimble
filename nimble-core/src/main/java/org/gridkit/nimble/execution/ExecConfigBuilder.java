@@ -4,21 +4,27 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.Callable;
 
 import org.gridkit.util.concurrent.Barriers;
 import org.gridkit.util.concurrent.BlockingBarrier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-// add task errors logging and safe tasks
 public class ExecConfigBuilder {
-    protected Collection<Task> tasks = Collections.emptySet();
-    protected ExecCondition condition = ExecConditions.infinity();
-    protected BlockingBarrier barrier = Barriers.openBarrier();
-    protected boolean continuous = false;
-    protected boolean once = false;
+    private List<Task> tasks = Collections.emptyList();
+    private ExecCondition condition = ExecConditions.infinity();
+    private BlockingBarrier barrier = Barriers.openBarrier();
+    private boolean continuous = false;
+    private boolean once = false;
+    private boolean safe = false;
+    private boolean logErrors = false;
+    private boolean valid = true;
     
     public ExecConfigBuilder tasks(Collection<Task> tasks) {
-        this.tasks = tasks;
+        this.tasks = new ArrayList<Task>(tasks);
         return this;
     }
     
@@ -73,23 +79,50 @@ public class ExecConfigBuilder {
         this.once = true;
         return this;
     }
+    
+    public ExecConfigBuilder safe(boolean safe) {
+        this.safe = safe;
+        return this;
+    }
 
+    public ExecConfigBuilder logErrors(boolean logErrors) {
+        this.logErrors = logErrors;
+        return this;
+    }
+    
     private boolean valid() {
-        return (tasks != null) && (condition != null) && (barrier != null);
+        return valid && (tasks != null) && (condition != null) && (barrier != null);
     }
     
     public ExecConfig build() {
         if (!valid()) {
-            throw new IllegalStateException("ExecConfigBuilder state is invalid to create new ExecConfig");
+            throw new IllegalStateException("ExecConfigBuilder state is invalid");
         }
         
         InternalExecConfig result = new InternalExecConfig();
+        
+        ListIterator<Task> iter = tasks.listIterator();
+        while (iter.hasNext()) {
+            Task task = iter.next();
+            
+            if (logErrors) {
+                task = new LoggingTask(task);
+            }
+            
+            if (safe) {
+                task = new SafeTask(task);
+            }
+            
+            iter.set(task);
+        }
         
         result.tasks = tasks;
         result.condition = once ? ExecConditions.once(tasks) : condition;
         result.barrier = barrier;
         result.continuous = continuous;
 
+        valid = false;
+        
         return result;
     }
     
@@ -120,7 +153,87 @@ public class ExecConfigBuilder {
         }
     }
     
-    private static class RunnableAdapter extends AbstractTask {
+    private interface DelegatingTask extends Task {
+        Object getDelegate();
+    }
+    
+    private static Object getTaskRunner(Object task) {
+        if (task instanceof DelegatingTask) {
+            return getTaskRunner(((DelegatingTask)task).getDelegate());
+        } else {
+            return task;
+        }
+    }
+
+    private static class SafeTask implements DelegatingTask {
+        private final Task delegate;
+        
+        public SafeTask(Task delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void run() throws Exception {
+            try {
+                delegate.run();
+            } catch (Exception e) {
+                // ignored
+            }
+        }
+
+        @Override
+        public void cancel(Interruptible thread) throws Exception {
+            try {
+                delegate.cancel(thread);
+            } catch (Exception e) {
+                // ignored
+            }
+        }
+
+        @Override
+        public Object getDelegate() {
+            return delegate;
+        }
+    }
+    
+    private static class LoggingTask implements DelegatingTask {
+        private final Task delegate;
+        private final Object runner;
+        private final Logger log;
+        
+        public LoggingTask(Task delegate) {
+            this.delegate = delegate;
+            this.runner = getTaskRunner(delegate);
+            this.log = LoggerFactory.getLogger(runner.getClass());
+        }
+
+        @Override
+        public void run() throws Exception {
+            try {
+                delegate.run();
+            } catch (Exception e) {
+                log.error("Exception while running " + runner, e);
+                throw e;
+            }
+        }
+
+        @Override
+        public void cancel(Interruptible thread) throws Exception {
+            try {
+                delegate.cancel(thread);
+            } catch (Exception e) {
+                log.error("Exception while canceling " + runner, e);
+                throw e;
+            }
+        }
+
+        @Override
+        public Object getDelegate() {
+            return delegate;
+        }
+    }
+    
+    private static class RunnableAdapter extends AbstractTask implements DelegatingTask  {
         private final Runnable delegate;
         
         public RunnableAdapter(Runnable delegate, boolean interrupt) {
@@ -133,10 +246,13 @@ public class ExecConfigBuilder {
             delegate.run();
         }
         
-        
+        @Override
+        public Object getDelegate() {
+            return delegate;
+        }
     }
     
-    private static class CallableAdapter extends AbstractTask {
+    private static class CallableAdapter extends AbstractTask implements DelegatingTask {
         private final Callable<?> delegate;
         
         public CallableAdapter(Callable<?> delegate, boolean interrupt) {
@@ -147,6 +263,11 @@ public class ExecConfigBuilder {
         @Override
         public void run() throws Exception {
             delegate.call();
+        }
+        
+        @Override
+        public Object getDelegate() {
+            return delegate;
         }
     }
 }
