@@ -2,12 +2,12 @@ package org.gridkit.nimble.execution;
 
 public interface ExecutionDriver {
     /**
-     * @return thread per task pool
+     * @return unlimited concurrent tasks execution pool
      */
     public ExecutionPool newExecutionPool(String name);
     
     /**
-     * @return fixed number of threads pool
+     * @return fixed number of concurrent tasks execution pool
      */
     public ExecutionPool newExecutionPool(String name, int nTasks);
 }
