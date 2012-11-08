@@ -30,7 +30,7 @@ public class ExecutionTest {
                 
         a2.join();
 
-        pool.shutdown();
+        pool.stop();
     }
     
     private static class PrintTask extends AbstractTask {

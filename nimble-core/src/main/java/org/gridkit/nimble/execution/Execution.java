@@ -80,7 +80,7 @@ public class Execution {
         }
         
         @Override
-        public void shutdown() {
+        public void stop() {
             executor.shutdown();
         }
     }
