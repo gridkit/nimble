@@ -19,13 +19,13 @@ import org.slf4j.LoggerFactory;
 public class ExecConfigBuilder {
     private List<Task> tasks = Collections.emptyList();
     private ExecCondition condition = ExecConditions.infinity();
-    private BlockingBarrier barrier = Barriers.openBarrier();
+    private BlockingBarrier barrier = null;
     private Integer splits = null;
     private boolean manualShutdown = false;
-    private boolean once = false;
-    private boolean safe = false;
+    private boolean runEachTaskOnce = false;
+    private boolean ignoreErrors = false;
     private boolean logErrors = false;
-    private boolean interrupt = false;
+    private boolean interruptOnCancel = false;
     private boolean valid = true;
     
     public ExecConfigBuilder tasks(Collection<Task> tasks) {
@@ -104,12 +104,12 @@ public class ExecConfigBuilder {
     }
     
     public ExecConfigBuilder runEachTaskOnce() {
-        this.once = true;
+        this.runEachTaskOnce = true;
         return this;
     }
     
     public ExecConfigBuilder ignoreErrors() {
-        this.safe = true;
+        this.ignoreErrors = true;
         return this;
     }
 
@@ -119,7 +119,7 @@ public class ExecConfigBuilder {
     }
     
     public ExecConfigBuilder interruptOnCancel() {
-        this.interrupt = true;
+        this.interruptOnCancel = true;
         return this;
     }
     
@@ -132,7 +132,7 @@ public class ExecConfigBuilder {
     }
     
     private boolean valid() {
-        return valid && (tasks != null) && (condition != null) && (barrier != null);
+        return valid && (tasks != null) && (condition != null);
     }
     
     public ExecConfig build() {
@@ -142,23 +142,26 @@ public class ExecConfigBuilder {
         
         InternalExecConfig result = new InternalExecConfig();
         
-        result.condition = once ? ExecConditions.once(tasks) : condition;
-        result.barrier = barrier;
+        result.condition = runEachTaskOnce ? ExecConditions.once(tasks) : condition;
         result.manualShutdown = manualShutdown;
         
         ListIterator<Task> iter = tasks.listIterator();
         while (iter.hasNext()) {
             Task task = iter.next();
             
+            if (barrier != null) {
+                task = new BarrierTask(task, barrier);
+            }
+            
             if (logErrors) {
                 task = new LoggingTask(task);
             }
             
-            if (safe) {
+            if (ignoreErrors) {
                 task = new SafeTask(task);
             }
             
-            if (interrupt) {
+            if (interruptOnCancel) {
                 task = new InterruptingTask(task);
             }
             
@@ -184,7 +187,6 @@ public class ExecConfigBuilder {
     private static class InternalExecConfig implements ExecConfig {
         protected Collection<Task> tasks;
         protected ExecCondition condition;
-        protected BlockingBarrier barrier;
         protected boolean manualShutdown;
         
         @Override
@@ -195,11 +197,6 @@ public class ExecConfigBuilder {
         @Override
         public ExecCondition getCondition() {
             return condition;
-        }
-
-        @Override
-        public BlockingBarrier getBarrier() {
-            return barrier;
         }
 
         @Override
@@ -382,6 +379,32 @@ public class ExecConfigBuilder {
             } finally {
                 thread.interrupt();
             }
+        }
+
+        @Override
+        public Object getDelegate() {
+            return delegate;
+        }
+    }
+    
+    private static class BarrierTask implements DelegatingTask {
+        private final Task delegate;
+        private final BlockingBarrier barrier;
+        
+        public BarrierTask(Task delegate, BlockingBarrier barrier) {
+            this.delegate = delegate;
+            this.barrier = barrier;
+        }
+
+        @Override
+        public void run() throws Exception {
+            barrier.pass();
+            delegate.run();
+        }
+
+        @Override
+        public void cancel(Thread thread) throws Exception {
+            delegate.cancel(thread);
         }
 
         @Override
