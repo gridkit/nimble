@@ -1,8 +1,11 @@
 package org.gridkit.nimble.btrace;
 
+import static org.gridkit.nimble.util.StringOps.F;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -29,7 +32,7 @@ public interface BTraceDriver {
     
     void stop();
     
-    public static class Impl implements BTraceDriver, BTraceClientSource, Serializable {
+    public static class Impl implements BTraceDriver, Serializable {
         private static final long serialVersionUID = -7698303441795919196L;
         private static final Logger log = LoggerFactory.getLogger(Impl.class);
 
@@ -68,7 +71,7 @@ public interface BTraceDriver {
                 probe.setSettings(settings);
                 
                 probe.setClientOps(clientOps);
-                probe.setClientSource(this);
+                probe.setClient(getClient(pid, settings));
                 
                 probe.setFactoryProvider(factoryProvider.getSink());
 
@@ -87,10 +90,29 @@ public interface BTraceDriver {
             return trace(pidProvider, settings, factoryProvider);
         }
         
-        @Override
-        public Client getClient(final long pid) throws ClientCreateException {
-            Client client = clientFactory.newClient((int)pid, settings);
-            clients.add(client);
+        public Client getClient(long pid, BTraceScriptSettings scriptSettings) {
+            Client client = null;
+            
+            try {
+                client = clientFactory.newClient((int)pid, settings);
+                
+                // submit is first because it is the only method initializing command channel
+                clientOps.submit(
+                    client, scriptSettings.getScriptClass(), scriptSettings.getArgsArray(), timeoutMs
+                );
+                
+                clientOps.clearSamples(
+                    client, Collections.<Class<?>>singleton(scriptSettings.getScriptClass()), timeoutMs
+                );
+            } catch (Exception e) {
+                log.error(F("Failed to connect to client with pid %d", pid));
+                throw new RuntimeException(e);
+            } finally {
+                if (client != null) {
+                    clients.add(client);
+                }
+            }
+            
             return client;
         }
         

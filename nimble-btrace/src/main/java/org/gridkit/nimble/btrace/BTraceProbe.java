@@ -34,20 +34,16 @@ public class BTraceProbe implements Callable<Void> {
     private long pid;
     private BTraceScriptSettings settings;
     
+    private Client client; 
     private BTraceClientOps clientOps;
-    private BTraceClientSource clientSource;
     
     private BTraceSamplerFactoryProvider factoryProvider;
     
     private Map<String, SampleStoreProcessor> processors = new HashMap<String, SampleStoreProcessor>();
-    
-    private Client client;
 
     @Override
     public Void call() throws Exception {
-        try {            
-            Client client = getClient();
-    
+        try {
             PollSamplesCmdResult result = clientOps.pollSamples(
                 client, getScriptClasses(), settings.getTimeoutMs()
             );
@@ -63,24 +59,6 @@ public class BTraceProbe implements Callable<Void> {
         }
     }
 
-    private Client getClient() throws Exception {
-        if (client == null) {
-            try {
-                client = clientSource.getClient(pid);
-                                
-                // submit is first because it is the only method initializing command channel
-                clientOps.submit(client, settings.getScriptClass(), settings.getArgsArray(), settings.getTimeoutMs());
-                
-                clientOps.clearSamples(client, getScriptClasses(), settings.getTimeoutMs());
-            } catch (Exception e) {
-                log.error(F("Failed to connect to client with pid %d", pid));
-                throw e;
-            }
-        }
-        
-        return client;
-    }
-
     private class SampleStoreProcessor {        
         private SamplerFactory userSamplerFactory;
         
@@ -88,6 +66,9 @@ public class BTraceProbe implements Callable<Void> {
         
         private PointSampler receivedSampler;
         private PointSampler missedSampler;
+        
+        private long missedSamples = 0;
+        private long receivedSamples = 0;
         
         private long lastSeqNum = RingBuffer.START_ID - 1;
         
@@ -103,13 +84,13 @@ public class BTraceProbe implements Callable<Void> {
         }
         
         public void process(SampleStoreContents contents) {
+            submitStats(contents);
             for (ScalarSample sample : contents.getSamples()) {
-                submit(sample);
+                submitSample(sample);
             }
-            submit(contents);
         }
         
-        private void submit(ScalarSample rawSample) {       
+        private void submitSample(ScalarSample rawSample) {       
             if (rawSample instanceof SpanSample) {
                 submitSpan((SpanSample)rawSample);
             } else if (rawSample instanceof DurationSample) {
@@ -123,27 +104,22 @@ public class BTraceProbe implements Callable<Void> {
             }
         }
 
-        private void submit(SampleStoreContents contents) {
-            int missed = calculateMissed(contents);
-            
+        private void submitStats(SampleStoreContents contents) {            
             double timestampS = Seconds.currentTime();
             
-            missedSampler.write(missed, timestampS);
-            receivedSampler.write(contents.getSamples().size(), timestampS);
-        }
-        
-        private int calculateMissed(SampleStoreContents contents) {
             long newLastSeqNum = lastSeqNum;
             
             for (ScalarSample sample : contents.getSamples()) {
                 newLastSeqNum = Math.max(newLastSeqNum, sample.getSeqNumber());
             }
             
-            int result = (int)(newLastSeqNum - lastSeqNum - contents.getSamples().size());
+            missedSamples += newLastSeqNum - lastSeqNum - contents.getSamples().size();
+            receivedSamples += contents.getSamples().size();
 
             lastSeqNum = newLastSeqNum;
-
-            return result;
+            
+            missedSampler.write(missedSamples, timestampS);
+            receivedSampler.write(receivedSamples, timestampS);
         }
         
         public void submitScalar(ScalarSample sample) {            
@@ -211,8 +187,8 @@ public class BTraceProbe implements Callable<Void> {
         this.clientOps = clientOps;
     }
 
-    public void setClientSource(BTraceClientSource clientSource) {
-        this.clientSource = clientSource;
+    public void setClient(Client client) {
+        this.client = client;
     }
 
     public void setFactoryProvider(BTraceSamplerFactoryProvider factoryProvider) {
