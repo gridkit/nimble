@@ -10,6 +10,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.util.NamedThreadFactory;
@@ -25,10 +27,23 @@ public class Execution {
         public ExecutionPool newExecutionPool(String name) {
             return Execution.newExecutionPool(name);
         }
+
+        @Override
+        public DynamicSemaphore newDynamicSemaphore(int nPermits) {
+            return Execution.newDynamicSemaphore(nPermits);
+        }
     }
     
     public static ExecutionPool newExecutionPool(String name) {
         return new Pool(name);
+    }
+    
+    public static DynamicSemaphore newDynamicSemaphore() {
+        return new VaryingSemaphore();
+    }
+    
+    public static DynamicSemaphore newDynamicSemaphore(int nPermits) {
+        return new VaryingSemaphore(nPermits);
     }
         
     private static class CompositeActivity implements Activity {
@@ -85,7 +100,6 @@ public class Execution {
         }
     }
     
-    // TODO finish join after first Exception
     private static class Handle implements Activity {  
         private final Worker worker;
         private final Future<Void> future;
@@ -205,6 +219,50 @@ public class Execution {
                     future.cancel(true);
                 }
             }
+        }
+    }
+    
+    // TODO add support multiple acquires within one thread
+    private static class VaryingSemaphore implements DynamicSemaphore {
+        private final AtomicReference<Semaphore> globalSemaphore = new AtomicReference<Semaphore>(null);
+        private final ThreadLocal<Semaphore> localSemaphore = new ThreadLocal<Semaphore>();
+        
+        public VaryingSemaphore() {
+        }
+        
+        public VaryingSemaphore(int nPermits) {
+            permits(nPermits);
+        }
+
+        @Override
+        public void acquire() throws InterruptedException {
+            Semaphore semaphore = globalSemaphore.get();
+            if (semaphore != null) {
+                semaphore.acquire();
+                localSemaphore.set(semaphore);
+            }
+        }
+
+        @Override
+        public void release() {
+            Semaphore semaphore = localSemaphore.get();
+            if (semaphore != null) {
+                semaphore.release();
+                localSemaphore.set(null);
+            }
+        }
+
+        @Override
+        public void permits(int nPermits) {
+            if (nPermits < 1) {
+                throw new IllegalArgumentException("nPermits < 1");
+            }
+            globalSemaphore.set(new Semaphore(nPermits));
+        }
+
+        @Override
+        public void disable() {
+            globalSemaphore.set(null);
         }
     }
 }

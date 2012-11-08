@@ -20,6 +20,7 @@ public class ExecConfigBuilder {
     private List<Task> tasks = Collections.emptyList();
     private ExecCondition condition = ExecConditions.infinity();
     private BlockingBarrier barrier = null;
+    private Semaphore semaphore = null;
     private Integer splits = null;
     private boolean manualStop = false;
     private boolean runEachTaskOnce = false;
@@ -98,6 +99,11 @@ public class ExecConfigBuilder {
         return rate(ops * (secondNs / unitNs));
     }
     
+    public ExecConfigBuilder semaphore(Semaphore semaphore) {
+        this.semaphore = semaphore;
+        return this;
+    }
+    
     public ExecConfigBuilder manualStop() {
         this.manualStop = true;
         return this;
@@ -121,6 +127,18 @@ public class ExecConfigBuilder {
     public ExecConfigBuilder interruptOnCancel() {
         this.interruptOnCancel = true;
         return this;
+    }
+    
+    public ExecConfigBuilder duration(long duration, TimeUnit unit) {
+        return condition(ExecConditions.duration(duration, unit));
+    }
+    
+    public ExecConfigBuilder duration(long durationS) {
+        return condition(ExecConditions.duration(durationS));
+    }
+    
+    public ExecConfigBuilder iterations(long iterations) {
+        return condition(ExecConditions.iterations(iterations));
     }
     
     public ExecConfigBuilder split(int splits) {
@@ -149,6 +167,10 @@ public class ExecConfigBuilder {
         while (iter.hasNext()) {
             Task task = iter.next();
             
+            if (semaphore != null) {
+                task = new SemaphoreTask(task, semaphore);
+            }
+            
             if (barrier != null) {
                 task = new BarrierTask(task, barrier);
             }
@@ -157,18 +179,18 @@ public class ExecConfigBuilder {
                 task = new LoggingTask(task);
             }
             
-            if (ignoreErrors) {
-                task = new SafeTask(task);
-            }
-            
             if (interruptOnCancel) {
                 task = new InterruptingTask(task);
+            }
+
+            if (ignoreErrors) {
+                task = new SafeTask(task);
             }
             
             iter.set(task);
         }
         
-        if (splits != null && tasks.size() < splits && tasks.size() > 0) {
+        if (splits != null && tasks.size() > splits) {
             BlockingQueue<Task> queue = new ArrayBlockingQueue<Task>(tasks.size(), true, tasks);
             
             tasks = new ArrayList<Task>(splits);
@@ -216,7 +238,7 @@ public class ExecConfigBuilder {
             return task;
         }
     }
-
+    
     private static class SafeTask implements DelegatingTask {
         private final Task delegate;
         
@@ -400,6 +422,36 @@ public class ExecConfigBuilder {
         public void run() throws Exception {
             barrier.pass();
             delegate.run();
+        }
+
+        @Override
+        public void cancel(Thread thread) throws Exception {
+            delegate.cancel(thread);
+        }
+
+        @Override
+        public Object getDelegate() {
+            return delegate;
+        }
+    }
+    
+    private static class SemaphoreTask implements DelegatingTask {
+        private final Task delegate;
+        private final Semaphore semaphore;
+        
+        public SemaphoreTask(Task delegate, Semaphore semaphore) {
+            this.delegate = delegate;
+            this.semaphore = semaphore;
+        }
+
+        @Override
+        public void run() throws Exception {
+            semaphore.acquire();
+            try {
+                delegate.run();
+            } finally {
+                semaphore.release();
+            }
         }
 
         @Override
