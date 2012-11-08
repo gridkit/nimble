@@ -169,7 +169,7 @@ public class Execution {
                 if (!done && !config.getCondition().satisfied()) {
                     latch.countDown();
                     done = true;
-                    if (!config.isManualShutdown()) {
+                    if (!config.isManualStop()) {
                         return;
                     }
                 }

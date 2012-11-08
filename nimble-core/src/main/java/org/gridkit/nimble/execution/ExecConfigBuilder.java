@@ -21,7 +21,7 @@ public class ExecConfigBuilder {
     private ExecCondition condition = ExecConditions.infinity();
     private BlockingBarrier barrier = null;
     private Integer splits = null;
-    private boolean manualShutdown = false;
+    private boolean manualStop = false;
     private boolean runEachTaskOnce = false;
     private boolean ignoreErrors = false;
     private boolean logErrors = false;
@@ -98,8 +98,8 @@ public class ExecConfigBuilder {
         return rate(ops * (secondNs / unitNs));
     }
     
-    public ExecConfigBuilder manualShutdown() {
-        this.manualShutdown = true;
+    public ExecConfigBuilder manualStop() {
+        this.manualStop = true;
         return this;
     }
     
@@ -143,7 +143,7 @@ public class ExecConfigBuilder {
         InternalExecConfig result = new InternalExecConfig();
         
         result.condition = runEachTaskOnce ? ExecConditions.once(tasks) : condition;
-        result.manualShutdown = manualShutdown;
+        result.manualShutdown = manualStop;
         
         ListIterator<Task> iter = tasks.listIterator();
         while (iter.hasNext()) {
@@ -200,7 +200,7 @@ public class ExecConfigBuilder {
         }
 
         @Override
-        public boolean isManualShutdown() {
+        public boolean isManualStop() {
             return manualShutdown;
         }
     }

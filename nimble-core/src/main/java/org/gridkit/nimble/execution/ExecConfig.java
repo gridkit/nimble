@@ -7,5 +7,5 @@ public interface ExecConfig {
     
     ExecCondition getCondition();
             
-    boolean isManualShutdown();
+    boolean isManualStop();
 }
