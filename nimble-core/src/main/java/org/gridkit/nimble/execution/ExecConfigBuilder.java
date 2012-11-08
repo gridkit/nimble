@@ -65,6 +65,18 @@ public class ExecConfigBuilder {
         return callables(Arrays.asList(callables));
     }
     
+    public ExecConfigBuilder tasks(Task task, int nCopies) {
+        return tasks(Collections.nCopies(nCopies, task));
+    }
+    
+    public ExecConfigBuilder runnables(Runnable runnable, int nCopies) {
+        return runnables(Collections.nCopies(nCopies, runnable));
+    }
+    
+    public ExecConfigBuilder callables(Callable<?> callable, int nCopies) {
+        return callables(Collections.<Callable<?>>nCopies(nCopies, callable));
+    }
+    
     public ExecConfigBuilder condition(ExecCondition condition) {
         this.condition = condition;
         return this;

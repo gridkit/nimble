@@ -204,6 +204,7 @@ public class Execution {
                 run();
             } catch (Exception e) {
                 if (!done) {
+                    latch.countDown();
                     throw e;
                 }
             }
@@ -234,8 +235,8 @@ public class Execution {
                         }
                         task.run();
                     } finally {
-                        Thread.interrupted(); // clearing up thread's interrupted status
                         synchronized (lock) {
+                            Thread.interrupted(); // clearing up thread's interrupted status
                             thread = null;
                             if (canceled) {
                                 return;
