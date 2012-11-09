@@ -119,12 +119,15 @@ public class ExecConditions {
         
         @Override
         public boolean satisfied() {
+            boolean result = true;
+            
             for (ExecCondition condition : conditions) {
                 if (!condition.satisfied()) {
-                    return false;
+                    result = false;
                 }
             }
-            return true;
+            
+            return result;
         }
     }
     
@@ -147,12 +150,15 @@ public class ExecConditions {
         
         @Override
         public boolean satisfied() {
+            boolean result = false;
+            
             for (ExecCondition condition : conditions) {
                 if (condition.satisfied()) {
-                    return true;
+                    result = true;
                 }
             }
-            return false;
+            
+            return result;
         }
     }
 }

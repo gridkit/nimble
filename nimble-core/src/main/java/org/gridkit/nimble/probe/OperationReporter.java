@@ -23,7 +23,7 @@ public class OperationReporter {
         startTimesNs.put(operation, System.nanoTime());
     }
 
-    public void finish(String operation) {
+    public void finish(String operation, double unit) {
         long finishNs = System.nanoTime();
         
         if (!startTimesMs.containsKey(operation) || !startTimesNs.containsKey(operation)) {
@@ -33,13 +33,29 @@ public class OperationReporter {
         long startMs = startTimesMs.get(operation);
         long startNs = startTimesNs.get(operation);
         
-        factory.getSpanSampler(operation).write(1.0, Seconds.fromMillis(startMs), Seconds.fromNanos(finishNs - startNs));
-        
-        startTimesMs.remove(operation);
-        startTimesNs.remove(operation);
+        try {
+            factory.getSpanSampler(operation).write(
+                unit, Seconds.fromMillis(startMs), Seconds.fromNanos(finishNs - startNs)
+            );
+        } finally {
+            startTimesMs.remove(operation);
+            startTimesNs.remove(operation);
+        }
+    }
+    
+    public void finish(String operation) {
+        finish(operation, 1.0);
     }
     
     public void scalar(String key, double value) {
         factory.getScalarSampler(key).write(value);
+    }
+    
+    public void event(String key, double measure) {
+        factory.getPointSampler(key).write(measure, Seconds.currentTime());
+    }
+    
+    public void event(String key) {
+        event(key, 1.0);
     }
 }
