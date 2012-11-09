@@ -8,7 +8,7 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
 import org.gridkit.lab.util.jmx.mxstruct.MXStruct;
-import org.gridkit.lab.util.jmx.mxstruct.MxHelper;
+import org.gridkit.lab.util.jmx.mxstruct.MXHelper;
 import org.gridkit.lab.util.jmx.mxstruct.common.MemoryMXStruct.MemUsage;
 
 public class MemoryPoolMXStruct extends MXStruct {
@@ -17,7 +17,7 @@ public class MemoryPoolMXStruct extends MXStruct {
 	public static final MemoryPoolMXStruct PROTO = new MemoryPoolMXStruct();
 	
 	public static Map<String, MemoryPoolMXStruct> get(MBeanServerConnection conn) throws ReflectionException, IOException {
-		return MxHelper.collectBeans(conn, PATTERN, PROTO);
+		return MXHelper.collectBeans(conn, PATTERN, PROTO);
 	}
 	
 	@AttrName("Name")

@@ -3,6 +3,8 @@ package org.gridkit.nimble.probe.jmx;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
+import org.gridkit.lab.util.jmx.mxstruct.common.RuntimeMXStruct;
+
 public class MBeanTarget {
 
 	private final MBeanServerConnection connection;
@@ -17,6 +19,14 @@ public class MBeanTarget {
 		return connection;
 	}
 
+	public String getProcessName() {
+		try {
+			return (String) connection.getAttribute(RuntimeMXStruct.NAME, "Name");
+		} catch (Exception e) {
+			return connection.toString();
+		}
+	}
+	
 	public ObjectName getMbeanName() {
 		return mbeanName;
 	}

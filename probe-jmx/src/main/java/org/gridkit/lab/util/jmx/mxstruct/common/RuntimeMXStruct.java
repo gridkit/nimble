@@ -9,7 +9,7 @@ import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
 import org.gridkit.lab.util.jmx.mxstruct.MXStruct;
-import org.gridkit.lab.util.jmx.mxstruct.MxHelper;
+import org.gridkit.lab.util.jmx.mxstruct.MXHelper;
 
 public class RuntimeMXStruct extends MXStruct implements RuntimeMXBean {
 	
@@ -18,7 +18,7 @@ public class RuntimeMXStruct extends MXStruct implements RuntimeMXBean {
 	
 	public static RuntimeMXStruct get(MBeanServerConnection conn) {
 		try {
-			return MxHelper.collectBeans(conn, NAME, PROTO).values().iterator().next();
+			return MXHelper.collectBeans(conn, NAME, PROTO).values().iterator().next();
 		} catch (Exception e) {
 			throw new RuntimeException();
 		}

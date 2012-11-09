@@ -1,6 +1,7 @@
 package org.gridkit.nimble.probe.jmx.threading;
 
 import java.lang.management.ThreadInfo;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import org.gridkit.nimble.probe.jmx.MXBeanFactory;
 class JmxThreadTracker {
 
 	private ExtendedThreadMXBean mbean;
+	private boolean hotspotExtentionsSupported = true;
 
 	private Map<Long, ThreadNote> notes = new HashMap<Long, JmxThreadTracker.ThreadNote>();
 	
@@ -27,9 +29,9 @@ class JmxThreadTracker {
 		long[] ids = mbean.getAllThreadIds();
 		Arrays.sort(ids);
 		long timestamp = System.nanoTime();
-		long[] cpuTime = mbean.getThreadCpuTime(ids);
-		long[] userTime = mbean.getThreadUserTime(ids);
-		long[] alloc = mbean.getThreadAllocatedBytes(ids);
+		long[] cpuTime = getThreadCpuTime(ids);
+		long[] userTime = getThreadUserTime(ids);
+		long[] alloc = getThreadAllocatedBytes(ids);
 		ThreadInfo[] infos = mbean.getThreadInfo(ids, 0);
 
 		Map<Long, ThreadNote> nnotes = new HashMap<Long, JmxThreadTracker.ThreadNote>();
@@ -55,6 +57,63 @@ class JmxThreadTracker {
 			}
 		}	
 		notes = nnotes;
+	}
+
+	private long[] getThreadCpuTime(long[] ids) {
+		if (hotspotExtentionsSupported) {
+			try {
+				return mbean.getThreadCpuTime(ids);
+			}
+			catch(UndeclaredThrowableException e) {
+				hotspotExtentionsSupported = false;
+				return getThreadCpuTime(ids);
+			}
+		}
+		else {
+			long[] data = new long[ids.length];
+			for(int i = 0; i != ids.length; ++i) {
+				data[i] = mbean.getThreadCpuTime(ids[i]);
+			}
+			return data;
+		}
+	}
+	
+	private long[] getThreadUserTime(long[] ids) {
+		if (hotspotExtentionsSupported) {
+			try {
+				return mbean.getThreadUserTime(ids);
+			}
+			catch(UndeclaredThrowableException e) {
+				hotspotExtentionsSupported = false;
+				return getThreadUserTime(ids);
+			}
+		}
+		else {
+			long[] data = new long[ids.length];
+			for(int i = 0; i != ids.length; ++i) {
+				data[i] = mbean.getThreadUserTime(ids[i]);
+			}
+			return data;
+		}
+	}
+
+	private long[] getThreadAllocatedBytes(long[] ids) {
+		if (hotspotExtentionsSupported) {
+			try {
+				return mbean.getThreadAllocatedBytes(ids);
+			}
+			catch(UndeclaredThrowableException e) {
+				hotspotExtentionsSupported = false;
+				return getThreadAllocatedBytes(ids);
+			}
+		}
+		else {
+			long[] data = new long[ids.length];
+			for(int i = 0; i != ids.length; ++i) {
+				data[i] = 0;
+			}
+			return data;
+		}			
 	}
 	
 	public synchronized List<TradeDetails> getAllThreads() {

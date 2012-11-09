@@ -4,4 +4,6 @@ public interface SampleFactory {
 
 	public SampleWriter newSample();
 	
+	public void trace(boolean enable);
+	
 }

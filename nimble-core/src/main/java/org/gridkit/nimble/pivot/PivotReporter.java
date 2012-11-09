@@ -110,11 +110,21 @@ public class PivotReporter implements SampleAccumulator {
 		}
 		SingleSampleReader ssr = new SingleSampleReader(samples);
 		while(true) {
-			processSample(summary, ssr);
+			if (!processSample(summary, ssr)) {
+				LOGGER.debug("Sample ignored: " + printSample(samples));
+			}
 			if (!samples.next()) {
 				return;
 			}
 		}		
+	}
+
+	private String printSample(SampleReader sample) {
+		Map<String, Object> line = new LinkedHashMap<String, Object>();
+		for(Object key: sample.keySet()) {
+			line.put(key.toString(), sample.get(key));
+		}
+		return line.toString();
 	}
 
 	@Override
@@ -125,22 +135,25 @@ public class PivotReporter implements SampleAccumulator {
 	/**
 	 * @param reader - single sample reader (actual class declaration is intentional)
 	 */
-	private void processSample(LevelSummary summary, SingleSampleReader reader) {
+	private boolean processSample(LevelSummary summary, SingleSampleReader reader) {
+		boolean processed = false;
 		if (summary.info.filter.match(reader)) {
-			processAggregations(summary, reader);
+			processed |= processAggregations(summary, reader);
 			if (summary.isGroupping()) {
-				processGroups(summary, reader);
+				processed |= processGroups(summary, reader);
 			}
 			else {
 				summary.ensureSublevels(this);
 				for(LevelSummary sublevel: summary.sublevels.values()) {
-					processSample(sublevel, reader);
+					processed |= processSample(sublevel, reader);
 				}
 			}				
 		}		
+		return processed;
 	}
 	
-	private void processGroups(LevelSummary summary, SingleSampleReader reader) {
+	private boolean processGroups(LevelSummary summary, SingleSampleReader reader) {
+		boolean processed = false;
 		if (summary.subgroups != null) {
 			SampleExtractor groupBy = summary.info.groupBy;
 			Object group = groupBy.extract(reader);
@@ -148,8 +161,9 @@ public class PivotReporter implements SampleAccumulator {
 			if (subgroup == null) {
 				subgroup = createSubGroup(summary, group);
 			}
-			processSample(subgroup, reader);
+			processed |= processSample(subgroup, reader);
 		}	
+		return processed;
 	}
 
 	protected LevelSummary createSubGroup(LevelSummary summary, Object group) {
@@ -160,15 +174,18 @@ public class PivotReporter implements SampleAccumulator {
 		return subgroup;
 	}
 
-	private void processAggregations(LevelSummary summary, SingleSampleReader reader) {
+	private boolean processAggregations(LevelSummary summary, SingleSampleReader reader) {
+		boolean processed = false;
 		if (summary.isVerbatim()) {
 			summary.samples.addSamples(reader);
+			processed = true;
 		}
 		else {
 			summary.ensureAggregations();
 			for(Object key: summary.aggregations.keySet()) {
 				try {
-					summary.aggregations.get(key).addSamples(reader);
+					summary.aggregations.get(key).addSamples(reader);					
+					processed = true;
 				}
 				catch(Exception e) {
 					LOGGER.warn("Error processing sample " + e.toString());
@@ -181,6 +198,7 @@ public class PivotReporter implements SampleAccumulator {
 						try {
 							agg.addSamples(reader);
 							summary.aggregations.put(key, agg);
+							processed = true;
 						}
 						catch(Exception e) {
 							LOGGER.warn("Error processing sample " + e.toString());
@@ -189,6 +207,7 @@ public class PivotReporter implements SampleAccumulator {
 				}
 			}
 		}
+		return processed;
 	}
 
 	static String combine(String a, String b) {

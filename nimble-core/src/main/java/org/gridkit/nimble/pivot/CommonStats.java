@@ -1,6 +1,7 @@
 package org.gridkit.nimble.pivot;
 
 import org.gridkit.nimble.pivot.display.UnitDeco;
+import org.gridkit.nimble.statistics.DistinctSummary;
 import org.gridkit.nimble.statistics.DistributionSummary;
 import org.gridkit.nimble.statistics.FrequencySummary;
 import org.gridkit.nimble.statistics.Summary.CountSummary;
@@ -18,6 +19,7 @@ public class CommonStats {
 	public static final StatAppraisal SUM = StatAppraisal.SUM;
 	public static final StatAppraisal DURATION = StatAppraisal.DURATION;
 	public static final StatAppraisal FREQUENCY = StatAppraisal.FREQUENCY;
+	public static final StatAppraisal DISTINCT = StatAppraisal.DISTINCT;
 	
 	public static final StatAppraisal[] DISTRIBUTION_STATS = {MEAN, STD_DEV, MIN, MAX}; 
 	public static final StatAppraisal[] FREQUENCY_STATS = {FREQUENCY, DURATION};
@@ -202,6 +204,23 @@ public class CommonStats {
 				case DENOMINATOR: return deco.getMultiplier();
 				default: throw new Error();
 				}
+			}
+			
+			@Override
+			public String toString() {
+				return "Freq.";
+			}															
+		},
+		DISTINCT() {
+			@Override
+			public Object extract(CombinedSummary summary) {
+				DistinctSummary ds = summary.getSummary(DistinctSummary.class);
+				return ds == null ? null : ds.getDistictCount();
+			}
+			
+			@Override
+			public double transalte(UnitDeco deco) {
+				return 1;
 			}
 			
 			@Override

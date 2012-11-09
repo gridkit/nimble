@@ -12,6 +12,10 @@ class PivotHelper {
 		return new FrequencyAggregator(new SampleFrequencyExtractor(extractor));
 	}
 
+	public static Pivot.AggregationFactory createDistictAggregator(SampleExtractor extractor) {
+		return new DistinctAggregator(extractor);
+	}
+
 	public static Pivot.AggregationFactory createConstantAggregator(final SampleExtractor extractor) {
 		return new ConstantAggregator(extractor);
 	}
@@ -81,6 +85,22 @@ class PivotHelper {
 		@Override
 		public Aggregation<?> newAggregation() {
 			return new FrequencyAggregation(extractor);
+		}				
+	}	
+
+	private static class DistinctAggregator implements Pivot.AggregationFactory, Serializable {
+		
+		private static final long serialVersionUID = 20121014L;
+		
+		private final SampleExtractor extractor;
+		
+		public DistinctAggregator(SampleExtractor extractor) {
+			this.extractor = extractor;
+		}
+		
+		@Override
+		public Aggregation<?> newAggregation() {
+			return new DistinctAggregation(extractor);
 		}				
 	}	
 }

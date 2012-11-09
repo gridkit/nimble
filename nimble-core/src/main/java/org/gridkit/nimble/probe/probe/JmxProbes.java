@@ -13,7 +13,9 @@ import java.util.Set;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
+import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.probe.common.TargetLocator;
 import org.gridkit.nimble.probe.jmx.JmxLocator;
 import org.gridkit.nimble.probe.jmx.MBeanConnector;
 import org.gridkit.nimble.probe.jmx.MBeanLocator;
@@ -25,22 +27,28 @@ import org.gridkit.nimble.probe.jmx.threading.JavaThreadingProbe;
 
 public class JmxProbes {
 
-	
-	
-	public static void deployJavaThreadProbe(MetricsPollDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto) {
-		deployJavaThreadProbe(pollDriver, connector, schemaConfig, samplerProto, 1000);
+	public static Activity deployJavaThreadProbe(MetricsPollDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto) {
+		return deployJavaThreadProbe(pollDriver, connector, schemaConfig, samplerProto, 1000);
 	}
 
-	public static void deployJavaThreadProbe(MetricsPollDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto, long periodMs) {
-		pollDriver.deploy(new JmxLocator(connector), new JavaThreadingProbe(), schemaConfig, samplerProto, periodMs);
+	public static Activity deployJavaThreadProbe(MetricsPollDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto, long periodMs) {
+		return pollDriver.deploy(new JmxLocator(connector), new JavaThreadingProbe(), schemaConfig, samplerProto, periodMs);
 	}
 
-	public static void deployMBeanProbe(MetricsPollDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto) {
-		deployMBeanProbe(pollDriver, connector, name, schemaConfig, samplerProto, 1000);
+	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto) {
+		return deployMBeanProbe(pollDriver, connector, name, schemaConfig, samplerProto, 1000);
 	}
 	
-	public static void deployMBeanProbe(MetricsPollDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto, long periodMs) {
-		pollDriver.deploy(new MBeanLocator(connector, name), new MBeanProbe(), schemaConfig, samplerProto, periodMs);
+	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto, long periodMs) {
+		return pollDriver.deploy(new MBeanLocator(connector, name), new MBeanProbe(), schemaConfig, samplerProto, periodMs);
+	}
+
+	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, TargetLocator<MBeanTarget> locator, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto) {
+		return deployMBeanProbe(pollDriver, locator, schemaConfig, samplerProto, 1000);
+	}
+	
+	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, TargetLocator<MBeanTarget> locator, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto, long periodMs) {
+		return pollDriver.deploy(locator, new MBeanProbe(), schemaConfig, samplerProto, periodMs);
 	}
 	
 	@SuppressWarnings("unchecked")

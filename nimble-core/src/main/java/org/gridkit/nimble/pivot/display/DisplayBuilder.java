@@ -3,9 +3,10 @@ package org.gridkit.nimble.pivot.display;
 import java.util.Arrays;
 import java.util.List;
 
-import org.gridkit.nimble.metering.DisrtibutedMetering;
+import org.gridkit.nimble.metering.DistributedMetering;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.pivot.CommonStats;
+import org.gridkit.nimble.pivot.SampleExtractor;
 
 public abstract class DisplayBuilder {
 	
@@ -70,6 +71,8 @@ public abstract class DisplayBuilder {
 	
 	public abstract WithCaptionAndUnitsDisplayBuilder stats(Object key, CommonStats.StatAppraisal... stats);
 
+	public abstract WithCaptionDisplayBuilder value(SampleExtractor extractor);
+
 	public WithCaptionAndUnitsDisplayBuilder count() {
 		return stats(Measure.MEASURE, CommonStats.COUNT);
 	}
@@ -133,6 +136,10 @@ public abstract class DisplayBuilder {
 	public WithCaptionAndUnitsDisplayBuilder duration(Object key) {
 		return stats(key, CommonStats.DURATION);
 	}
+
+	public WithCaptionAndUnitsDisplayBuilder distinct(Object key) {
+		return stats(key, CommonStats.DISTINCT);
+	}
 	
 	public abstract ForLevelDisplayBuider metricName(String caption);
 
@@ -193,22 +200,22 @@ public abstract class DisplayBuilder {
 		
 		@Override
 		public WithCaptionAndUnitsDisplayBuilder hostname() {
-			return (WithCaptionAndUnitsDisplayBuilder) attribute("Hostname", DisrtibutedMetering.HOSTNAME);
+			return (WithCaptionAndUnitsDisplayBuilder) attribute("Hostname", DistributedMetering.HOSTNAME);
 		}
 
 		@Override
 		public ForLevelDisplayBuider hostname(String caption) {
-			return attribute(caption, DisrtibutedMetering.HOSTNAME);
+			return attribute(caption, DistributedMetering.HOSTNAME);
 		}
 		
 		@Override
 		public WithCaptionAndUnitsDisplayBuilder nodeName() {
-			return (WithCaptionAndUnitsDisplayBuilder) attribute("Node", DisrtibutedMetering.NODENAME);
+			return (WithCaptionAndUnitsDisplayBuilder) attribute("Node", DistributedMetering.NODENAME);
 		}
 
 		@Override
 		public ForLevelDisplayBuider nodeName(String caption) {
-			return attribute(caption, DisrtibutedMetering.NODENAME);
+			return attribute(caption, DistributedMetering.NODENAME);
 		}
 
 		@Override
@@ -226,6 +233,12 @@ public abstract class DisplayBuilder {
 			StatsDisplayComponent ds = DisplayFactory.genericStats(key, stats);
 			add(ds);
 			return new WithCaptionAndUnitsDisplayBuilder(globalScope, printer, ds);
+		}
+		
+		public WithCaptionDisplayBuilder value(SampleExtractor extractor) {
+			SimpleDisplayComponent sd = new SimpleDisplayComponent(extractor.toString(), extractor);
+			add(sd);
+			return new WithCaptionDisplayBuilder(globalScope, printer, sd);
 		}
 
 		@Override

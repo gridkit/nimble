@@ -190,6 +190,7 @@ public class ArraySampleManager implements SampleReader {
 		private Map<Object, Object> statics;
 		private List<Object> keySet;
 		private Object[] measureKeys;
+		private boolean trace = false;
 		
 		private ArraySampleManager manager;
 		
@@ -206,7 +207,13 @@ public class ArraySampleManager implements SampleReader {
 
 		@Override
 		public SampleWriter newSample() {
-			return new ArraySampleWriter(manager, keySet, statics, measureKeys);
+			ArraySampleWriter writer = new ArraySampleWriter(manager, keySet, statics, measureKeys);
+			writer.trace =  trace;
+			return writer;
+		}
+		
+		public void trace(boolean enable) {
+			trace = enable;			
 		}
 	}
 
@@ -217,6 +224,7 @@ public class ArraySampleManager implements SampleReader {
 		private Map<Object, Object> statics;
 		private Object[] measureKeys;
 		private Object[] measures;
+		private boolean trace;
 		
 		public ArraySampleWriter(ArraySampleManager manager, List<Object> keySet, Map<Object, Object> statics, Object[] measureKeys) {
 			this.manager = manager;
@@ -295,6 +303,9 @@ public class ArraySampleManager implements SampleReader {
 		@Override
 		public void submit() {
 			Sample s = new Sample(keySet, statics, measureKeys, measures);
+			if (trace) {
+				System.out.println("SAMPLE: " + s.toString());
+			}
 			manager.submit(s);			
 		}
 	}
@@ -312,6 +323,17 @@ public class ArraySampleManager implements SampleReader {
 			this.statics = statics;
 			this.measureKeys = measureKeys;
 			this.measures = measures;
+		}
+		
+		public String toString() {
+			Map<Object, Object> line = new LinkedHashMap<Object, Object>();
+			for(Object key: keySet) { 
+				line.put(key, statics.get(key));
+			}
+			for(int i = 0; i != measureKeys.length; ++i) {
+				line.put(measureKeys[i], measures[i]);
+			}
+			return line.toString();
 		}
 	}
 	

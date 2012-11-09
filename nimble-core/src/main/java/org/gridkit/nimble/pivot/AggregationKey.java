@@ -2,6 +2,7 @@ package org.gridkit.nimble.pivot;
 
 import java.io.Serializable;
 
+import org.gridkit.nimble.statistics.DistinctSummary;
 import org.gridkit.nimble.statistics.DistributionSummary;
 import org.gridkit.nimble.statistics.FrequencySummary;
 import org.gridkit.nimble.statistics.Summary;
@@ -21,6 +22,10 @@ class AggregationKey implements Serializable {
 
 	public static AggregationKey frequency(Object key) {
 		return new AggregationKey(key, FrequencySummary.class);
+	}
+
+	public static AggregationKey distinct(Object key) {
+		return new AggregationKey(key, DistinctSummary.class);
 	}
 	
 	private final Object summaryKey;

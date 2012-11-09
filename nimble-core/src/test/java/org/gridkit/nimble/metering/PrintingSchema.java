@@ -53,6 +53,11 @@ public class PrintingSchema implements SampleSchema {
         public SampleWriter newSample() {
             return new Writer(new HashMap<Object, Object>(attrs));
         }
+
+		@Override
+		public void trace(boolean enable) {
+			// do nothing			
+		}
     }
     
     public static class Writer implements SampleWriter {

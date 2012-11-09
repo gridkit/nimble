@@ -114,9 +114,20 @@ public class Pivot {
 			return this;
 		}
 
-		public Level calcWeightedFrequency(Object key, SampleExtractor extractor) {
+		public Level calcFrequency(Object key, SampleExtractor extractor) {
 			AggregationFactory agg = PivotHelper.createFrequencyAggregator(extractor);
 			addAggregator(AggregationKey.frequency(key), agg);
+			return this;
+		}
+
+		public Level calcDistinct(Object key) {
+			calcDistinct(key, Extractors.field(key));
+			return this;
+		}
+
+		public Level calcDistinct(Object key, SampleExtractor extractor) {
+			AggregationFactory agg = PivotHelper.createDistictAggregator(extractor);
+			addAggregator(AggregationKey.distinct(key), agg);
 			return this;
 		}
 

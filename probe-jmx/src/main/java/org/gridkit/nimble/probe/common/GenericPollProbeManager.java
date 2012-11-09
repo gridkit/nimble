@@ -10,9 +10,13 @@ import org.gridkit.util.concurrent.RecuringTask;
 import org.gridkit.util.concurrent.SensibleTaskService;
 import org.gridkit.util.concurrent.TaskService;
 import org.gridkit.util.concurrent.TaskService.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GenericPollProbeManager {
 
+	private final static Logger LOGGER = LoggerFactory.getLogger(GenericPollProbeManager.class);
+	
 	private final TaskService taskService;
 
 	public GenericPollProbeManager() {
@@ -25,24 +29,8 @@ public class GenericPollProbeManager {
 
 	public <T, S> ProbeHandle deploy(final TargetLocator<T> locator, final PollProbeDeployer<T, S> factory, final SamplerProvider<T, S> samplerProvider, final long periodMs) {
 		String name = factory.toString() + " @ " + locator.toString();
-		final PollGroup group = new PollGroup(name, taskService);
-		taskService.schedule(new Task() {
-			
-			@Override
-			public void run() {
-				group.deploy(locator, factory, samplerProvider, periodMs);				
-			}
-			
-			@Override
-			public void interrupt(Thread taskThread) {
-				// do nothing				
-			}
-			
-			@Override
-			public void cancled() {
-				// do nothing;				
-			}
-		});
+		PollGroup group = new PollGroup(name, taskService);
+		group.deploy(locator, factory, samplerProvider, periodMs);				
 		
 		return group;
 	}
@@ -98,7 +86,12 @@ public class GenericPollProbeManager {
 
 		@Override
 		public void run() {
-			probe.poll();			
+			try {
+				probe.poll();
+			}
+			catch(Exception e) {
+				LOGGER.warn("Probe exception", e);
+			}
 		}
 
 		@Override

@@ -10,7 +10,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import org.gridkit.lab.util.jmx.mxstruct.MxHelper;
+import org.gridkit.lab.util.jmx.mxstruct.MXHelper;
 import org.gridkit.lab.util.jmx.mxstruct.common.GarbageCollectorMXStruct;
 import org.gridkit.lab.util.jmx.mxstruct.common.GarbageCollectorMXStruct.LastGcInfo;
 import org.gridkit.lab.util.jmx.mxstruct.common.MemoryMXStruct;
@@ -39,7 +39,7 @@ public class MXStructTest {
 		membean.getNonHeapMemoryUsage().getCommitted();
 		membean.getNonHeapMemoryUsage().getMax();
 		
-		String heapUsage = membean.getHeapMemoryUsage().toString();
+		membean.getHeapMemoryUsage().toString();
 		
 		membean.getObjectPendingFinalizationCount();
 		membean.isVerbose();
@@ -47,7 +47,7 @@ public class MXStructTest {
 	
 	@Test
 	public void test_gc_beans() throws MalformedObjectNameException, NullPointerException, IOException, ReflectionException {		
-		Map<String, GarbageCollectorMXStruct> beans = MxHelper.collectBeans(conn, GarbageCollectorMXStruct.PATTERN, GarbageCollectorMXStruct.PROTO);
+		Map<String, GarbageCollectorMXStruct> beans = MXHelper.collectBeans(conn, GarbageCollectorMXStruct.PATTERN, GarbageCollectorMXStruct.PROTO);
 		Assert.assertTrue(beans.size() > 0);
 		for(GarbageCollectorMXStruct bean: beans.values()) {
 			bean.getName();
@@ -84,7 +84,7 @@ public class MXStructTest {
 
 	@Test
 	public void test_memory_pool_beans() throws MalformedObjectNameException, NullPointerException, IOException, ReflectionException {		
-		Map<String, MemoryPoolMXStruct> beans = MxHelper.collectBeans(conn, MemoryPoolMXStruct.PATTERN, MemoryPoolMXStruct.PROTO);
+		Map<String, MemoryPoolMXStruct> beans = MXHelper.collectBeans(conn, MemoryPoolMXStruct.PATTERN, MemoryPoolMXStruct.PROTO);
 		Assert.assertTrue(beans.size() > 0);
 		for(MemoryPoolMXStruct bean: beans.values()) {
 			bean.getName();

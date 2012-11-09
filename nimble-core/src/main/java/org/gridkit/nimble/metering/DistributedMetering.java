@@ -1,6 +1,6 @@
 package org.gridkit.nimble.metering;
 
-public enum DisrtibutedMetering implements SampleKey {
+public enum DistributedMetering implements SampleKey {
 
 	/** 
 	 * Logical name of node/process there sample was collected. 

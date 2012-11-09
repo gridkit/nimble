@@ -117,6 +117,7 @@ public abstract class MXStruct implements Cloneable {
 			that.data = new LinkedHashMap<String, Object>();
 			try {
 				AttributeList al = conn.getAttributes(name, attrNames);
+				that.timestamp = System.nanoTime();
 				for (Attribute attr: al.asList()) {
 					that.data.put(attr.getName(), attr.getValue());
 				}

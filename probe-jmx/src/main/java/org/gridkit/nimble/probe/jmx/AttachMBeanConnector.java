@@ -28,6 +28,7 @@ public class AttachMBeanConnector implements MBeanConnector, Serializable {
 			MBeanServerConnection conn = AttachManager.getJmxConnection(id);
 			if (conn != null) {
 				result.add(conn);
+				System.out.println("Matched [" + processMatcher + "] " + id);
 			}
 		}
 		return result;
