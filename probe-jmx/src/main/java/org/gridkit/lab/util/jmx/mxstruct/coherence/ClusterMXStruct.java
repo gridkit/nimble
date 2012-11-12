@@ -24,12 +24,12 @@ public class ClusterMXStruct extends MXStruct {
 
 	@AttrName("LocalMemberId")
 	public int getLocalMemberId() {
-		return super.getMXAttr();
+		return (Integer)super.getMXAttr();
 	}
 
 	@AttrName("ClusterSize")
 	public int getClusterSize() {
-		return super.getMXAttr();
+		return (Integer)super.getMXAttr();
 	}
 
 	@AttrName("LicenseMode")
@@ -54,12 +54,12 @@ public class ClusterMXStruct extends MXStruct {
 
 	@AttrName("MembersDepartureCount")
 	public long getMembersDepartureCount() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("OldestMemberId")
 	public int getOldestMemberId() {
-		return super.getMXAttr();
+		return (Integer)super.getMXAttr();
 	}
 
 	@AttrName("Version")

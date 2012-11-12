@@ -21,51 +21,51 @@ public class ConnectionManagerMXStruct extends MXStruct {
 
 	@AttrName("IncomingBufferPoolCapacity")
 	public long getIncomingBufferPoolCapacity() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("IncomingBufferPoolSize")
 	public int getIncomingBufferPoolSize() {
-		return super.getMXAttr();
+		return (Integer)super.getMXAttr();
 	}
 
 	@AttrName("OutgoingBufferPoolCapacity")
 	public long getOutgoingBufferPoolCapacity() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("OutgoingBufferPoolSize")
 	public int getOutgoingBufferPoolSize() {
-		return super.getMXAttr();
+		return (Integer)super.getMXAttr();
 	}
 
 	@AttrName("OutgoingByteBacklog")
 	public long getOutgoingByteBacklog() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("OutgoingMessageBacklog")
 	public long getOutgoingMessageBacklog() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("TotalBytesReceived")
 	public long getTotalBytesReceived() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("TotalBytesSent")
 	public long getTotalBytesSent() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("TotalMessagesReceived")
 	public long getTotalMessagesReceived() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 
 	@AttrName("TotalMessagesSent")
 	public long getTotalMessagesSent() {
-		return super.getMXAttr();
+		return (Long)super.getMXAttr();
 	}
 }
