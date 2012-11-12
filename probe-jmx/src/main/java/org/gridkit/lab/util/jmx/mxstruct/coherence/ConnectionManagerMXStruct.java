@@ -11,7 +11,7 @@ public class ConnectionManagerMXStruct extends MXStruct {
 
 	@AttrName("ConnectionCount")
 	public int getConnectionCount() {
-		return super.getMXAttr();
+		return (Integer)super.getMXAttr();
 	}
 
 	@AttrName("HostIP")
