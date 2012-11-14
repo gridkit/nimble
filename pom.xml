@@ -29,9 +29,9 @@
     </properties>
 
     <scm>
-        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</connection>
-        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</developerConnection>
-        <url>http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</url>
+        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/branches/nimble-0.1-checkpoint1</connection>
+        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/branches/nimble-0.1-checkpoint1</developerConnection>
+        <url>http://gridkit.googlecode.com/svn/grid-lab/branches/nimble-0.1-checkpoint1</url>
     </scm>
 
     <modules>
@@ -42,6 +42,7 @@
         <module>probe-jmx</module>
         <module>nimble-btrace</module>
         <module>nimble-btrace-test</module>
+        <module>integration-tests</module>
     </modules>
     
     <repositories>
