@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.gridkit.nimble.metering.DistributedMetering;
 import org.gridkit.nimble.pivot.CommonStats;
 import org.gridkit.nimble.pivot.Extractors;
+import org.gridkit.nimble.pivot.SampleExtractor;
 
 public class DisplayFactory {
 	public static SimpleDisplayComponent constant(String caption, Object value) {
@@ -31,11 +32,19 @@ public class DisplayFactory {
 		return new StatsDisplayComponent(Extractors.summary(key), stats);
 	}
 
+	public static StatsDisplayComponent genericStats(SampleExtractor extractor, CommonStats.StatAppraisal... stats) {
+		return new StatsDisplayComponent(extractor, stats);
+	}
+
 	public static StatsDisplayComponent genericStats(String captionFormat, Object key, CommonStats.StatAppraisal... stats) {
 		return new StatsDisplayComponent(captionFormat, Extractors.summary(key), stats);
 	}
 	
 	public static StatsDisplayComponent distributionStats(Object key) {
+		return new StatsDisplayComponent(Extractors.summary(key), CommonStats.DISTRIBUTION_STATS);
+	}
+
+	public static StatsDisplayComponent subMin(Object key) {
 		return new StatsDisplayComponent(Extractors.summary(key), CommonStats.DISTRIBUTION_STATS);
 	}
 

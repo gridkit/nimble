@@ -1,7 +1,11 @@
 package org.gridkit.nimble.pivot;
 
+import java.io.Serializable;
+
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.pivot.CommonStats.StatAppraisal;
+import org.gridkit.nimble.statistics.CombinedSummary;
 
 public class Extractors {
 	
@@ -21,6 +25,10 @@ public class Extractors {
 		return new FieldExtractor(Measure.summary(key));
 	}
 
+	public static SampleExtractor stats(Object key, CommonStats.StatAppraisal app) {
+		return new StaticExtractor(summary(key), app);
+	}
+
 	public static SampleExtractor constant(double value) {
 		return new ConstExtractor(value);
 	}
@@ -29,7 +37,7 @@ public class Extractors {
 		return new ConstExtractor(value);
 	}
 	
-	public static class FieldExtractor implements SampleExtractor {
+	public static class FieldExtractor implements SampleExtractor, Serializable {
 
 		private static final long serialVersionUID = 20121014L;
 		
@@ -45,7 +53,27 @@ public class Extractors {
 		}
 	}
 
-	public static class ConstExtractor implements SampleExtractor {
+	public static class StaticExtractor implements SampleExtractor, Serializable {
+		
+		private static final long serialVersionUID = 20121014L;
+		
+		private final SampleExtractor extractor;
+		private final CommonStats.StatAppraisal app;
+		
+		public StaticExtractor(SampleExtractor extractor, StatAppraisal app) {
+			this.extractor = extractor;
+			this.app = app;
+		}
+
+
+		@Override
+		public Object extract(SampleReader sample) {
+			CombinedSummary summary = (CombinedSummary) extractor.extract(sample);			
+			return summary == null ? null : app.extract(summary);
+		}
+	}
+
+	public static class ConstExtractor implements SampleExtractor, Serializable {
 
 		private static final long serialVersionUID = 20121014L;
 		

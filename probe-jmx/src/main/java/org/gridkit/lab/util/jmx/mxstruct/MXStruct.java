@@ -149,10 +149,34 @@ public abstract class MXStruct implements Cloneable {
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
 	protected <V> V getMXAttr() {
+		return getMXAttrInternal();
+	}
+
+	protected int getInt() {
+		return (Integer)getMXAttrInternal();
+	}
+
+	protected long getLong() {
+		return (Long)getMXAttrInternal();
+	}
+
+	protected boolean getBoolean() {
+		return (Boolean)getMXAttrInternal();
+	}
+
+	protected float getFloat() {
+		return (Float)getMXAttrInternal();
+	}
+
+	protected double getDouble() {
+		return (Double)getMXAttrInternal();
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <V> V getMXAttrInternal() {
 		StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-		String methodName = trace[2].getMethodName();
+		String methodName = trace[3].getMethodName();
 		AttrInfo info = meta.get(methodName);
 		if (info == null) {
 			throw new IllegalArgumentException("Method " + methodName + " is not annotated with MBean meta data");
@@ -165,7 +189,7 @@ public abstract class MXStruct implements Cloneable {
 			return (V) val;
 		}
 	}
-	
+
 	private class AttrInfo {
 		
 		private String methodName;

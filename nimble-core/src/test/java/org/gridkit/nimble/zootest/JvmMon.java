@@ -34,8 +34,8 @@ import org.gridkit.nimble.probe.jmx.AttachMBeanConnector;
 import org.gridkit.nimble.probe.jmx.MBeanConnector;
 import org.gridkit.nimble.probe.jmx.threading.JavaThreadStatsSampler;
 import org.gridkit.nimble.probe.probe.JmxProbes;
-import org.gridkit.nimble.probe.probe.MetricsPollDriver;
-import org.gridkit.nimble.probe.probe.PollProbeHelper;
+import org.gridkit.nimble.probe.probe.MonitoringDriver;
+import org.gridkit.nimble.probe.probe.Monitoring;
 import org.gridkit.nimble.probe.probe.SamplerPrototype;
 import org.gridkit.nimble.probe.probe.SchemaConfigurer;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
@@ -182,7 +182,7 @@ public class JvmMon {
 
         sigar.monitorProcCpu(provider, metering.bind(new SigarCpuSamplerProvider()));
 
-        MetricsPollDriver pollDriver = PollProbeHelper.deployDriver("mon", sb, metering);
+        MonitoringDriver pollDriver = Monitoring.deployDriver("mon", sb, metering);
         
         MBeanConnector connector = new AttachMBeanConnector(matcher);
 

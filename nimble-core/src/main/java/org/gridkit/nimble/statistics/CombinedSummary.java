@@ -32,4 +32,9 @@ public class CombinedSummary implements Serializable {
 		}
 		return type.cast(ag);
 	}	
+	
+	@Override
+	public String toString() {
+		return "{combined-summary}";
+	}
 }

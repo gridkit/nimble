@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.pivot.Extractors;
 import org.gridkit.nimble.pivot.Filters;
 import org.gridkit.nimble.pivot.PivotReporter;
 import org.gridkit.nimble.pivot.SampleExtractor;
@@ -16,7 +17,7 @@ import org.gridkit.nimble.pivot.SampleFilter;
 import org.gridkit.nimble.print.LinePrinter;
 import org.gridkit.nimble.print.LinePrinter.Context;
 
-public class PivotPrinter2 {
+public class PivotPrinter2 implements PrintConfig {
 	
 	private final static LineKey LINE_KEY = LineKey.LINE_KEY;
 	private enum LineKey { LINE_KEY };
@@ -27,10 +28,19 @@ public class PivotPrinter2 {
 	
 	private boolean dumpUnprinted;
 	
+	@Override
 	public void sortBy(SampleExtractor extractor) {
 		sortOrder.add(extractor);
 	}
 
+	@Override
+	public void sortByField(Object... key) {
+		for(Object k: key) {
+			sortOrder.add(Extractors.field(k));
+		}		
+	}
+
+	@Override
 	public void sortByColumn(String... colName) {
 		for(String col: colName) {
 			sortOrder.add(new ColumnExtractor(col));
@@ -57,10 +67,12 @@ public class PivotPrinter2 {
 		filters.add(filter);
 	}
 	
+	@Override
 	public void add(DisplayComponent component) {
 		this.components.add(component);
 	}
 
+	@Override
 	public void add(String pattern, DisplayComponent component) {
 		this.components.add(new LevelFilter(GlobHelper.translate(pattern, "."), component));
 	}
@@ -293,7 +305,6 @@ public class PivotPrinter2 {
 		}
 	}
 
-	@SuppressWarnings("serial")
 	private static class ColumnExtractor implements SampleExtractor {
 
 		private final String columnName;

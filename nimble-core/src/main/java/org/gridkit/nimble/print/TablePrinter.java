@@ -91,7 +91,12 @@ public abstract class TablePrinter {
         if (value == null) {
             return toString(nullValue);
         } else if (value instanceof Double || value instanceof Float) {
-            return decFormat.format(value);
+        	if (Double.isNaN(((Number)value).doubleValue())) {
+        		return "NaN";
+        	}
+        	else {
+        		return decFormat.format(value);
+        	}
         } else if (value instanceof Date) {
         	return dateFormat.format(value);
         }

@@ -24,6 +24,6 @@ public class JmxLocator implements TargetLocator<MBeanServerConnection>, Seriali
 	
 	@Override
 	public String toString() {
-		return connector.toString();
+		return connector == null ? "null" : connector.toString();
 	}
 }

@@ -87,13 +87,13 @@ public class Pivot {
 		}
 
 		public Level calcDistribution(Object key) {
-			AggregationFactory agg = PivotHelper.createGaussianAggregator(Extractors.field(key));
+			AggregationFactory agg = Aggregations.createGaussianAggregator(Extractors.field(key));
 			addAggregator(AggregationKey.distribution(key), agg);
 			return this;
 		}
 		
         public Level calcDistribution(Object key, SampleExtractor extractor) {
-            AggregationFactory agg = PivotHelper.createGaussianAggregator(extractor);
+            AggregationFactory agg = Aggregations.createGaussianAggregator(extractor);
             addAggregator(AggregationKey.distribution(key), agg);
             return this;
         }
@@ -103,19 +103,19 @@ public class Pivot {
 		}
 
 		public Level calcFrequency(Object key) {
-			AggregationFactory agg = PivotHelper.createFrequencyAggregator(Extractors.field(key));
+			AggregationFactory agg = Aggregations.createFrequencyAggregator(Extractors.field(key));
 			addAggregator(AggregationKey.frequency(key), agg);
 			return this;
 		}
 
 		public Level calcFrequency(Object key, double weight) {
-			AggregationFactory agg = PivotHelper.createFrequencyAggregator(Extractors.constant(weight));
+			AggregationFactory agg = Aggregations.createFrequencyAggregator(Extractors.constant(weight));
 			addAggregator(AggregationKey.frequency(key), agg);
 			return this;
 		}
 
 		public Level calcFrequency(Object key, SampleExtractor extractor) {
-			AggregationFactory agg = PivotHelper.createFrequencyAggregator(extractor);
+			AggregationFactory agg = Aggregations.createFrequencyAggregator(extractor);
 			addAggregator(AggregationKey.frequency(key), agg);
 			return this;
 		}
@@ -126,28 +126,31 @@ public class Pivot {
 		}
 
 		public Level calcDistinct(Object key, SampleExtractor extractor) {
-			AggregationFactory agg = PivotHelper.createDistictAggregator(extractor);
+			AggregationFactory agg = Aggregations.createDistictAggregator(extractor);
 			addAggregator(AggregationKey.distinct(key), agg);
 			return this;
 		}
 
 		public Level calcConstant(Object key) {
-			aggregators.put(key, PivotHelper.createConstantAggregator(Extractors.field(key)));
+			aggregators.put(key, Aggregations.createConstantAggregator(Extractors.field(key)));
 			return this;
 		}
 
 		public Level calcConstant(Object key, SampleExtractor extractor) {
-			aggregators.put(key, PivotHelper.createConstantAggregator(extractor));
+			aggregators.put(key, Aggregations.createConstantAggregator(extractor));
 			return this;
 		}
 
 		public Level setConstant(Object key, Object value) {
-			aggregators.put(key, PivotHelper.createStaticValue(value));
+			aggregators.put(key, Aggregations.createStaticValue(value));
 			return this;
 		}
 				
-		public Level pivot() {
-			Level level = level("");
+		public Level pivot(String name) {
+			if (name.isEmpty()) {
+				throw new IllegalArgumentException("Pivot should have a name");
+			}
+			Level level = level(name);
 			level.pivoted = true;
 			return level;
 		}

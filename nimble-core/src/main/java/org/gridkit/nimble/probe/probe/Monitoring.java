@@ -12,14 +12,13 @@ import org.gridkit.nimble.probe.common.ProbeHandle;
 import org.gridkit.nimble.probe.common.SamplerProvider;
 import org.gridkit.nimble.probe.common.TargetLocator;
 
-public class PollProbeHelper {
+public class Monitoring {
 
-	public static MetricsPollDriver deployDriver(ScenarioBuilder sb, MeteringDriver metering) {
+	public static MonitoringDriver deployDriver(ScenarioBuilder sb, MeteringDriver metering) {
 		return sb.deploy(newDriver()).newDriver(metering);				
 	}
 
-
-	public static MetricsPollDriver deployDriver(String target, ScenarioBuilder sb, MeteringDriver metering) {
+	public static MonitoringDriver deployDriver(String target, ScenarioBuilder sb, MeteringDriver metering) {
 		return sb.deploy(target, newDriver()).newDriver(metering);				
 	}
 
@@ -29,7 +28,7 @@ public class PollProbeHelper {
 	
 	static interface DriverFactory {
 		
-		MetricsPollDriver newDriver(MeteringDriver metering);
+		MonitoringDriver newDriver(MeteringDriver metering);
 						
 	}
 	
@@ -38,12 +37,12 @@ public class PollProbeHelper {
 		private static final long serialVersionUID = 20121106L;
 
 		@Override
-		public MetricsPollDriver newDriver(MeteringDriver metering) {
+		public MonitoringDriver newDriver(MeteringDriver metering) {
 			return new GenericPollDriver(metering);
 		}
 	}
 	
-	private static class GenericPollDriver implements MetricsPollDriver {
+	private static class GenericPollDriver implements MonitoringDriver {
 		
 		private SampleSchema rootSchema;
 		private GenericPollProbeManager manager;
@@ -79,6 +78,9 @@ public class PollProbeHelper {
 		@Override
 		public S getSampler(T target) {
 			SampleSchema schema = targetConfig.configure(target, rootSchema);
+			if (schema == null) {
+				return null;
+			}
 			return proto.instantiate(schema);
 		}
 	}

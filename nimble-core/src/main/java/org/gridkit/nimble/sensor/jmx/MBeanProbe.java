@@ -9,13 +9,11 @@ import java.util.Set;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
-import org.gridkit.nimble.sensor.PidProvider;
+import org.gridkit.lab.jvm.attach.AttachManager;
+import org.gridkit.lab.jvm.attach.JavaProcessId;
+import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.sensor.Sensor;
-import org.gridkit.nimble.util.JvmOps;
 
-import com.sun.tools.attach.VirtualMachineDescriptor;
-
-@SuppressWarnings("restriction")
 public class MBeanProbe implements Sensor<Map<Long, Object>>, Serializable {
 
 	private static final long serialVersionUID = 20121005L;
@@ -57,12 +55,11 @@ public class MBeanProbe implements Sensor<Map<Long, Object>>, Serializable {
 		if (connections == null) {
 			connections = new HashMap<Long, MBeanServerConnection>();
 			Set<Long> pids = new HashSet<Long>(pidProvider.getPids());
-			for(VirtualMachineDescriptor vm: JvmOps.listVms()) {
-				long pid = Long.valueOf(vm.id());
+			for(JavaProcessId jpid: AttachManager.listJavaProcesses()) {
+				long pid = jpid.getPID();
 				if (pids.contains(pid)) {
 					try {
-						MBeanServerConnection conn = JvmOps.getMBeanConnection(vm);
-						connections.put(pid, conn);
+						connections.put(pid, AttachManager.getDetails(jpid).getMBeans());								
 					}
 					catch(Exception e) {
 						// ignore

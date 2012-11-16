@@ -6,28 +6,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.gridkit.nimble.sensor.JvmMatcher;
-import org.gridkit.nimble.util.JvmOps;
-
-import com.sun.tools.attach.VirtualMachineDescriptor;
+import org.gridkit.lab.jvm.attach.AttachManager;
+import org.gridkit.lab.jvm.attach.JavaProcessId;
+import org.gridkit.lab.jvm.attach.JavaProcessMatcher;
 
 public class JvmMatcherPidProvider implements PidProvider, Serializable {
     private static final long serialVersionUID = -1550756426157493470L;
     
-    private final JvmMatcher matcher;
+    private final JavaProcessMatcher matcher;
 
-    public JvmMatcherPidProvider(JvmMatcher matcher) {
+    public JvmMatcherPidProvider(JavaProcessMatcher matcher) {
         this.matcher = matcher;
     }
 
     @Override
     public Collection<Long> getPids() {
         List<Long> pids = new ArrayList<Long>();
-        
-        List<VirtualMachineDescriptor> vms = new ArrayList<VirtualMachineDescriptor>(JvmOps.listVms(matcher));
-        
-        for(VirtualMachineDescriptor vm: vms) {
-            pids.add(Long.parseLong(vm.id()));
+
+        for(JavaProcessId jpid: AttachManager.listJavaProcesses(matcher)) {
+        	pids.add(jpid.getPID());
         }
         
         Collections.shuffle(pids);

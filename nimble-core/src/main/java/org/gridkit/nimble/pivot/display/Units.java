@@ -13,6 +13,8 @@ public class Units {
 	public static UnitDeco GiB = new SimpleUnitDeco("GiB", 1d / (1 <<30), UnitDecoType.NUMERATOR);
 	public static UnitDeco K = new SimpleUnitDeco("K", 1e-3d, UnitDecoType.NUMERATOR);
 	public static UnitDeco M = new SimpleUnitDeco("M", 1e-6d, UnitDecoType.NUMERATOR);
+
+	public static UnitDeco PERCENT = new SimpleUnitDeco("%", 100, UnitDecoType.NUMERATOR);
 	
 	
 	private static class SimpleUnitDeco implements UnitDeco, Serializable {

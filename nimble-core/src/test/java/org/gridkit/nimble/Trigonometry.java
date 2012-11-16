@@ -6,10 +6,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.lab.jvm.attach.PatternJvmMatcher;
 import org.gridkit.nimble.platform.Director;
 import org.gridkit.nimble.platform.Play;
 import org.gridkit.nimble.platform.RemoteAgent;
@@ -17,6 +17,8 @@ import org.gridkit.nimble.platform.local.ThreadPoolAgent;
 import org.gridkit.nimble.platform.remote.LocalAgentFactory;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.print.TablePrinter;
+import org.gridkit.nimble.probe.JvmMatcherPidProvider;
+import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.scenario.DemonScenario;
 import org.gridkit.nimble.scenario.ParScenario;
 import org.gridkit.nimble.scenario.Scenario;
@@ -25,7 +27,6 @@ import org.gridkit.nimble.sensor.IntervalMeasure;
 import org.gridkit.nimble.sensor.NetInterfacePrinter;
 import org.gridkit.nimble.sensor.NetInterfaceReporter;
 import org.gridkit.nimble.sensor.NetInterfaceSensor;
-import org.gridkit.nimble.sensor.PidProvider;
 import org.gridkit.nimble.sensor.ProcCpuPrinter;
 import org.gridkit.nimble.sensor.ProcCpuReporter;
 import org.gridkit.nimble.sensor.ProcCpuSensor;
@@ -51,8 +52,6 @@ import org.hyperic.sigar.Cpu;
 import org.junit.Test;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 
 public class Trigonometry {    
     private static final String SIN = "sin";
@@ -231,16 +230,10 @@ public class Trigonometry {
     }    
     
     private static PidProvider newPidProvider() {
-        Predicate<Properties> propsPred = new Predicate<Properties>() {
-            @Override
-            public boolean apply(Properties input) {
-                return "a".equals(input.getProperty("a"));
-            }
-        };
+    	PatternJvmMatcher matcher = new PatternJvmMatcher();
+    	matcher.matchProp("a", "a");
         
-        Predicate<String> namePred = Predicates.and(Predicates.alwaysTrue(), Predicates.containsPattern("Bootstraper"));
-        
-        return new PidProvider.JavaPidProvider(namePred, propsPred);
+        return new JvmMatcherPidProvider(matcher);
     }
     
     @SuppressWarnings("serial")

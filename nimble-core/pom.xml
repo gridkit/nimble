@@ -54,12 +54,6 @@
 		</dependency>
 
         <dependency>
-            <groupId>com.sun</groupId>
-            <artifactId>tools</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
             <scope>test</scope>
@@ -97,16 +91,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
-        <dependency>
-            <!-- TODO to be removed -->
-            <groupId>com.sun</groupId>
-            <artifactId>tools</artifactId>
-            <version>${tools-jar.version}</version>
-            <scope>system</scope>
-            <systemPath>${java.home}/../lib/tools.jar</systemPath>
-            <optional>true</optional>
-        </dependency>
-		
+        		
 	</dependencies>
 </project>

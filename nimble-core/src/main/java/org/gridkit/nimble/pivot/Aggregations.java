@@ -2,7 +2,7 @@ package org.gridkit.nimble.pivot;
 
 import java.io.Serializable;
 
-class PivotHelper {
+public class Aggregations {
 
 	public static Pivot.AggregationFactory createGaussianAggregator(SampleExtractor extractor) {
 		return new DistributionAggregator(extractor);

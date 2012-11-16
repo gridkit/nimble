@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 import javax.management.MBeanServerConnection;
 
+import org.gridkit.lab.jvm.attach.AttachManager;
+import org.gridkit.lab.jvm.attach.JavaProcessDetails;
 import org.gridkit.lab.jvm.attach.PatternJvmMatcher;
 import org.gridkit.lab.util.jmx.mxstruct.common.RuntimeMXStruct;
 import org.gridkit.nanocloud.CloudFactory;
@@ -30,19 +32,16 @@ import org.gridkit.nimble.probe.jmx.AttachMBeanConnector;
 import org.gridkit.nimble.probe.jmx.MBeanConnector;
 import org.gridkit.nimble.probe.jmx.threading.JavaThreadStatsSampler;
 import org.gridkit.nimble.probe.probe.JmxProbes;
-import org.gridkit.nimble.probe.probe.MetricsPollDriver;
-import org.gridkit.nimble.probe.probe.PollProbeHelper;
+import org.gridkit.nimble.probe.probe.MonitoringDriver;
+import org.gridkit.nimble.probe.probe.Monitoring;
 import org.gridkit.nimble.probe.probe.SamplerPrototype;
 import org.gridkit.nimble.probe.probe.SchemaConfigurer;
 import org.gridkit.nimble.probe.sigar.SigarDriver;
 import org.gridkit.nimble.probe.sigar.SigarMeasure;
 import org.gridkit.nimble.probe.sigar.StandardSigarSamplerFactoryProvider;
-import org.gridkit.nimble.util.JvmOps;
 import org.gridkit.vicluster.ViManager;
 import org.junit.After;
 import org.junit.Test;
-
-import com.sun.tools.attach.VirtualMachineDescriptor;
 
 public class ZooTest {
 
@@ -212,7 +211,7 @@ public class ZooTest {
 
         sigar.monitorProcCpu(provider, metering.bind(new SigarCpuSamplerProvider()));
 
-        MetricsPollDriver pollDriver = PollProbeHelper.deployDriver("node22", sb, metering);
+        MonitoringDriver pollDriver = Monitoring.deployDriver("node22", sb, metering);
         
         PatternJvmMatcher matcher = new PatternJvmMatcher();
         matcher.matchProp("vinode.name", "node1.*");
@@ -293,6 +292,7 @@ public class ZooTest {
 		return scenario;
 	}	
 	
+	@SuppressWarnings("serial")
 	private static class NodeClassifier implements SchemaConfigurer<MBeanServerConnection>, Serializable {
 
 		@Override
@@ -329,7 +329,7 @@ public class ZooTest {
 		}
 	}
 
-	@SuppressWarnings("serial")
+	@SuppressWarnings({ "serial", "unused" })
 	private static class FilteredCpuSamplerProvider implements SamplerPrototype<JavaThreadStatsSampler>, Serializable {
 		
 		@Override
@@ -355,6 +355,7 @@ public class ZooTest {
 		}
 	}
 	
+	@SuppressWarnings("serial")
 	private static class SigarCpuSamplerProvider extends StandardSigarSamplerFactoryProvider {
 
 		@Override
@@ -363,10 +364,8 @@ public class ZooTest {
 	        
 	        String nodename = "pid:" + pid;
 	        try {
-	        	VirtualMachineDescriptor vmd = JvmOps.getDescriptor(pid);
-	        	if (vmd != null) {
-	        		nodename = JvmOps.getProps(vmd).getProperty("vinode.name");
-	        	}
+	        	JavaProcessDetails jp = AttachManager.getDetails(pid);
+        		nodename = jp.getSystemProperties().getProperty("vinode.name");
 	        }
 	        catch(Exception e) {
 	        	// ignore

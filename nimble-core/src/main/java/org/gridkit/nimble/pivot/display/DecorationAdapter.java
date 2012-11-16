@@ -1,8 +1,8 @@
 package org.gridkit.nimble.pivot.display;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +44,7 @@ public class DecorationAdapter implements DisplayComponent {
 	private class DecoReader implements SampleReader {
 		
 		private final SampleReader reader;
+		private List<Object> keySet;
 
 		public DecoReader(SampleReader reader) {
 			this.reader = reader;
@@ -61,20 +62,22 @@ public class DecorationAdapter implements DisplayComponent {
 
 		@Override
 		public List<Object> keySet() {
-			List<Object> list = new ArrayList<Object>(reader.keySet());
-			filter(list);
-			return list;
-		}
-
-		private void filter(List<Object> list) {
-			Iterator<Object> it = list.iterator();
-			while(it.hasNext()) {
-				Object next = it.next();
-				if (next instanceof Decorated && ((Decorated)next).startsWith(deco)) {
-					continue;					
+			if (keySet == null) {
+				LinkedHashSet<Object> set = new LinkedHashSet<Object>();
+				for(Object k: reader.keySet()) {
+					if (k instanceof Decorated) {
+						Decorated dk = (Decorated) k;
+						if (dk.startsWith(deco)) {
+							set.add(Decorated.undecorate(deco.size(), dk));
+						}
+					}
+					else if (!set.contains(k)) {
+						set.add(k);
+					}
 				}
-				it.remove();
-			}			
+				keySet = new ArrayList<Object>(set);
+			}
+			return keySet;
 		}
 
 		@Override
@@ -87,7 +90,7 @@ public class DecorationAdapter implements DisplayComponent {
 				List<Object> nd  = new ArrayList<Object>();
 				nd.addAll(deco);
 				nd.addAll(((Decorated) key).getDecoration());
-				return new Decorated(nd, key);				
+				return new Decorated(nd, ((Decorated)key).getOriginalKey());				
 			}
 			else {
 				return new Decorated(deco, key);				

@@ -13,7 +13,9 @@ import java.util.Set;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
+import org.gridkit.lab.jvm.attach.AttachManager;
 import org.gridkit.nimble.driver.Activity;
+import org.gridkit.nimble.metering.SampleKey;
 import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.probe.common.TargetLocator;
 import org.gridkit.nimble.probe.jmx.JmxLocator;
@@ -24,31 +26,45 @@ import org.gridkit.nimble.probe.jmx.MBeanSampler;
 import org.gridkit.nimble.probe.jmx.MBeanTarget;
 import org.gridkit.nimble.probe.jmx.threading.JavaThreadStatsSampler;
 import org.gridkit.nimble.probe.jmx.threading.JavaThreadingProbe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JmxProbes {
 
-	public static Activity deployJavaThreadProbe(MetricsPollDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto) {
+	private static final Logger LOGGER = LoggerFactory.getLogger(JmxProbes.class);
+	
+	public static Object JVM_ID = JmxMetricsKey.PROCESS_ID;
+	
+	private enum JmxMetricsKey implements SampleKey {
+		PROCESS_ID;
+	}
+	
+	public static Activity deployJavaThreadProbe(MonitoringDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto) {
 		return deployJavaThreadProbe(pollDriver, connector, schemaConfig, samplerProto, 1000);
 	}
 
-	public static Activity deployJavaThreadProbe(MetricsPollDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto, long periodMs) {
+	public static Activity deployJavaThreadProbe(MonitoringDriver pollDriver, MBeanConnector connector, SchemaConfigurer<MBeanServerConnection> schemaConfig, SamplerPrototype<JavaThreadStatsSampler> samplerProto, long periodMs) {
 		return pollDriver.deploy(new JmxLocator(connector), new JavaThreadingProbe(), schemaConfig, samplerProto, periodMs);
 	}
 
-	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto) {
+	public static Activity deployMBeanProbe(MonitoringDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto) {
 		return deployMBeanProbe(pollDriver, connector, name, schemaConfig, samplerProto, 1000);
 	}
 	
-	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto, long periodMs) {
+	public static Activity deployMBeanProbe(MonitoringDriver pollDriver, MBeanConnector connector, ObjectName name, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto, long periodMs) {
 		return pollDriver.deploy(new MBeanLocator(connector, name), new MBeanProbe(), schemaConfig, samplerProto, periodMs);
 	}
 
-	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, TargetLocator<MBeanTarget> locator, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto) {
+	public static Activity deployMBeanProbe(MonitoringDriver pollDriver, TargetLocator<MBeanTarget> locator, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto) {
 		return deployMBeanProbe(pollDriver, locator, schemaConfig, samplerProto, 1000);
 	}
 	
-	public static Activity deployMBeanProbe(MetricsPollDriver pollDriver, TargetLocator<MBeanTarget> locator, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto, long periodMs) {
+	public static Activity deployMBeanProbe(MonitoringDriver pollDriver, TargetLocator<MBeanTarget> locator, SchemaConfigurer<MBeanTarget> schemaConfig, SamplerPrototype<MBeanSampler> samplerProto, long periodMs) {
 		return pollDriver.deploy(locator, new MBeanProbe(), schemaConfig, samplerProto, periodMs);
+	}
+	
+	public static SchemaConfigurer<Long> jmx2pid(SchemaConfigurer<MBeanServerConnection> config) {
+		return new PidToJmxAdapter(config);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -129,6 +145,30 @@ public class JmxProbes {
 			public String toString() {
 				return samplers.toString();
 			}
+		}
+	}
+	
+	private static class PidToJmxAdapter implements SchemaConfigurer<Long>, Serializable {
+		
+		private static final long serialVersionUID = 20121115L;
+		
+		private final SchemaConfigurer<MBeanServerConnection> scheme;
+
+		public PidToJmxAdapter(SchemaConfigurer<MBeanServerConnection> scheme) {
+			this.scheme = scheme;
+		}
+
+		@Override
+		public SampleSchema configure(Long target, SampleSchema root) {
+			try {
+				MBeanServerConnection conn = AttachManager.getDetails(target).getMBeans();
+				if (conn != null) {
+					return scheme.configure(conn, root);
+				}
+			} catch (Exception e) {
+				LOGGER.warn("JMX connection failed, pid: " + target, e);
+			}
+			return null;
 		}
 	}
 }

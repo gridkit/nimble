@@ -15,6 +15,9 @@ public class JavaThreadingProbe implements PollProbeDeployer<MBeanServerConnecti
 	@Override
 	public PollProbe deploy(MBeanServerConnection target, SamplerProvider<MBeanServerConnection, JavaThreadStatsSampler> samplerProvider) {
 		JavaThreadStatsSampler sampler = samplerProvider.getSampler(target);
+		if (sampler == null) {
+			return null;
+		}
 		ThreadTracker tracker = new ThreadTracker(target, sampler);
 				
 		return tracker;
@@ -30,6 +33,8 @@ public class JavaThreadingProbe implements PollProbeDeployer<MBeanServerConnecti
 			this.connection = connection;
 			this.tracker = new JmxThreadTracker(connection);
 			this.sampler = sampler;
+			
+			tracker.updateSnapshot();
 		}
 
 		@Override

@@ -16,7 +16,12 @@ public class MBeanProbe implements PollProbeDeployer<MBeanTarget, MBeanSampler>,
 	@Override
 	public PollProbe deploy(MBeanTarget target, SamplerProvider<MBeanTarget, MBeanSampler> provider) {
 		MBeanSampler sampler = provider.getSampler(target);
-		return new MBeanTracker(target.getConnection(), target.getMbeanName(), sampler);
+		if (sampler == null) {
+			return null;
+		}
+		else {
+			return new MBeanTracker(target.getConnection(), target.getMbeanName(), sampler);
+		}
 	}
 	
 	private static class MBeanTracker implements PollProbe {

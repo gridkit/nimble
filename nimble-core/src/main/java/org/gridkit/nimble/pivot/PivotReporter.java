@@ -388,7 +388,20 @@ public class PivotReporter implements SampleAccumulator {
 						sub.dumpData(data, subDeco);
 					}
 				}
-			}			
+			}
+			if (subgroups != null) {
+				for(Object g: subgroups.keySet()) {
+					LevelSummary sub = subgroups.get(g);
+					if (sub.info.pivoted) {
+						List<Object> subDeco = new ArrayList<Object>(deco);
+						Object levelId = g;
+						if (!isEmpty(levelId)) {
+							subDeco.add(levelId);
+						}
+						sub.dumpData(data, subDeco);
+					}
+				}				
+			}
 		}
 
 		boolean isReportable() {

@@ -50,7 +50,9 @@ public class GenericPollProbeManager {
 			Collection<T> targets = locator.findTargets();
 			for(T target: targets) {
 				PollProbe probe = factory.deploy(target, sampleProvider);
-				RecuringTask.start(service, new ProbeTask(probe), periodMs, TimeUnit.MILLISECONDS);
+				if (probe != null) {
+					RecuringTask.start(service, new ProbeTask(probe), periodMs, TimeUnit.MILLISECONDS);
+				}
 			}
 		}
 

@@ -5,25 +5,30 @@ import java.util.List;
 
 import org.gridkit.nimble.metering.DistributedMetering;
 import org.gridkit.nimble.metering.Measure;
+import org.gridkit.nimble.pivot.Aggregations;
 import org.gridkit.nimble.pivot.CommonStats;
+import org.gridkit.nimble.pivot.CommonStats.StatAppraisal;
+import org.gridkit.nimble.pivot.Extractors;
+import org.gridkit.nimble.pivot.Pivot.AggregationFactory;
 import org.gridkit.nimble.pivot.SampleExtractor;
 
 public abstract class DisplayBuilder {
 	
-	public static ForLevelDisplayBuider with(PivotPrinter2 pp) {
+	public static ForLevelDisplayBuider with(PrintConfig pp) {
 		return new ForLevelDisplayBuider(null, pp);
 	}
 
-	public static ForLevelDisplayBuider with(PivotPrinter2 pp, String scope) {
+	public static ForLevelDisplayBuider with(PrintConfig pp, String scope) {
 		return new ForLevelDisplayBuider(scope, pp);
 	}
 
-	final PivotPrinter2 printer;
+	final PrintConfig printer;
 	String globalScope;
 	String scope;
 	List<Object> deco;
+	StatAppraisal subaggregate;
 	
-	protected DisplayBuilder(String globalScope, PivotPrinter2 pp) {
+	protected DisplayBuilder(String globalScope, PrintConfig pp) {
 		this.globalScope = globalScope;
 		this.printer = pp;
 	}
@@ -57,13 +62,17 @@ public abstract class DisplayBuilder {
 
 	public abstract WithCaptionAndUnitsDisplayBuilder attribute(Object key);
 
-	public abstract WithCaptionAndUnitsDisplayBuilder frequencyStats(Object key);
+	public WithCaptionAndUnitsDisplayBuilder frequencyStats(Object key) {
+		return stats(key, CommonStats.FREQUENCY_STATS);
+	}
 
 	public WithCaptionAndUnitsDisplayBuilder frequencyStats() {
 		return frequencyStats(Measure.MEASURE);
 	}
 
-	public abstract WithCaptionAndUnitsDisplayBuilder distributionStats(Object key);
+	public WithCaptionAndUnitsDisplayBuilder distributionStats(Object key) {
+		return stats(key, CommonStats.DISTRIBUTION_STATS);
+	}
 
 	public WithCaptionAndUnitsDisplayBuilder distributionStats() {
 		return distributionStats(Measure.MEASURE);
@@ -137,6 +146,10 @@ public abstract class DisplayBuilder {
 		return stats(key, CommonStats.DURATION);
 	}
 
+	public WithCaptionAndUnitsDisplayBuilder distinct() {
+		return stats(Measure.MEASURE, CommonStats.DISTINCT);
+	}
+
 	public WithCaptionAndUnitsDisplayBuilder distinct(Object key) {
 		return stats(key, CommonStats.DISTINCT);
 	}
@@ -153,9 +166,14 @@ public abstract class DisplayBuilder {
 
 	public abstract WithUnitsDisplayBuilder hostname();
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public CalcOver<SingleOnlyDisplayBuilder> calc() {
+		return new CalcOver((SingleOnlyDisplayBuilder) this);
+	}
+
 	public static abstract class DecoDisplayBuilder extends DisplayBuilder {
 
-		public DecoDisplayBuilder(String globalScope, PivotPrinter2 pp) {
+		public DecoDisplayBuilder(String globalScope, PrintConfig pp) {
 			super(globalScope, pp);
 		}
 
@@ -166,9 +184,9 @@ public abstract class DisplayBuilder {
 		}
 	}
 	
-	public static class ForLevelDisplayBuider extends DecoDisplayBuilder {
+	public static class ForLevelDisplayBuider extends DecoDisplayBuilder implements SingleOnlyDisplayBuilder {
 
-		public ForLevelDisplayBuider(String globalScope, PivotPrinter2 pp) {
+		public ForLevelDisplayBuider(String globalScope, PrintConfig pp) {
 			super(globalScope, pp);
 		}
 		
@@ -230,7 +248,19 @@ public abstract class DisplayBuilder {
 
 		@Override
 		public WithCaptionAndUnitsDisplayBuilder stats(Object key, CommonStats.StatAppraisal... stats) {
-			StatsDisplayComponent ds = DisplayFactory.genericStats(key, stats);
+			StatsDisplayComponent ds;
+			if (subaggregate != null) {
+				if (stats.length > 1) {
+					throw new IllegalArgumentException("Could aggregate only over one measure");
+				}
+				AggregationFactory aggFactory = createAggregator(Extractors.stats(key, stats[0]), subaggregate);
+				SampleExtractor calc = new SubAggreagtor(aggFactory);
+				ds = new StatsDisplayComponent(calc, subaggregate);
+				subaggregate = null;
+			}
+			else {
+				ds = DisplayFactory.genericStats(key, stats);
+			}
 			add(ds);
 			return new WithCaptionAndUnitsDisplayBuilder(globalScope, printer, ds);
 		}
@@ -240,23 +270,13 @@ public abstract class DisplayBuilder {
 			add(sd);
 			return new WithCaptionDisplayBuilder(globalScope, printer, sd);
 		}
-
-		@Override
-		public WithCaptionAndUnitsDisplayBuilder distributionStats(Object key) {
-			return stats(key, CommonStats.DISTRIBUTION_STATS);
-		}
-
-		@Override
-		public WithCaptionAndUnitsDisplayBuilder frequencyStats(Object key) {
-			return stats(key, CommonStats.FREQUENCY_STATS);
-		}
 	}
 	
 	public static class WithUnitsDisplayBuilder extends ForLevelDisplayBuider {
 		
 		final DisplayConfigurable component;
 
-		WithUnitsDisplayBuilder(String globalScope, PivotPrinter2 pp, DisplayConfigurable component) {
+		WithUnitsDisplayBuilder(String globalScope, PrintConfig pp, DisplayConfigurable component) {
 			super(globalScope, pp);
 			this.component = component;
 		}
@@ -269,11 +289,19 @@ public abstract class DisplayBuilder {
 		public ForLevelDisplayBuider asMillis() {
 			return as(Units.MILLIS);
 		}		
+
+		public ForLevelDisplayBuider asMiB() {
+			return as(Units.MiB);
+		}		
+
+		public ForLevelDisplayBuider asPercent() {
+			return as(Units.PERCENT);
+		}		
 	}
 
 	public static class WithCaptionAndUnitsDisplayBuilder extends WithUnitsDisplayBuilder {
 
-		public WithCaptionAndUnitsDisplayBuilder(String globalScope, PivotPrinter2 pp, DisplayConfigurable component) {
+		public WithCaptionAndUnitsDisplayBuilder(String globalScope, PrintConfig pp, DisplayConfigurable component) {
 			super(globalScope, pp, component);
 		}
 		
@@ -288,7 +316,7 @@ public abstract class DisplayBuilder {
 		
 		private final DisplayConfigurable component;
 		
-		WithCaptionDisplayBuilder(String globalScope, PivotPrinter2 pp, DisplayConfigurable component) {
+		WithCaptionDisplayBuilder(String globalScope, PrintConfig pp, DisplayConfigurable component) {
 			super(globalScope, pp);
 			this.component = component;
 		}
@@ -297,5 +325,117 @@ public abstract class DisplayBuilder {
 			component.setCaption(caption);
 			return this;
 		}
+	}
+	
+	public static class CalcOver<T> {
+		
+		private final T next;
+
+		public CalcOver(T next) {
+			this.next = next;
+		}
+		
+		public T stat(CommonStats.StatAppraisal app) {
+			((DisplayBuilder)next).subaggregate = app;
+			return next;
+		}
+		
+		public T count() {
+			return stat(CommonStats.COUNT);
+		}
+
+		public T distinct() {
+			return stat(CommonStats.DISTINCT);
+		}
+
+		public T duration() {
+			return stat(CommonStats.DURATION);
+		}
+		
+		public T frequency() {
+			return stat(CommonStats.FREQUENCY);
+		}
+		
+		public T max() {
+			return stat(CommonStats.MAX);
+		}
+		
+		public T min() {
+			return stat(CommonStats.MIN);
+		}
+		
+		public T mean() {
+			return stat(CommonStats.MEAN);
+		}
+		
+		public T stdDev() {
+			return stat(CommonStats.STD_DEV);
+		}		
+		
+		public T sum() {
+			return stat(CommonStats.SUM);
+		}		
+		
+		public T variance() {
+			return stat(CommonStats.VARIANCE);
+		}		
+	}
+	
+	public static interface SingleOnlyDisplayBuilder {
+		
+		public WithCaptionAndUnitsDisplayBuilder count();
+
+		public WithCaptionAndUnitsDisplayBuilder count(Object key);
+
+		public WithCaptionAndUnitsDisplayBuilder mean();
+
+		public WithCaptionAndUnitsDisplayBuilder mean(Object key);
+
+		public WithCaptionAndUnitsDisplayBuilder stdDev();
+
+		public WithCaptionAndUnitsDisplayBuilder stdDev(Object key);
+		
+		public WithCaptionAndUnitsDisplayBuilder min();
+
+		public WithCaptionAndUnitsDisplayBuilder min(Object key);
+		
+		public WithCaptionAndUnitsDisplayBuilder max();
+
+		public WithCaptionAndUnitsDisplayBuilder max(Object key);
+
+		public WithCaptionAndUnitsDisplayBuilder sum();
+
+		public WithCaptionAndUnitsDisplayBuilder sum(Object key);
+
+		public WithCaptionAndUnitsDisplayBuilder frequency();
+
+		public WithCaptionAndUnitsDisplayBuilder frequency(Object key);
+
+		public WithCaptionAndUnitsDisplayBuilder duration();
+
+		public WithCaptionAndUnitsDisplayBuilder duration(Object key);
+
+		public WithCaptionAndUnitsDisplayBuilder distinct();
+
+		public WithCaptionAndUnitsDisplayBuilder distinct(Object key);
+	}
+	
+	private static AggregationFactory createAggregator(SampleExtractor extractor, CommonStats.StatAppraisal app) {
+		switch (app) {
+		case COUNT:
+		case MAX:
+		case MEAN:
+		case MIN:
+		case STD_DEV:
+		case SUM:
+		case VARIANCE:
+			return Aggregations.createGaussianAggregator(extractor);
+		case DURATION:
+		case FREQUENCY:
+			return Aggregations.createFrequencyAggregator(extractor);
+		case DISTINCT:
+			return Aggregations.createDistictAggregator(extractor);
+		}
+		throw new IllegalArgumentException("Unknown: " + app);
 	}
 }

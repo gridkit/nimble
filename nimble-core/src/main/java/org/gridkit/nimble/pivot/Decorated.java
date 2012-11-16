@@ -2,6 +2,7 @@ package org.gridkit.nimble.pivot;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Decorated implements Serializable {
@@ -10,6 +11,33 @@ public class Decorated implements Serializable {
 	
 	private final List<Object> decoration;
 	private final Object key;
+	
+	public static Decorated decorate(Object deco, Object key) {
+		if (key instanceof Decorated) {
+			Decorated dk = (Decorated)key;
+			List<Object> ndeco = new ArrayList<Object>();
+			ndeco.add(deco);
+			ndeco.addAll(dk.getDecoration());
+			return new Decorated(ndeco, dk.getOriginalKey());
+		}
+		else {
+			return new Decorated(Collections.singletonList(deco), key);
+		}
+	}
+
+	public static Object undecorate(Object key) {
+		Decorated dk = (Decorated)key;
+		List<Object> ndeco = new ArrayList<Object>(dk.decoration);
+		ndeco.remove(0);		
+		return ndeco.isEmpty() ? dk.getOriginalKey() : new Decorated(ndeco, dk.getOriginalKey());
+	}
+
+	public static Object undecorate(int n, Object key) {
+		for(int i = 0; i != n; ++i) {
+			key = undecorate(key);
+		}
+		return key;
+	}
 	
 	public Decorated(List<Object> decoration, Object key) {
 		this.decoration = new ArrayList<Object>(decoration);
@@ -24,7 +52,7 @@ public class Decorated implements Serializable {
 	}
 	
 	public List<Object> getDecoration() {
-		return decoration;
+		return Collections.unmodifiableList(decoration);
 	}
 	 
 	public boolean startsWith(List<Object> deco) {

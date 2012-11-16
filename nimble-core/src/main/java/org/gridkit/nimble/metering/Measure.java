@@ -4,6 +4,14 @@ import java.io.Serializable;
 
 public enum Measure implements SampleKey {
 		
+	/**
+	 * Identifier of probe producing this sample
+	 */
+	PRODUCER,
+	/**
+	 * Logical domain used to filter and route samples
+	 */
+	DOMAIN,
 	NAME,
 	MEASURE,
 	/**

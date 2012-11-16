@@ -21,7 +21,9 @@ public class RemoteMBeanConnector implements MBeanConnector, Serializable {
 	private final String[] hosts;
 	private final int[] ports;
 	
+	@SuppressWarnings("unused")
 	private String user;
+	@SuppressWarnings("unused")
 	private String password;
 	
 	public RemoteMBeanConnector(String host, int... ports) {

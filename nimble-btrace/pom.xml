@@ -17,6 +17,11 @@
             <groupId>org.gridkit.lab</groupId>
             <artifactId>nimble-core</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>jvm-attach-api</artifactId>
+        </dependency>
     
         <dependency>
             <groupId>net.java.btrace</groupId>
@@ -41,15 +46,6 @@
         <dependency>
             <groupId>net.java.btrace</groupId>
             <artifactId>ext-default</artifactId>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.sun</groupId>
-            <artifactId>tools</artifactId>
-            <version>${tools-jar.version}</version>
-            <scope>system</scope>
-            <systemPath>${java.home}/../lib/tools.jar</systemPath>
-            <optional>true</optional>
         </dependency>
         
         <dependency>

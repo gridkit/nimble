@@ -29,26 +29,36 @@ public class PivotTest {
 		
 		Pivot pv = new Pivot();
 		
-		Pivot.Level pivotLevel = 
+		Pivot.Level pivotLevel1 = 
 		pv
 			.root()
 				.level("test-metrics")
 					.group(Measure.NAME)
 						.level("")
 							.calcDistribution(Measure.MEASURE)
-							.calcFrequency(Measure.MEASURE, 1)
-							.pivot();
+							.calcFrequency(Measure.MEASURE, 1);
 		
-		pivotLevel
-			.level("A=0")
-			.filter(ATTR_A, 0)
-			.calcDistribution(Measure.MEASURE);
+		pivotLevel1
+			.pivot("A=0")
+				.filter(ATTR_A, 0)
+					.calcDistribution(Measure.MEASURE);
 
-		pivotLevel
-			.level("A=1")
-			.filter(ATTR_A, 1)
-			.calcDistribution(Measure.MEASURE);
-		
+		pivotLevel1
+			.pivot("A=1")
+				.filter(ATTR_A, 1)
+					.calcDistribution(Measure.MEASURE);
+
+//		Pivot.Level pivotLevel2 = 
+		pv.root()
+				.level("test-metrics2")
+					.group(Measure.NAME)
+						.level("")
+							.calcDistribution(Measure.MEASURE)
+							.calcFrequency(Measure.MEASURE, 1)
+							.pivot("sub")
+								.group(ATTR_A)
+									.calcDistribution(Measure.MEASURE);
+				
 		
 		ArraySampleManager asm1 = new ArraySampleManager(100);
 		ArraySampleManager asm2 = new ArraySampleManager(100);
@@ -104,8 +114,10 @@ public class PivotTest {
 			.distributionStats().caption("%s (ms)").asMillis()
 			.frequency()
 			.duration()
-			.decorated("A=0").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("[A=0] %s")
-			.decorated("A=1").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("[A=1] %s")
+			.decorated("sub").calc().min().max().caption("min/max")
+			.decorated("sub").calc().max().min().caption("max/min")
+			.decorated("A=0").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("{A=0} %s")
+			.decorated("A=1").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("{A=1} %s")
 		;
 					
 		new PrettyPrinter().print(System.out, p2.print(reporter.getReader()));

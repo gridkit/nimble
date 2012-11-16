@@ -10,10 +10,9 @@ import net.java.btrace.api.extensions.ExtensionsRepository;
 import net.java.btrace.api.extensions.ExtensionsRepositoryFactory;
 import net.java.btrace.client.Client;
 
+import org.gridkit.lab.jvm.attach.AttachManager;
+import org.gridkit.lab.jvm.attach.JavaProcessDetails;
 import org.gridkit.nimble.util.CriticalSection;
-import org.gridkit.nimble.util.JvmOps;
-
-import com.sun.tools.attach.VirtualMachine;
 
 public class BTraceClientFactory {
     private static int MAX_PORT_NUMBER = 65535;
@@ -24,8 +23,6 @@ public class BTraceClientFactory {
     private CriticalSection connectSection = new CriticalSection();
     private AtomicInteger nextPort = new AtomicInteger(BTRACE_PORT);
         
-    protected static String JVM_OPS = JvmOps.class.getCanonicalName(); // force tools.jar load
-    
     public Client newClient(int pid, BTraceClientSettings settings) throws ClientCreateException {
         try {
             return connectSection.execute(pid, new ClientConnector(pid, settings));
@@ -77,25 +74,18 @@ public class BTraceClientFactory {
         
         private int getPort() throws Exception {
             Integer port = null;
-            VirtualMachine vm = null;
+
+            JavaProcessDetails vm = AttachManager.getDetails(pid);
             
-            try {
-                vm = VirtualMachine.attach(String.valueOf(pid));
+            String portPropery = vm.getSystemProperties().getProperty(BTRACE_PORT_PROPERTY);
+            
+            if (portPropery != null) {
+                port = Integer.valueOf(portPropery);
+            } else {
+                port = borrowFreePort();
                 
-                String portPropery = vm.getSystemProperties().getProperty(BTRACE_PORT_PROPERTY);
-                
-                if (portPropery != null) {
-                    port = Integer.valueOf(portPropery);
-                } else {
-                    port = borrowFreePort();
-                    
-                    if (port == null) {
-                        throw new ClientCreateException("Failed to borrow free TCP port for pid " + pid);
-                    }
-                }
-            } finally {
-                if (vm != null) {
-                    vm.detach();
+                if (port == null) {
+                    throw new ClientCreateException("Failed to borrow free TCP port for pid " + pid);
                 }
             }
 
