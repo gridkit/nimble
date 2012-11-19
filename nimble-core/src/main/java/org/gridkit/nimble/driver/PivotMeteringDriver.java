@@ -8,8 +8,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.gridkit.nimble.metering.ArraySampleManager;
+import org.gridkit.nimble.metering.Measure;
+import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.metering.SampleWriter;
+import org.gridkit.nimble.metering.SamplerBuilder;
+import org.gridkit.nimble.metering.ScalarSampler;
+import org.gridkit.nimble.metering.SpanReporter;
+import org.gridkit.nimble.metering.TimeReporter;
 import org.gridkit.nimble.orchestration.DeployableBean;
 import org.gridkit.nimble.pivot.DistributedPivotReporter;
 import org.gridkit.nimble.pivot.Pivot;
@@ -47,6 +54,11 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 
 	@Override
 	public void setGlobal(Object key, Object value) {
+		throw new UnsupportedOperationException("Should be called in node scope");
+	}
+
+	@Override
+	public SamplerBuilder samplerBuilder() {
 		throw new UnsupportedOperationException("Should be called in node scope");
 	}
 
@@ -159,6 +171,11 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}
 
 		@Override
+		public SamplerBuilder samplerBuilder() {
+			return new Builder(getSchema());
+		}
+
+		@Override
 		public void flush() {
 			processSamples();
 			accumulator.flush();
@@ -179,5 +196,117 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	            }
 	        };
 	    }
+	}
+	
+	private static class Builder implements SamplerBuilder {
+
+		private SampleSchema schema;
+		
+		private Builder(SampleSchema schema) {
+			this.schema = schema.createDerivedScheme();
+			this.schema.setStatic(Measure.PRODUCER, SamplerBuilder.class);
+		}
+
+		@Override
+		public SamplerBuilder set(Object key, Object value) {
+			schema.setStatic(key, value);
+			return this;
+		}
+
+		@Override
+		public TimeReporter timeReporter(String name) {
+			SampleSchema s = schema.createDerivedScheme();
+			s.setStatic(Measure.NAME, name);
+			s.declareDynamic(Measure.TIMESTAMP, double.class);
+			s.declareDynamic(Measure.DURATION, double.class);
+			return new SimpleTimeReporter(s.createFactory());
+		}
+
+		@Override
+		public SpanReporter snapReporter(String name) {
+			SampleSchema s = schema.createDerivedScheme();
+			s.setStatic(Measure.NAME, name);
+			s.declareDynamic(Measure.TIMESTAMP, double.class);
+			s.declareDynamic(Measure.DURATION, double.class);
+			s.declareDynamic(Measure.MEASURE, double.class);
+			return new SimpleSnapReporter(s.createFactory());
+		}
+
+		@Override
+		public ScalarSampler scalarSampler(String name) {
+			SampleSchema s = schema.createDerivedScheme();
+			s.setStatic(Measure.NAME, name);
+			s.declareDynamic(Measure.MEASURE, double.class);
+			return new SimpleScalarReporter(s.createFactory());
+		}
+	}
+	
+	private static class SimpleTimeReporter implements TimeReporter {
+
+		private final SampleFactory factory;
+		
+		private SimpleTimeReporter(SampleFactory factory) {
+			this.factory = factory;
+//			this.factory.trace(true);
+		}
+
+		@Override
+		public StopWatch start() {
+			return new StopWatch() {
+				
+				private final long nsStart = System.nanoTime();
+				private final SampleWriter writer = factory.newSample();
+				
+				@Override
+				public void finish() {
+					long nsEnd = System.nanoTime();
+					writer.setTimeBounds(nsStart, nsEnd);
+					writer.submit();
+				}
+			};
+		}		
+	}
+
+	private static class SimpleSnapReporter implements SpanReporter {
+		
+		private final SampleFactory factory;
+		
+		private SimpleSnapReporter(SampleFactory factory) {
+			this.factory = factory;
+		}
+		
+		@Override
+		public StopWatch start() {
+			return new StopWatch() {
+				
+				private final long nsStart = System.nanoTime();
+				private final SampleWriter writer = factory.newSample();
+				
+				
+				@Override
+				public void finish(double measure) {
+					long nsEnd = System.nanoTime();
+					writer.setTimeBounds(nsStart, nsEnd);
+					writer.setMeasure(measure);
+					writer.submit();
+				}
+			};
+		}		
+	}
+	
+	public static class SimpleScalarReporter implements ScalarSampler {
+		
+		private final SampleFactory factory;
+
+		private SimpleScalarReporter(SampleFactory factory) {
+			this.factory = factory;
+		}
+
+		@Override
+		public void write(double value) {
+			factory.newSample()
+				.setMeasure(value)
+				.submit();
+		}
 	}
 }

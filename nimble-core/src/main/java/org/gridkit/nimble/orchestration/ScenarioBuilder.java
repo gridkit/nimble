@@ -182,7 +182,7 @@ public class ScenarioBuilder {
 		return sync;		
 	}
 	
-	void debug_simulate() {
+	public void debug_simulate() {
 		new PrintScenario().play(null);
 	}
 	
@@ -555,7 +555,7 @@ public class ScenarioBuilder {
 		@Override
 		public String toString() {
 			return "[" + actionId + "] " 
-					+ ( name != null ? "name" : sleep == 0 ? "<sync>" : "<sleep " + sleep + "ms>");
+					+ ( name != null ? name : sleep == 0 ? "<sync>" : "<sleep " + sleep + "ms>");
 		}
 	}
 	
@@ -1059,7 +1059,7 @@ public class ScenarioBuilder {
 			}
 			
 			if (candidates.isEmpty()) {
-				throw new IllegalArgumentException("No target nodes have found");
+				throw new IllegalArgumentException("No target nodes have found, for " + resolver);
 			}
 			
 			return candidates;
@@ -1075,6 +1075,8 @@ public class ScenarioBuilder {
 	}
 	
 	private static class UnionScope implements ScopeResolver {
+		
+		private static ThreadLocal<Boolean> IN_STACK = new ThreadLocal<Boolean>();
 		
 		private final Set<ScopeResolver> resolvers = new LinkedHashSet<ScenarioBuilder.ScopeResolver>();
 		
@@ -1104,10 +1106,27 @@ public class ScenarioBuilder {
 			else {
 				return false;
 			}
-		}				
+		}
+		
+		public String toString() {
+			if (IN_STACK.get() == Boolean.TRUE) {
+				return "<>";
+			}
+			else {				
+				IN_STACK.set(Boolean.TRUE);
+				try {
+					return "UNION" + resolvers.toString();
+				}
+				finally {
+					IN_STACK.set(null);
+				}
+			}
+		}
 	}
 	
 	private static class IntersectionScope implements ScopeResolver {
+		
+		private static ThreadLocal<Boolean> IN_STACK = new ThreadLocal<Boolean>();
 		
 		private final Set<ScopeResolver> resolvers = new LinkedHashSet<ScenarioBuilder.ScopeResolver>();
 
@@ -1141,7 +1160,22 @@ public class ScenarioBuilder {
 			else {
 				return true;
 			}
-		}		
+		}
+		
+		public String toString() {
+			if (IN_STACK.get() == Boolean.TRUE) {
+				return "<>";
+			}
+			else {				
+				IN_STACK.set(Boolean.TRUE);
+				try {
+					return "INTERSECT" + resolvers.toString();
+				}
+				finally {
+					IN_STACK.set(null);
+				}
+			}
+		}
 	}	
 	
 	private static class FixedScope implements ScopeResolver {

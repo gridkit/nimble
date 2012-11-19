@@ -2,6 +2,7 @@ package org.gridkit.nimble.driver;
 
 import org.gridkit.nimble.metering.DistributedMetering;
 import org.gridkit.nimble.metering.SampleSchema;
+import org.gridkit.nimble.metering.SamplerBuilder;
 
 public interface MeteringDriver {
 	
@@ -11,6 +12,8 @@ public interface MeteringDriver {
 	public SampleSchema getSchema();
 	
 	public void setGlobal(Object key, Object value);
+	
+	public SamplerBuilder samplerBuilder();
 	
 	public void flush();
 	

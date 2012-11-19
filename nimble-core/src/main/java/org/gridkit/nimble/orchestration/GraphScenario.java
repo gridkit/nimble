@@ -152,6 +152,7 @@ class GraphScenario implements Scenario {
 					}
 				}
 				if (noop) {
+					// TODO deadlock check is broken
 					boolean waiting = true;
 					for(ActionInfo ai: actions.values()) {
 						if (!isCompleted(ai.getId())) {
