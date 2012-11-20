@@ -58,7 +58,6 @@ public class MonitoringBench {
 		cohCpuPerHost.setLocator(new AttachMBeanConnector(getClusterMatcher()));
 		cohCpuPerHost.groupBy(CoherenceMetricsKey.MEMBER_ROLE);
 		cohCpuPerHost.groupBy(DistributedMetering.HOSTNAME);
-		cohCpuPerHost.groupBy(CoherenceMetricsKey.MEMBER_ROLE);		
 		cohCpuPerHost.sortByField(DistributedMetering.HOSTNAME);
 		cohCpuPerHost.sortByField(CoherenceMetricsKey.MEMBER_ROLE);
 		cohCpuPerHost.sortByField(CoherenceMetricsKey.SERVICE_NAME);

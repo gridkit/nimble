@@ -28,7 +28,7 @@ import org.gridkit.nimble.metering.DTimeReporter;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.monitoring.MonitoringStack;
 import org.gridkit.nimble.monitoring.ProcessCpuMonitoring;
-import org.gridkit.nimble.monitoring.StandardSamplerReportBundler;
+import org.gridkit.nimble.monitoring.StandardSamplerReportBundle;
 import org.gridkit.nimble.monitoring.SysPropSchemaConfig;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.orchestration.TimeLine;
@@ -49,7 +49,6 @@ import org.junit.Test;
 public class ZkTest {
 
 	private ViManager cloud = CloudFactory.createLocalCloud();
-//	private ViManager cloud = CloudFactory.createIsolateCloud();
 	
 	private MonitoringStack mstack = new MonitoringStack();
 	
@@ -69,7 +68,7 @@ public class ZkTest {
 	
 	@Before
 	public void addReporting() {
-		StandardSamplerReportBundler mon = new StandardSamplerReportBundler("sampler");
+		StandardSamplerReportBundle mon = new StandardSamplerReportBundle("sampler");		
 		mon.sortByField(Measure.NAME);		
 		mstack.addBundle(mon, "Operation statistics");
 	}
@@ -122,6 +121,7 @@ public class ZkTest {
 		cloud.nodes("MON");
 		cloud.node("ZK.**").setProp("proc-type", "ZooServer");
 		cloud.node("WORKER.**").setProp("proc-type", "Worker");
+//		ViProps.at(cloud.node("WORKER.1")).setInProcessType();
 		cloud.node("**").touch();
 		startZooKeeper();
 		
@@ -138,7 +138,6 @@ public class ZkTest {
 	public PivotReporter runTest() {
 		
 		ScenarioBuilder sb = new ScenarioBuilder();
-
 		
 		Pivot pivot = new Pivot();
 		mstack.configurePivot(pivot);

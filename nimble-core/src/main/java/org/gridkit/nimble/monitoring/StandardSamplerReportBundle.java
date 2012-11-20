@@ -8,9 +8,9 @@ import org.gridkit.nimble.pivot.Pivot;
 import org.gridkit.nimble.pivot.display.DisplayBuilder;
 import org.gridkit.nimble.pivot.display.PrintConfig;
 
-public class StandardSamplerReportBundler extends AbstractMonitoringBundle {
+public class StandardSamplerReportBundle extends AbstractMonitoringBundle {
 
-	public StandardSamplerReportBundler(String namespace) {
+	public StandardSamplerReportBundle(String namespace) {
 		super(namespace);
 	}
 
