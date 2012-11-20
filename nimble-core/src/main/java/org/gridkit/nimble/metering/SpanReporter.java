@@ -7,7 +7,7 @@ public interface SpanReporter {
 	
 	public interface StopWatch {
 
-		public void finish(double measure);
+		public void stop(double measure);
 		
 	}
 }

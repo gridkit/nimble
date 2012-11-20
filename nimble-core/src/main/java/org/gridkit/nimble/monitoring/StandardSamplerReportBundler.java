@@ -39,7 +39,7 @@ public class StandardSamplerReportBundler extends AbstractMonitoringBundle {
 		.count()
 		.distributionStats(Measure.DURATION).asMillis()
 		.frequency()
-		.duration().caption("Observer [S]");		
+		.duration().caption("Observed [S]");		
 	}
 
 	@Override

@@ -16,6 +16,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import org.gridkit.lab.jvm.attach.PatternJvmMatcher;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.ExecutionDriver;
@@ -23,15 +24,17 @@ import org.gridkit.nimble.driver.ExecutionDriver.ExecutionConfig;
 import org.gridkit.nimble.driver.ExecutionHelper;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
+import org.gridkit.nimble.metering.DTimeReporter;
 import org.gridkit.nimble.metering.Measure;
-import org.gridkit.nimble.metering.TimeReporter;
-import org.gridkit.nimble.metering.TimeReporter.StopWatch;
 import org.gridkit.nimble.monitoring.MonitoringStack;
+import org.gridkit.nimble.monitoring.ProcessCpuMonitoring;
 import org.gridkit.nimble.monitoring.StandardSamplerReportBundler;
+import org.gridkit.nimble.monitoring.SysPropSchemaConfig;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.orchestration.TimeLine;
 import org.gridkit.nimble.pivot.Pivot;
 import org.gridkit.nimble.pivot.PivotReporter;
+import org.gridkit.nimble.pivot.display.DisplayBuilder;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.probe.Monitoring;
@@ -67,8 +70,27 @@ public class ZkTest {
 	@Before
 	public void addReporting() {
 		StandardSamplerReportBundler mon = new StandardSamplerReportBundler("sampler");
-		mon.sortByField(Measure.NAME);
+		mon.sortByField(Measure.NAME);		
 		mstack.addBundle(mon, "Operation statistics");
+	}
+
+	@Before
+	public void addCpuReporting() {
+		PatternJvmMatcher matcher = new PatternJvmMatcher();
+		matcher.matchVmName(".*boot.*");
+		matcher.matchProp("proc-type", ".*");
+		
+		SysPropSchemaConfig.ProcessId config = new SysPropSchemaConfig.ProcessId();
+		config.readProp("proc-type", "Process type");
+		
+		ProcessCpuMonitoring mon = new ProcessCpuMonitoring("proc-cpu");
+		mon.setLocator(matcher);
+		mon.setSchemaConfig(config);
+		mon.groupBy("Process type");
+		mon.sortByField("Process type");
+		DisplayBuilder.with(mon)
+		.attribute("Process type");
+		mstack.addBundle(mon, "Process CPU utilization");
 	}
 
 	public void startZooKeeper() {
@@ -97,8 +119,9 @@ public class ZkTest {
 	public void start_and_run() {
 		cloud.nodes("ZK.1", "ZK.2", "ZK.3");
 		cloud.nodes("WORKER.1", "WORKER.2", "WORKER.3");
-//		cloud.nodes("WORKER").setProp(ViProps.NODE_TYPE, ViProps.NODE_TYPE_ISOLATE);
 		cloud.nodes("MON");
+		cloud.node("ZK.**").setProp("proc-type", "ZooServer");
+		cloud.node("WORKER.**").setProp("proc-type", "Worker");
 		cloud.node("**").touch();
 		startZooKeeper();
 		
@@ -123,7 +146,7 @@ public class ZkTest {
 		
 		MeteringDriver md = sb.deploy(pd);
 		mstack.inject(MeteringDriver.class, md);
-		mstack.inject(MonitoringDriver.class, Monitoring.deployDriver("**", sb, md));
+		mstack.inject(MonitoringDriver.class, Monitoring.deployDriver("**.MON.**", sb, md));
 		
 		sb.checkpoint("init");
 		sb.checkpoint("start");
@@ -153,13 +176,12 @@ public class ZkTest {
 		ExecutionDriver exec = sb.deploy(ExecutionHelper.newDriver());
 		
 		for(int i = 0; i != readerCount; ++i) {
-			sb.fromStart();
+			sb.from("init");
 			Runnable r = driver.getReader(md);
 			sb.sleep(5000);
-			sb.join("init");
-			sb.from("init");
-			Activity act = exec.start(r, readerExecConfig, null);
 			sb.join("start");
+			sb.from("start");
+			Activity act = exec.start(r, readerExecConfig, null);
 			sb.from("stop");
 			act.stop();
 			sb.fromStart();
@@ -168,12 +190,11 @@ public class ZkTest {
 		}
 
 		for(int i = 0; i != writerCount; ++i) {
-			sb.fromStart();
-			Runnable r = driver.getWriter(md);
-			sb.join("init");
 			sb.from("init");
-			Activity act = exec.start(r, writerExecConfig, null);
+			Runnable r = driver.getWriter(md);
 			sb.join("start");
+			sb.from("start");
+			Activity act = exec.start(r, writerExecConfig, null);
 			sb.from("stop");
 			act.stop();
 			sb.fromStart();
@@ -190,8 +211,11 @@ public class ZkTest {
 		
 	}
 	
+	@SuppressWarnings("serial")
 	public static class TestDriverImpl implements TestDriver, Serializable {
 
+		enum Op { hit, miss, create, update, fail };
+		
 		private String basePath = "/test";
 		private int nameRange = 1000;
 
@@ -241,8 +265,7 @@ public class ZkTest {
 			
 			return new Runnable() {
 				
-				TimeReporter readRep = metering.samplerBuilder().timeReporter("Read");
-				TimeReporter missRep = metering.samplerBuilder().timeReporter("Read (miss)");
+				DTimeReporter<Op> rep = metering.samplerBuilder().timeReporter("Read (%s)", Op.class);
 				Random rand = new Random();
 				
 				@Override
@@ -251,15 +274,14 @@ public class ZkTest {
 					try {
 						int n = rand.nextInt(nameRange);
 						String path = basePath + "/node-" + n;
-						StopWatch swh = readRep.start();
-						StopWatch swm = missRep.start();
+						DTimeReporter.StopWatch<Op> sw = rep.start();
 						try {
 							byte[] data = client.getData(path, false, null);
 							n = data.length; // just to avoid warning
-							swh.finish();
+							sw.stop(Op.hit);
 						}
 						catch(NoNodeException e) {
-							swm.finish();
+							sw.stop(Op.miss);
 						}
 					} catch (Exception e) {
 						throw new RuntimeException(e);
@@ -275,9 +297,7 @@ public class ZkTest {
 			
 			return new Runnable() {
 				
-				TimeReporter createRep = metering.samplerBuilder().timeReporter("Write (create)");
-				TimeReporter updateRep = metering.samplerBuilder().timeReporter("Write (update)");
-				TimeReporter failRep = metering.samplerBuilder().timeReporter("Write (failure)");
+				DTimeReporter<Op> rep = metering.samplerBuilder().timeReporter("Write (%s)", Op.class);
 				Random rand = new Random();
 				
 				@Override
@@ -293,27 +313,25 @@ public class ZkTest {
 						rand.nextBytes(data);
 						
 						String path = basePath + "/node-" + n;
-						StopWatch swc = createRep.start();
-						StopWatch swu = updateRep.start();
-						StopWatch swf = failRep.start();
+						DTimeReporter.StopWatch<Op> sw = rep.start();
 						Stat st = client.exists(path, false);
 						if (st == null) {
 							try {
 								client.create(path, data, acl, CreateMode.PERSISTENT);
-								swc.finish();
+								sw.stop(Op.create);
 							}
 							catch(NodeExistsException e) {
-								swf.finish();
+								sw.stop(Op.fail);
 								return;								
 							}
 						}
 						else {
 							try {
 								client.setData(path, data, st.getVersion());
-								swu.finish();
+								sw.stop(Op.update);
 							}
 							catch(BadVersionException e) {
-								swf.finish();
+								sw.stop(Op.fail);
 								return;								
 							}
 						}

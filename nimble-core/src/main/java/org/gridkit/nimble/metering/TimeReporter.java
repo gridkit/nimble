@@ -6,7 +6,7 @@ public interface TimeReporter {
 	
 	public interface StopWatch {
 		
-		public void finish();
+		public void stop();
 		
 	}	
 }

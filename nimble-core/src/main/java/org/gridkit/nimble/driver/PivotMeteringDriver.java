@@ -4,10 +4,13 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.Remote;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.gridkit.nimble.metering.ArraySampleManager;
+import org.gridkit.nimble.metering.DSpanReporter;
+import org.gridkit.nimble.metering.DTimeReporter;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
@@ -223,6 +226,14 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}
 
 		@Override
+		public <T extends Enum<T>> DTimeReporter<T> timeReporter(String name, Class<T> descriminator) {
+			SampleSchema s = schema.createDerivedScheme();
+			s.declareDynamic(Measure.TIMESTAMP, double.class);
+			s.declareDynamic(Measure.DURATION, double.class);
+			return new DescriminatingTimeReporter<T>(s, name, descriminator);
+		}
+
+		@Override
 		public SpanReporter snapReporter(String name) {
 			SampleSchema s = schema.createDerivedScheme();
 			s.setStatic(Measure.NAME, name);
@@ -230,6 +241,15 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			s.declareDynamic(Measure.DURATION, double.class);
 			s.declareDynamic(Measure.MEASURE, double.class);
 			return new SimpleSnapReporter(s.createFactory());
+		}
+
+		@Override
+		public <T extends Enum<T>> DSpanReporter<T> snapReporter(String name,	Class<T> descriminator) {
+			SampleSchema s = schema.createDerivedScheme();
+			s.declareDynamic(Measure.TIMESTAMP, double.class);
+			s.declareDynamic(Measure.DURATION, double.class);
+			s.declareDynamic(Measure.MEASURE, double.class);
+			return new DescriminatingSpanReporter<T>(s, name, descriminator);
 		}
 
 		@Override
@@ -247,7 +267,6 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		
 		private SimpleTimeReporter(SampleFactory factory) {
 			this.factory = factory;
-//			this.factory.trace(true);
 		}
 
 		@Override
@@ -258,7 +277,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 				private final SampleWriter writer = factory.newSample();
 				
 				@Override
-				public void finish() {
+				public void stop() {
 					long nsEnd = System.nanoTime();
 					writer.setTimeBounds(nsStart, nsEnd);
 					writer.submit();
@@ -267,6 +286,38 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}		
 	}
 
+	private static class DescriminatingTimeReporter<T extends Enum<T>> implements DTimeReporter<T> {
+
+		private final SampleFactory[] factores;
+		
+		private DescriminatingTimeReporter(SampleSchema schema, String template, Class<T> en) {
+			EnumSet<T> es = EnumSet.allOf(en);
+			this.factores = new SampleFactory[es.size()];
+			for(T x: es) {
+				String name = String.format(template, x);
+				SampleFactory factory = schema.createDerivedScheme().setStatic(Measure.NAME, name).createFactory();
+				factores[x.ordinal()] = factory;
+			}
+		}
+
+		@Override
+		public StopWatch<T> start() {
+			return new StopWatch<T>() {
+				
+				private final long nsStart = System.nanoTime();
+				
+				@Override
+				public void stop(T descr) {
+					int n = descr.ordinal();
+					SampleWriter writer = factores[n].newSample();
+					long nsEnd = System.nanoTime();
+					writer.setTimeBounds(nsStart, nsEnd);
+					writer.submit();
+				}
+			};
+		}		
+	}
+	
 	private static class SimpleSnapReporter implements SpanReporter {
 		
 		private final SampleFactory factory;
@@ -284,7 +335,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 				
 				
 				@Override
-				public void finish(double measure) {
+				public void stop(double measure) {
 					long nsEnd = System.nanoTime();
 					writer.setTimeBounds(nsStart, nsEnd);
 					writer.setMeasure(measure);
@@ -293,8 +344,41 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			};
 		}		
 	}
+
+	private static class DescriminatingSpanReporter<T extends Enum<T>> implements DSpanReporter<T> {
+
+		private final SampleFactory[] factores;
+		
+		private DescriminatingSpanReporter(SampleSchema schema, String template, Class<T> en) {
+			EnumSet<T> es = EnumSet.allOf(en);
+			this.factores = new SampleFactory[es.size()];
+			for(T x: es) {
+				String name = String.format(template, x);
+				SampleFactory factory = schema.createDerivedScheme().setStatic(Measure.NAME, name).createFactory();
+				factores[x.ordinal()] = factory;
+			}
+		}
+
+		@Override
+		public StopWatch<T> start() {
+			return new StopWatch<T>() {
+				
+				private final long nsStart = System.nanoTime();
+				
+				@Override
+				public void stop(double value, T descr) {
+					int n = descr.ordinal();
+					SampleWriter writer = factores[n].newSample();
+					long nsEnd = System.nanoTime();
+					writer.setTimeBounds(nsStart, nsEnd);
+					writer.setMeasure(value);
+					writer.submit();
+				}
+			};
+		}		
+	}
 	
-	public static class SimpleScalarReporter implements ScalarSampler {
+	private static class SimpleScalarReporter implements ScalarSampler {
 		
 		private final SampleFactory factory;
 
