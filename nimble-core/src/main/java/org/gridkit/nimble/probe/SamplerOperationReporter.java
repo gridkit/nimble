@@ -58,4 +58,9 @@ public class SamplerOperationReporter implements OperationReporter {
     public void event(String key) {
         event(key, 1.0);
     }
+
+    @Override
+    public void duration(String operation, double timestampS, double durationS) {
+        factory.getSpanSampler(operation).write(1.0, timestampS, durationS);
+    }
 }

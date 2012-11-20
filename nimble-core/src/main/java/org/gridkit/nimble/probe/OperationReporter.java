@@ -7,4 +7,6 @@ public interface OperationReporter {
     void finish(String operation);
     
     void scalar(String key, double value);
+    
+    void duration(String operation, double timestampS, double durationS);
 }
