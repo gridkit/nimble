@@ -23,7 +23,7 @@ public class StandardSamplerReportBundle extends AbstractMonitoringBundle {
 	public void configurePivot(Pivot pivot) {
 		pivot.root()
 			.level(namespace)
-				.filter(Measure.PRODUCER, SamplerBuilder.class)
+				.filter(Measure.PRODUCER, SamplerBuilder.Producer.USER)
 					.group(Measure.NAME)
 						.calcDistribution(Measure.DURATION)
 						.calcFrequency(Measure.MEASURE);
@@ -37,7 +37,7 @@ public class StandardSamplerReportBundle extends AbstractMonitoringBundle {
 		DisplayBuilder.with(printer, namespace)
 		.attribute("Metric", Measure.NAME)
 		.count()
-		.distributionStats(Measure.DURATION).asMillis()
+		.distributionStats(Measure.DURATION).caption("%s [ms]").asMillis()
 		.frequency()
 		.duration().caption("Observed [S]");		
 	}

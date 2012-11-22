@@ -272,6 +272,11 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle {
 			
 			return new ProcCpuPollProbe(target, s, getSigar());
 		}
+
+		@Override
+		public String toString() {
+			return "SigarProcCpu";
+		}
 	}
 		
 	private final static class ProcCpuPollProbe implements PollProbe {
@@ -328,6 +333,10 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle {
 		@Override
 		public Collection<Long> findTargets() {
 			return provider.getPids();
+		}
+		
+		public String toString() {
+			return provider.toString();
 		}
 	}
 	

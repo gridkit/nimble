@@ -2,14 +2,18 @@ package org.gridkit.nimble.pivot;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.StringWriter;
 import java.util.List;
 
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.gridkit.nimble.metering.ArraySampleManager;
 import org.gridkit.nimble.metering.DeltaSampleWriter;
 import org.gridkit.nimble.metering.Measure;
+import org.gridkit.nimble.metering.RawSampleCollector;
+import org.gridkit.nimble.metering.SampleBuffer;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
@@ -134,6 +138,45 @@ public class PivotTest {
 		
 	}
 
+	@Test
+	public void test_buffer() throws IOException {
+		ArraySampleManager asm1 = new ArraySampleManager(100);
+		ArraySampleManager asm2 = new ArraySampleManager(100);
+		
+		SampleSchema ss = ArraySampleManager.newScheme();
+		ss.declareDynamic(Measure.TIMESTAMP, double.class);
+		
+		SampleSchema ss1 = ss.createDerivedScheme();
+		asm1.adopt(ss1);
+		ss1.setStatic(Measure.NAME, "XYZ");
+//		ss1.setStatic(Measure.NAME, "ABC");
+		ss1.declareDynamic(Measure.MEASURE, double.class);
+		ss1.declareDynamic(ATTR_A, String.class);
+
+		SampleSchema ss2 = ss.createDerivedScheme();
+		asm2.adopt(ss2);
+		ss2.setStatic(Measure.NAME, "ABC");
+		ss2.declareDynamic(Measure.MEASURE, double.class);
+		ss2.declareDynamic(ATTR_A, String.class);
+		
+		SampleFactory sf1 = ss1.createFactory();
+		SampleFactory sf2 = ss2.createFactory();
+
+		generateSamples(sf1, sf2);
+
+		SampleBuffer buf = new SampleBuffer();
+		buf.accumulate(asm1);
+		buf.accumulate(asm2);
+
+		RawSampleCollector collector = new RawSampleCollector();
+		buf.feed(collector, 3);
+		
+		new PrettyPrinter().print(System.out, collector);
+		StringWriter sw = new StringWriter();
+		collector.writeCsv(sw);
+		System.out.println("\n" + sw.toString());
+	}
+	
 	private SampleSet reserialize(SampleSet set) {
 		try {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();

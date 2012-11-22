@@ -1,17 +1,21 @@
 package org.gridkit.nimble.driver;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.Remote;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.gridkit.nimble.metering.ArraySampleManager;
 import org.gridkit.nimble.metering.DSpanReporter;
 import org.gridkit.nimble.metering.DTimeReporter;
 import org.gridkit.nimble.metering.Measure;
+import org.gridkit.nimble.metering.RawSampleSink;
+import org.gridkit.nimble.metering.SampleBuffer;
 import org.gridkit.nimble.metering.SampleFactory;
 import org.gridkit.nimble.metering.SampleReader;
 import org.gridkit.nimble.metering.SampleSchema;
@@ -33,6 +37,8 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	private final int bufferSize;
 	private final Map<String, RemoteSlave> slaves = new HashMap<String, RemoteSlave>();
 	
+	private boolean keepRawData = true;
+	
 	public PivotMeteringDriver(Pivot pivot) {
 		this(pivot, 16 << 10);
 	}
@@ -40,6 +46,10 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	public PivotMeteringDriver(Pivot pivot, int bufferSize) {
 		this.bufferSize = bufferSize;
 		this.reporter = new DistributedPivotReporter(pivot);		
+	}
+	
+	public void setKeyRawSampler(boolean keep) {
+		keepRawData = keep;
 	}
 	
 	public PivotReporter getReporter() {
@@ -70,8 +80,12 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		throw new UnsupportedOperationException("Should be called in node scope");
 	}
 	
-	
     @Override
+	public void dumpRawSamples(RawSampleSink sink, int batchSize) {
+    	throw new UnsupportedOperationException("Should be called in node scope");
+	}
+
+	@Override
 	public <S, T extends MeteringAware<S>> MeteringSink<S> bind(T sink) {
     	throw new UnsupportedOperationException("Should be called in node scope");
     }
@@ -84,7 +98,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			throw new IllegalStateException("Duplicate slave creation, node " + nodename);
 		}
 		
-		return new Deployer(nodename, reporter.createSlaveReporter(), bufferSize);
+		return new Deployer(nodename, reporter.createSlaveReporter(), bufferSize, keepRawData);
 	}
 
 	private static class Deployer implements DeploymentArtifact, Serializable {
@@ -94,16 +108,18 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		private final String nodename;
 		private final SampleAccumulator accumulator;
 		private final int bufferSize;
+		private final boolean keepRaw;
 		
-		public Deployer(String nodename, SampleAccumulator accumulator, int bufferSize) {
+		public Deployer(String nodename, SampleAccumulator accumulator, int bufferSize, boolean keepRaw) {
 			this.nodename = nodename;
 			this.accumulator = accumulator;
 			this.bufferSize = bufferSize;
+			this.keepRaw = keepRaw;
 		}
 
 		@Override
 		public Object deploy(EnvironmentContext context) {
-			return new Slave(nodename, accumulator, bufferSize);
+			return new Slave(nodename, accumulator, bufferSize, keepRaw);
 		}
 	}
 
@@ -115,16 +131,24 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		
 		private final String nodename;
 		private final ArraySampleManager manager;
-		private final SampleAccumulator accumulator;		
+		private final SampleAccumulator accumulator;
+		private final SampleBuffer buffer;
 		
 		private final Map<Object, Object> globals =  new HashMap<Object, Object>();
 		@SuppressWarnings("unused")
 		private final Thread reporter;
 		
-		public Slave(String nodename, SampleAccumulator accumulator, int bufferSize) {
+		public Slave(String nodename, SampleAccumulator accumulator, int bufferSize, boolean keepRaw) {
 			this.nodename = nodename;
 			this.manager = new ArraySampleManager(bufferSize);
 			this.accumulator = accumulator;
+			
+			try {
+				buffer = keepRaw ? new SampleBuffer() : null;
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			
 			this.reporter = startReporter();
 			
 			globals.put(NODE, nodename);
@@ -179,13 +203,36 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}
 
 		@Override
+		public void dumpRawSamples(RawSampleSink sink, int batchSize) {
+			try {
+				buffer.feed(sink, batchSize);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
 		public void flush() {
 			processSamples();
 			accumulator.flush();
 		}
 
 		private synchronized void processSamples() {
-			accumulator.accumulate(manager);
+			if (buffer == null) {
+				accumulator.accumulate(manager);
+			}
+			else {
+				if (manager.isReady() || manager.next()) {
+					SingleSampleReader reader = new SingleSampleReader(manager);
+					while(true) {
+						buffer.accumulate(reader);
+						accumulator.accumulate(reader);
+						if (!manager.next()) {
+							break;
+						}
+					}
+				}
+			}				
 		}
 		
 		@Override
@@ -207,7 +254,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		
 		private Builder(SampleSchema schema) {
 			this.schema = schema.createDerivedScheme();
-			this.schema.setStatic(Measure.PRODUCER, SamplerBuilder.class);
+			this.schema.setStatic(Measure.PRODUCER, SamplerBuilder.Producer.USER);
 		}
 
 		@Override
@@ -391,6 +438,35 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			factory.newSample()
 				.setMeasure(value)
 				.submit();
+		}
+	}
+	
+	private static class SingleSampleReader implements SampleReader {
+
+		private final SampleReader reader;
+
+		private SingleSampleReader(SampleReader reader) {
+			this.reader = reader;
+		}
+
+		@Override
+		public boolean isReady() {
+			return reader.isReady();
+		}
+
+		@Override
+		public boolean next() {
+			return false;
+		}
+
+		@Override
+		public List<Object> keySet() {
+			return reader.keySet();
+		}
+
+		@Override
+		public Object get(Object key) {
+			return reader.get(key);
 		}
 	}
 }

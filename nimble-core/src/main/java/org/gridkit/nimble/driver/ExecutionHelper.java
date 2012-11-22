@@ -84,10 +84,15 @@ public class ExecutionHelper {
 		}
 		
 		private synchronized void startWorkers(int threads) {
-			realThreadCount += threads;
-			for(int i = 0; i != threads; ++i) {
+			if (threads > 0) { 
+				realThreadCount += threads;
+				for(int i = 0; i != threads; ++i) {
+					service.submit(this);
+				}
+			}
+			else {
 				service.submit(this);
-			}			
+			}
 		}
 
 		@Override

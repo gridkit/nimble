@@ -31,4 +31,9 @@ public class JvmMatcherPidProvider implements PidProvider, Serializable {
         
         return pids;
     }
+    
+    @Override
+    public String toString() {
+    	return matcher.toString();
+    }
 }

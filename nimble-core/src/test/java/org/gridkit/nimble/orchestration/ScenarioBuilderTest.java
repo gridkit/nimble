@@ -86,6 +86,7 @@ public class ScenarioBuilderTest {
 		
 	}
 	
+	@SuppressWarnings("serial")
 	public static class SimpleAgent implements Agent, Serializable {
 
 		private String name;
@@ -110,6 +111,7 @@ public class ScenarioBuilderTest {
 		}
 	}
 	
+	@SuppressWarnings("serial")
 	public static class SimpleReporter implements Reporter, Serializable {
 		
 		private final String text;
@@ -124,6 +126,7 @@ public class ScenarioBuilderTest {
 		}
 	}
 
+	@SuppressWarnings("serial")
 	public static class SimpleReportingSupport implements ReportingSupport, Serializable {
 		
 		public SimpleReportingSupport() {

@@ -48,6 +48,7 @@ public class GenericPollProbeManager {
 		
 		public <T, S> void deploy(TargetLocator<T> locator, PollProbeDeployer<T, S> factory, SamplerProvider<T, S> sampleProvider, long periodMs) {
 			Collection<T> targets = locator.findTargets();
+			LOGGER.info("Target for probe \"" + name + "\" " + targets);
 			for(T target: targets) {
 				PollProbe probe = factory.deploy(target, sampleProvider);
 				if (probe != null) {
