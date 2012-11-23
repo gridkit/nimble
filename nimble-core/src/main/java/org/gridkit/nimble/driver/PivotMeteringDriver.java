@@ -14,6 +14,7 @@ import org.gridkit.nimble.metering.ArraySampleManager;
 import org.gridkit.nimble.metering.DSpanReporter;
 import org.gridkit.nimble.metering.DTimeReporter;
 import org.gridkit.nimble.metering.Measure;
+import org.gridkit.nimble.metering.PointSampler;
 import org.gridkit.nimble.metering.RawSampleSink;
 import org.gridkit.nimble.metering.SampleBuffer;
 import org.gridkit.nimble.metering.SampleFactory;
@@ -71,7 +72,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	}
 
 	@Override
-	public SamplerBuilder samplerBuilder() {
+	public SamplerBuilder samplerBuilder(String domain) {
 		throw new UnsupportedOperationException("Should be called in node scope");
 	}
 
@@ -198,8 +199,8 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}
 
 		@Override
-		public SamplerBuilder samplerBuilder() {
-			return new Builder(getSchema());
+		public SamplerBuilder samplerBuilder(String domain) {
+			return new Builder(domain, getSchema());
 		}
 
 		@Override
@@ -252,9 +253,10 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 
 		private SampleSchema schema;
 		
-		private Builder(SampleSchema schema) {
+		private Builder(String domain, SampleSchema schema) {
 			this.schema = schema.createDerivedScheme();
 			this.schema.setStatic(Measure.PRODUCER, SamplerBuilder.Producer.USER);
+			this.schema.setStatic(Measure.DOMAIN, domain);
 		}
 
 		@Override
@@ -267,6 +269,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		public TimeReporter timeReporter(String name) {
 			SampleSchema s = schema.createDerivedScheme();
 			s.setStatic(Measure.NAME, name);
+			s.setStatic(OPERATION, name);
 			s.declareDynamic(Measure.TIMESTAMP, double.class);
 			s.declareDynamic(Measure.DURATION, double.class);
 			return new SimpleTimeReporter(s.createFactory());
@@ -275,15 +278,17 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		@Override
 		public <T extends Enum<T>> DTimeReporter<T> timeReporter(String name, Class<T> descriminator) {
 			SampleSchema s = schema.createDerivedScheme();
+			s.setStatic(OPERATION, name);
 			s.declareDynamic(Measure.TIMESTAMP, double.class);
 			s.declareDynamic(Measure.DURATION, double.class);
 			return new DescriminatingTimeReporter<T>(s, name, descriminator);
 		}
 
 		@Override
-		public SpanReporter snapReporter(String name) {
+		public SpanReporter spanReporter(String name) {
 			SampleSchema s = schema.createDerivedScheme();
 			s.setStatic(Measure.NAME, name);
+			s.setStatic(OPERATION, name);
 			s.declareDynamic(Measure.TIMESTAMP, double.class);
 			s.declareDynamic(Measure.DURATION, double.class);
 			s.declareDynamic(Measure.MEASURE, double.class);
@@ -291,8 +296,9 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}
 
 		@Override
-		public <T extends Enum<T>> DSpanReporter<T> snapReporter(String name,	Class<T> descriminator) {
+		public <T extends Enum<T>> DSpanReporter<T> spanReporter(String name,	Class<T> descriminator) {
 			SampleSchema s = schema.createDerivedScheme();
+			s.setStatic(OPERATION, name);
 			s.declareDynamic(Measure.TIMESTAMP, double.class);
 			s.declareDynamic(Measure.DURATION, double.class);
 			s.declareDynamic(Measure.MEASURE, double.class);
@@ -303,8 +309,19 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		public ScalarSampler scalarSampler(String name) {
 			SampleSchema s = schema.createDerivedScheme();
 			s.setStatic(Measure.NAME, name);
+			s.setStatic(OPERATION, name);
 			s.declareDynamic(Measure.MEASURE, double.class);
 			return new SimpleScalarReporter(s.createFactory());
+		}
+
+		@Override
+		public PointSampler pointSampler(String name) {
+			SampleSchema s = schema.createDerivedScheme();
+			s.setStatic(Measure.NAME, name);
+			s.setStatic(OPERATION, name);
+			s.declareDynamic(Measure.MEASURE, double.class);
+			s.declareDynamic(Measure.TIMESTAMP, double.class);
+			return new SimplePointReporter(s.createFactory());
 		}
 	}
 	
@@ -342,7 +359,11 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			this.factores = new SampleFactory[es.size()];
 			for(T x: es) {
 				String name = String.format(template, x);
-				SampleFactory factory = schema.createDerivedScheme().setStatic(Measure.NAME, name).createFactory();
+				SampleFactory factory = schema
+						.createDerivedScheme()
+						.setStatic(Measure.NAME, name)
+						.setStatic(SamplerBuilder.DESCRIMINATOR, x)				
+						.createFactory();
 				factores[x.ordinal()] = factory;
 			}
 		}
@@ -401,7 +422,11 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			this.factores = new SampleFactory[es.size()];
 			for(T x: es) {
 				String name = String.format(template, x);
-				SampleFactory factory = schema.createDerivedScheme().setStatic(Measure.NAME, name).createFactory();
+				SampleFactory factory = schema
+					.createDerivedScheme()
+					.setStatic(Measure.NAME, name)
+					.setStatic(SamplerBuilder.DESCRIMINATOR, x)								
+					.createFactory();
 				factores[x.ordinal()] = factory;
 			}
 		}
@@ -438,6 +463,24 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			factory.newSample()
 				.setMeasure(value)
 				.submit();
+		}
+	}
+
+	private static class SimplePointReporter implements PointSampler {
+		
+		private final SampleFactory factory;
+		
+		private SimplePointReporter(SampleFactory factory) {
+			this.factory = factory;
+		}
+		
+		
+		@Override
+		public void write(double value, double timestampS) {
+			factory.newSample()
+			.setMeasure(value)
+			.set(Measure.TIMESTAMP, timestampS)
+			.submit();
 		}
 	}
 	

@@ -14,7 +14,7 @@ public interface MeteringDriver {
 	
 	public void setGlobal(Object key, Object value);
 	
-	public SamplerBuilder samplerBuilder();
+	public SamplerBuilder samplerBuilder(String domain);
 	
 	public void flush();
 
