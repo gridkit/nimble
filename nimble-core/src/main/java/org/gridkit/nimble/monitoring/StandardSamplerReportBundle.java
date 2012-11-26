@@ -107,6 +107,8 @@ public class StandardSamplerReportBundle extends AbstractMonitoringBundle {
 		
 		if (reports.contains(ReportType.FREQUENCY)) {
 			level.calcFrequency(1, 1);
+			// this aggregator may be overriden
+			level.calcFrequency(Measure.MEASURE, 1);
 		}
 		if (reports.contains(ReportType.WEIGHTED_FREQUENCY)) {
 			level.calcFrequency(Measure.MEASURE);
