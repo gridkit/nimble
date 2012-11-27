@@ -318,13 +318,17 @@ public class PivotReporter implements SampleAccumulator {
 						Object m = ((AggregationKey) key).getMeasureKey();
 						Class<? extends Summary> t = ((AggregationKey) key).getSummaryType();
 						
-						CombinedSummary sa = (CombinedSummary) data.get(Measure.summary(m));
-						if (sa == null) {
-							sa = new CombinedSummary();
-							data.put(Measure.summary(m), sa);
-						}
+						Summary sv = (Summary)((Aggregation)ag).getResult();
 						
-						sa.addAggregation(t, (Summary)((Aggregation)ag).getResult());
+						if (!sv.isEmpty()) {
+							CombinedSummary sa = (CombinedSummary) data.get(Measure.summary(m));
+							if (sa == null) {
+								sa = new CombinedSummary();
+								data.put(Measure.summary(m), sa);
+							}
+							
+							sa.addAggregation(t, (Summary)((Aggregation)ag).getResult());
+						}
 					}
 				}
 				return data;

@@ -113,7 +113,12 @@ public interface DistributionSummary extends Summary.CountSummary, Summary.SumSu
 	    	this(summary.getMean(), summary.getVariance(), summary.getN(), summary.getMax(), summary.getMin(), summary.getSum());
 	    }
 
-	    /**
+	    @Override
+		public boolean isEmpty() {
+			return n == 0;
+		}
+
+		/**
 	     * @return Returns the max.
 	     */
 	    public double getMax() {

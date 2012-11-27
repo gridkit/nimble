@@ -121,8 +121,14 @@ public class StandardSamplerReportBundle extends AbstractMonitoringBundle {
 		
 		DisplayBuilder db = DisplayBuilder.with(printer, namespace);
 		db
-			.attribute("Metric", Measure.NAME)
-			.count();
+			.attribute("Metric", Measure.NAME);
+		
+		if (reports.contains(DISTRIBUTION)) {
+			db.count();
+		}
+		else {
+			db.count(Measure.DURATION);
+		}
 		if (reports.contains(DISTRIBUTION)) {
 			db.distributionStats(Measure.MEASURE).caption("%s");
 			db.sum(Measure.MEASURE).caption("%s");

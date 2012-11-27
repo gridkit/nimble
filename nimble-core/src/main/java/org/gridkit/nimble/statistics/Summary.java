@@ -7,6 +7,8 @@ package org.gridkit.nimble.statistics;
  */
 public interface Summary {
 
+	public boolean isEmpty();
+	
 	public interface CountSummary extends Summary {
 
 		public long getN();

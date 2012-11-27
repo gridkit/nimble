@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public interface DistinctSummary extends Summary {
+public interface DistinctSummary extends Summary, Summary.CountSummary {
 
 	public long getTotalCount();
 	
@@ -28,6 +28,11 @@ public interface DistinctSummary extends Summary {
 			this.total = total();
 		}
 		
+		@Override
+		public boolean isEmpty() {
+			return total == 0;
+		}
+
 		private long total() {
 			long t = 0;
 			for(Long n: counters.values()) {
@@ -38,6 +43,11 @@ public interface DistinctSummary extends Summary {
 
 		@Override
 		public long getTotalCount() {
+			return total;
+		}
+
+		@Override
+		public long getN() {
 			return total;
 		}
 

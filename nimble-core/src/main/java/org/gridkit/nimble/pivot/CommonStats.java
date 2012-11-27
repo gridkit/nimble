@@ -30,7 +30,7 @@ public class CommonStats {
 			@Override
 			public Object extract(CombinedSummary summary) {
 				CountSummary cs = summary.getSummary(CountSummary.class);
-				return cs == null ? null : cs.getN();
+				return cs == null ? 0l : cs.getN();
 			}
 			
 			@Override

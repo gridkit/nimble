@@ -50,6 +50,11 @@ public interface FrequencySummary extends Summary, Summary.CountSummary, Summary
 		}
 
 		@Override
+		public boolean isEmpty() {
+			return n == 0;
+		}
+
+		@Override
 		public long getN() {
 			return n;
 		}

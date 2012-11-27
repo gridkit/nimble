@@ -11,14 +11,14 @@ import java.util.Map;
 import org.gridkit.nimble.metering.Measure;
 import org.gridkit.nimble.metering.SampleReader;
 
-public class CvsSampleReader implements SampleReader {
+public class CsvSampleReader implements SampleReader {
 
 	private BufferedReader reader;
 	
 	private List<Object> header;
 	private Map<Object, Object> row;
 	
-	public CvsSampleReader(Reader reader) throws IOException {
+	public CsvSampleReader(Reader reader) throws IOException {
 		this.reader = toBuffered(reader);
 		readHeader();
 	}
@@ -36,6 +36,10 @@ public class CvsSampleReader implements SampleReader {
 		String[] line = readLine();
 		if (line == null) {
 			throw new IOException("File is empty");
+		}
+		if (line[0].equals("sep=")) {
+			readHeader();
+			return;
 		}
 		header = new ArrayList<Object>(line.length);
 		for(String column: line) {
