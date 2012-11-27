@@ -20,6 +20,8 @@ public interface SamplerBuilder {
 
 	public PointSampler pointSampler(String name);
 	
+	public SpanSampler spanSampler(String name);
+	
 	enum SamplerAttribute implements SampleKey { DOMAIN, OPERATION, DESCRIMINATOR };
 	
 	/** This object is used internally to filter samples for reporting */

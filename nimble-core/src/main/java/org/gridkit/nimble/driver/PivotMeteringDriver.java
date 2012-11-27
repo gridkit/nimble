@@ -24,6 +24,7 @@ import org.gridkit.nimble.metering.SampleWriter;
 import org.gridkit.nimble.metering.SamplerBuilder;
 import org.gridkit.nimble.metering.ScalarSampler;
 import org.gridkit.nimble.metering.SpanReporter;
+import org.gridkit.nimble.metering.SpanSampler;
 import org.gridkit.nimble.metering.TimeReporter;
 import org.gridkit.nimble.orchestration.DeployableBean;
 import org.gridkit.nimble.pivot.DistributedPivotReporter;
@@ -311,7 +312,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			s.setStatic(Measure.NAME, name);
 			s.setStatic(OPERATION, name);
 			s.declareDynamic(Measure.MEASURE, double.class);
-			return new SimpleScalarReporter(s.createFactory());
+			return new SimpleScalarSampler(s.createFactory());
 		}
 
 		@Override
@@ -321,8 +322,19 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			s.setStatic(OPERATION, name);
 			s.declareDynamic(Measure.MEASURE, double.class);
 			s.declareDynamic(Measure.TIMESTAMP, double.class);
-			return new SimplePointReporter(s.createFactory());
+			return new SimplePointSampler(s.createFactory());
 		}
+
+        @Override
+        public SpanSampler spanSampler(String name) {
+            SampleSchema s = schema.createDerivedScheme();
+            s.setStatic(Measure.NAME, name);
+            s.setStatic(OPERATION, name);
+            s.declareDynamic(Measure.MEASURE, double.class);
+            s.declareDynamic(Measure.TIMESTAMP, double.class);
+            s.declareDynamic(Measure.DURATION, double.class);
+            return new SimpleSnapSampler(s.createFactory());
+        }
 	}
 	
 	private static class SimpleTimeReporter implements TimeReporter {
@@ -450,11 +462,11 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}		
 	}
 	
-	private static class SimpleScalarReporter implements ScalarSampler {
+	private static class SimpleScalarSampler implements ScalarSampler {
 		
 		private final SampleFactory factory;
 
-		private SimpleScalarReporter(SampleFactory factory) {
+		private SimpleScalarSampler(SampleFactory factory) {
 			this.factory = factory;
 		}
 
@@ -466,14 +478,13 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 		}
 	}
 
-	private static class SimplePointReporter implements PointSampler {
+	private static class SimplePointSampler implements PointSampler {
 		
 		private final SampleFactory factory;
 		
-		private SimplePointReporter(SampleFactory factory) {
+		private SimplePointSampler(SampleFactory factory) {
 			this.factory = factory;
 		}
-		
 		
 		@Override
 		public void write(double value, double timestampS) {
@@ -483,6 +494,24 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 			.submit();
 		}
 	}
+	
+    private static class SimpleSnapSampler implements SpanSampler {
+        
+        private final SampleFactory factory;
+        
+        private SimpleSnapSampler(SampleFactory factory) {
+            this.factory = factory;
+        }
+        
+        @Override
+        public void write(double value, double timestampS, double durationS) {
+            factory.newSample()
+            .setMeasure(value)
+            .set(Measure.TIMESTAMP, timestampS)
+            .set(Measure.DURATION, durationS)
+            .submit();
+        }
+    }
 	
 	private static class SingleSampleReader implements SampleReader {
 
