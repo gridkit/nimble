@@ -15,7 +15,7 @@
 
     <properties>
         <nanocloud.version>0.7.9</nanocloud.version>
-        <sigar-lib.version>0.2</sigar-lib.version>
+        <sigar-lib.version>0.1</sigar-lib.version>
         
         <tools-jar.version>1.6</tools-jar.version>
         <btrace.version>2.0-nimble-1</btrace.version>
