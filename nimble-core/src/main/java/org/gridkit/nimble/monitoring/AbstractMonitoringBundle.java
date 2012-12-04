@@ -8,7 +8,7 @@ import org.gridkit.nimble.pivot.SampleExtractor;
 import org.gridkit.nimble.pivot.display.DisplayComponent;
 import org.gridkit.nimble.pivot.display.PrintConfig;
 
-abstract class AbstractMonitoringBundle implements MonitoringBundle {
+public abstract class AbstractMonitoringBundle implements MonitoringBundle {
 
 	private static AtomicInteger COUNTER = new AtomicInteger();
 	

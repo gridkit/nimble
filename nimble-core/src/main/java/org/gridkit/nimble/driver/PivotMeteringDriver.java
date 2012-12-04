@@ -166,13 +166,17 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 				@Override
 				public void run() {
 					while(true) {
-						processSamples();
-						try {
-							Thread.sleep(500);
-						} catch (InterruptedException e) {
-							// TODO logging
-							e.printStackTrace();
-							return;
+						if (manager.isReady() || manager.next()) {
+							processSamples();
+						}
+						else {
+							try {
+								Thread.sleep(50);
+							} catch (InterruptedException e) {
+								// TODO logging
+								e.printStackTrace();
+								return;
+							}
 						}
 					}
 				}

@@ -44,32 +44,45 @@ public class BTraceClientFactory {
 
         @Override
         public Client call() throws Exception {
-            int port = getPort();
-            
-            Client client = Client.forProcess(pid);
-            
-            String extPath = settings.getExtensionsPath();
-            
-            ExtensionsRepository extRep = ExtensionsRepositoryFactory.fixed(ExtensionsRepository.Location.BOTH, extPath);
-            
-            if (settings.isDumpClasses()) {
-                File dumpDir = new File(settings.getDumpDir());
-                dumpDir.mkdirs();
-            }
-            
-            client.setBootstrapPath(settings.getRuntimePath());
-            client.setAgentPath(settings.getAgentPath());
-            client.setExtRepository(extRep);
-            client.setTrackRetransforms(settings.isTrackRetransform());
-            client.setUnsafe(settings.isUnsafe());
-            client.setDumpClasses(settings.isDumpClasses());
-            client.setDumpDir(settings.getDumpDir());
-            client.setProbeDescPath(settings.getProbeDescPath());
-            client.setPort(port);
-            
-            client.attach();
-            
-            return client;
+        	int retries = 1;
+        	while(true) {
+	            int port = getPort();
+	            
+	            Client client = Client.forProcess(pid);
+	            
+	            String extPath = settings.getExtensionsPath();
+	            
+	            ExtensionsRepository extRep = ExtensionsRepositoryFactory.fixed(ExtensionsRepository.Location.BOTH, extPath);
+	            
+	            if (settings.isDumpClasses()) {
+	                File dumpDir = new File(settings.getDumpDir());
+	                dumpDir.mkdirs();
+	            }
+	            
+	            client.setBootstrapPath(settings.getRuntimePath());
+	            client.setAgentPath(settings.getAgentPath());
+	            client.setExtRepository(extRep);
+	            client.setTrackRetransforms(settings.isTrackRetransform());
+	            client.setUnsafe(settings.isUnsafe());
+	            client.setDumpClasses(settings.isDumpClasses());
+	            client.setDumpDir(settings.getDumpDir());
+	            client.setProbeDescPath(settings.getProbeDescPath());
+	            client.setPort(port);
+
+	            try {
+	            	client.attach();
+	            }
+	            catch(IOException e) {
+	            	if (e.getMessage().startsWith("Can not attach")) {
+	            		if (retries-- > 0) {
+	            			continue;
+	            		}
+	            	}
+	            	throw e;
+	            }
+	            
+	            return client;
+        	}        	
         }
         
         private int getPort() throws Exception {

@@ -109,8 +109,7 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle {
 	public void setJmxSchemaConfig(SchemaConfigurer<MBeanServerConnection> config) {
 		this.schemaConfigurer = JmxProbes.jmx2pid(config);
 	}
-	
-	
+		
 	@Override
 	public void configurePivot(Pivot pivot) {
 		Pivot.Level base = pivot.root().level(namespace)
