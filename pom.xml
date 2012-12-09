@@ -18,7 +18,7 @@
         <sigar-lib.version>0.1</sigar-lib.version>
         
         <tools-jar.version>1.6</tools-jar.version>
-        <btrace.version>2.0-nimble-1</btrace.version>
+        <btrace.version>2.0-nimble-2</btrace.version>
         
         <commons-math.version>3.0</commons-math.version>
         <guava.version>13.0.1</guava.version>
@@ -182,6 +182,18 @@
             <dependency>
                 <groupId>net.java.btrace</groupId>
                 <artifactId>ext-default</artifactId>
+                <version>${btrace.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>sun.jdk</groupId>
+                        <artifactId>tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
+            <dependency>
+                <groupId>net.java.btrace</groupId>
+                <artifactId>ext-collections</artifactId>
                 <version>${btrace.version}</version>
                 <exclusions>
                     <exclusion>
