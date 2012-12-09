@@ -39,6 +39,11 @@
         </dependency>
 
         <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>ext-collections</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.sun</groupId>
             <artifactId>tools</artifactId>
             <version>${tools-jar.version}</version>

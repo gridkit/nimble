@@ -1,42 +1,53 @@
 package org.gridkit.nimble.btrace.ext;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 
 public class SampleStore {
-    private final String storeName;
-    private final RingBuffer<ScalarSample> buffer;
+    private final String name;
+    private volatile RingBuffer<ScalarSample> buffer;
     
-    public SampleStore(String storeName, int capacity) {
-        this.storeName = storeName;
+    protected SampleStore(String name, int capacity) {
+        this.name = name;
         this.buffer = new RingBuffer<ScalarSample>(capacity);
     }
     
-    public void add(ScalarSample sample) {
-        buffer.add(sample);
+    protected void add(ScalarSample sample) {
+        RingBuffer<ScalarSample> buffer = this.buffer;
+        
+        if (buffer != null) {
+            buffer.add(sample);
+        }
     }
     
-    public List<ScalarSample> getSamples() {
-        List<RingBuffer.Element<ScalarSample>> elements = buffer.get();
+    protected List<ScalarSample> getSamples() {
+        RingBuffer<ScalarSample> buffer = this.buffer;
         
-        List<ScalarSample> result = new ArrayList<ScalarSample>(elements.size());
-        
-        for (RingBuffer.Element<ScalarSample> element : elements) {
-            ScalarSample sample = element.getData();
-            sample.setSeqNumber(element.getSeqNumber());
-            result.add(sample);
+        if (buffer != null) {
+            List<RingBuffer.Element<ScalarSample>> elements = buffer.get();
+            
+            List<ScalarSample> result = new ArrayList<ScalarSample>(elements.size());
+            
+            for (RingBuffer.Element<ScalarSample> element : elements) {
+                ScalarSample sample = element.getData();
+                sample.setSeqNumber(element.getSeqNumber());
+                result.add(sample);
+            }
+            
+            return result;
+        } else {
+            return Collections.emptyList();
         }
-        
-        return result;
     }
 
-    public String getStoreName() {
-        return storeName;
+    protected String getName() {
+        return name;
     }
     
-    public void clear() {
-        buffer.clear();
+    protected void close() {
+        buffer = null;
     }
 }

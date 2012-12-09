@@ -6,18 +6,9 @@ import java.util.List;
 public class SampleStoreContents implements Serializable {
     private static final long serialVersionUID = -7906160410947353935L;
     
-    private String scriptClass;
     private String sampleStore;
     private List<ScalarSample> samples;
-    
-    public String getScriptClass() {
-        return scriptClass;
-    }
-    
-    public void setScriptClass(String clazz) {
-        this.scriptClass = clazz;
-    }
-    
+        
     public String getSampleStore() {
         return sampleStore;
     }

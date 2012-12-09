@@ -2,13 +2,9 @@ package org.gridkit.nimble.btrace;
 
 import static org.gridkit.nimble.util.StringOps.F;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
-import net.java.btrace.client.Client;
 
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.RingBuffer;
@@ -34,8 +30,7 @@ public class BTraceProbe implements Callable<Void> {
     private long pid;
     private BTraceScriptSettings settings;
     
-    private Client client; 
-    private BTraceClientOps clientOps;
+    private NimbleClient client; 
     
     private BTraceSamplerFactoryProvider factoryProvider;
     
@@ -44,9 +39,7 @@ public class BTraceProbe implements Callable<Void> {
     @Override
     public Void call() throws Exception {
         try {
-            PollSamplesCmdResult result = clientOps.pollSamples(
-                client, getScriptClasses(), settings.getTimeoutMs()
-            );
+            PollSamplesCmdResult result = client.pollSamples();
             
             for (SampleStoreContents contents : result.getData()) {
                 getProcessor(contents.getSampleStore()).process(contents);
@@ -170,11 +163,7 @@ public class BTraceProbe implements Callable<Void> {
             return rateSamplers.get(samplerKey);
         }
     }
-    
-    private Collection<Class<?>> getScriptClasses() {
-        return Collections.<Class<?>>singleton(settings.getScriptClass());
-    }
-    
+        
     public void setPid(long pid) {
         this.pid = pid;
     }
@@ -183,11 +172,7 @@ public class BTraceProbe implements Callable<Void> {
         this.settings = settings;
     }
 
-    public void setClientOps(BTraceClientOps clientOps) {
-        this.clientOps = clientOps;
-    }
-
-    public void setClient(Client client) {
+    public void setClient(NimbleClient client) {
         this.client = client;
     }
 

@@ -2,10 +2,7 @@ package org.gridkit.nimble.btrace.ext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-
-import org.gridkit.nimble.btrace.ext.model.SampleStoreContents;
 
 import net.java.btrace.api.core.BTraceLogger;
 import net.java.btrace.api.core.Lookup;
@@ -13,26 +10,27 @@ import net.java.btrace.api.wireio.Channel;
 import net.java.btrace.api.wireio.Command;
 import net.java.btrace.spi.wireio.CommandImpl;
 
+import org.gridkit.nimble.btrace.ext.model.SampleStoreContents;
+
 @Command(clazz=PollSamplesCmd.class)
 public class PollSamplesCmdImpl extends CommandImpl<PollSamplesCmd> {    
     @Override
     public void execute(Lookup ctx, PollSamplesCmd cmd) {        
         List<SampleStoreContents> data = new ArrayList<SampleStoreContents>();
         
-        Collection<ScriptStore> scriptStores = Nimble.getScriptStores(cmd.getScriptClasses());
+        ScriptStore scriptStore = Nimble.getScriptStore(cmd.getTraceSriptClass());
         
-        for (ScriptStore scriptStore : scriptStores) {
+        if (scriptStore != null) {
             for (SampleStore sampleStore : scriptStore.getSampleStores()) {
                 SampleStoreContents contents = new SampleStoreContents();
 
-                contents.setScriptClass(scriptStore.getScriptClass());
-                contents.setSampleStore(sampleStore.getStoreName());
+                contents.setSampleStore(sampleStore.getName());
                 contents.setSamples(sampleStore.getSamples());
                 
                 data.add(contents);
             }
         }
-        
+
         PollSamplesCmdResult result = new PollSamplesCmdResult();
         result.setData(data);
         

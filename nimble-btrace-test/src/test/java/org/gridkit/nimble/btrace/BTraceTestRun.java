@@ -10,7 +10,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipException;
@@ -43,19 +44,24 @@ public class BTraceTestRun {
     private void runTest(Class<?> clazz) {
         JUnitCore junitCore = new JUnitCore();
                 
-        final AtomicInteger failures = new AtomicInteger(0);
+        final List<Failure> failures = new CopyOnWriteArrayList<Failure>();
         
         junitCore.addListener(new RunListener() {
             @Override
             public void testFailure(Failure failure) throws Exception {
-                System.err.print("Failure" + failure);
-                failures.incrementAndGet();
+                failures.add(failure);
             }
         });
         
         junitCore.run(clazz);
         
-        if (failures.get() != 0) {
+        if (!failures.isEmpty()) {
+            for (Failure failure : failures) {
+                System.err.println("-------- Test Failure " + failure + "--------");
+                if (failure.getException() != null) {
+                    failure.getException().printStackTrace();
+                }
+            }
             throw new RuntimeException();
         }
     }

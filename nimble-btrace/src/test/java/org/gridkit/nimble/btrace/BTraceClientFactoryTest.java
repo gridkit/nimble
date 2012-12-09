@@ -2,20 +2,17 @@ package org.gridkit.nimble.btrace;
 
 import java.io.Serializable;
 import java.net.ServerSocket;
-import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.java.btrace.client.Client;
-import net.java.btrace.ext.Printer;
+import net.java.btrace.agent.Server;
 
-import org.gridkit.nimble.btrace.ext.Nimble;
+import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
+import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.nimble.util.SystemOps;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
@@ -29,17 +26,18 @@ public class BTraceClientFactoryTest {
     private static ViManager cloud;
     
     private static AtomicInteger counter = new AtomicInteger(0);
-    
-    private static BTraceClientOps clientOps = new BTraceClientOps();
-    
+        
     private static long OP_TIMEOUT_MS = 1000;
     
     @BeforeClass
     public static void beforeClass() {
         cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory()));
-        JvmProps.addJvmArg(cloud.node("**"), "-XX:MaxPermSize=512m");
-        JvmProps.addJvmArg(cloud.node("**"), "-Xmx512m");
-        JvmProps.addJvmArg(cloud.node("**"), "-XX:MaxDirectMemorySize=512m");
+        
+        JvmProps props = JvmProps.at(cloud.node("**"));
+        
+        props.addJvmArg("-XX:MaxPermSize=512m");
+        props.addJvmArg("-Xmx512m");
+        props.addJvmArg("-XX:MaxDirectMemorySize=512m");
     }
 
     @AfterClass
@@ -53,109 +51,189 @@ public class BTraceClientFactoryTest {
     
     @After
     public void after() throws Exception {
-        Thread.sleep(2000); // release TCP ports
+        Thread.sleep(5000); // release TCP ports
     }
 
-    private void simple_connect(Class<?> clazz) throws Exception {        
-        BTraceClientFactory factory = new BTraceClientFactory();
+    @Test
+    public void one_client() throws Exception {
+        int from1 = 0;
+        int from2 = from1 + CountScript.STORE_SIZE;
+        int from3 = from2 + CountScript.STORE_SIZE;
         
-        ViNode node = newNode("connect");
+        int nTicks1 = CountScript.STORE_SIZE / 2;
+        int nTicks2 = 0;
+        int nTicks3 = CountScript.STORE_SIZE + 1;
+        
+        BTraceClientFactory factory = new BTraceClientFactory(newClientSettings());
+        
+        ViNode node = newNode("one_client");
         
         try {
             int pid = node.exec(new GetPid());
+                        
+            NimbleClient client = factory.newClient(pid, newScriptSettings(CountScript.class));
             
-            BTraceClientSettings settings = newSettings();
+            Assert.assertTrue(client.submit());
+            Assert.assertTrue(client.configureSession());
+
+            node.exec(Count.newCounter(from1, nTicks1));
+            PollSamplesCmdResult result1 = client.pollSamples();
+            validate(result1, from1, nTicks1);
             
-            Client client = factory.newClient(pid, settings);
+            PollSamplesCmdResult result2 = client.pollSamples();
+            validate(result2, from2, nTicks2);
             
-            submit(client, clazz);
+            node.exec(Count.newCounter(from3, nTicks3));
+            PollSamplesCmdResult result3 = client.pollSamples();
+            validate(result3, from3 + 1, nTicks3 - 1);
+
+            client.close();
+        } finally {
+            node.shutdown();
+        }
+    }
     
-            Assert.assertTrue(ping(client));
+    @Test
+    public void two_clients() throws Exception {
+        int from0 = 0;
+        int from1 = from0 + CountScript.STORE_SIZE;
+        int from2 = from1 + CountScript.STORE_SIZE;
+        int from3 = from2 + CountScript.STORE_SIZE;
+        int from4 = from3 + CountScript.STORE_SIZE;
+        
+        int nTicks0 = CountScript.STORE_SIZE / 2;
+        int nTicks1 = CountScript.STORE_SIZE / 3;
+        int nTicks2 = 0;
+        int nTicks3 = CountScript.STORE_SIZE + 1;
+        int nTicks4 = CountScript.STORE_SIZE / 4;
+        
+        BTraceClientFactory factory = new BTraceClientFactory(newClientSettings());
+        
+        ViNode node = newNode("two_clients");
+        
+        try {
+            int pid = node.exec(new GetPid());
+                
+            NimbleClient client1 = factory.newClient(pid, newScriptSettings(CountScript.class));
+            NimbleClient client2 = factory.newClient(pid, newScriptSettings(CountScript.class));
             
-            Thread.sleep(1000);
-                                
-            exit(client);
+            Assert.assertTrue(client1.submit());
+            Assert.assertTrue(client1.configureSession());
+            
+            node.exec(Count.newCounter(from0, nTicks0));
+            PollSamplesCmdResult result0 = client1.pollSamples();
+            validate(result0, from0, nTicks0);
+            
+            Assert.assertTrue(client2.submit());
+            Assert.assertTrue(client2.configureSession());
+            
+            node.exec(Count.newCounter(from1, nTicks1));
+            PollSamplesCmdResult result11 = client1.pollSamples();
+            PollSamplesCmdResult result12 = client2.pollSamples();
+            validate(result11, from1, nTicks1);
+            validate(result12, from1, nTicks1);
+            
+            PollSamplesCmdResult result21 = client1.pollSamples();
+            PollSamplesCmdResult result22 = client2.pollSamples();
+            validate(result21, from2, nTicks2);
+            validate(result22, from2, nTicks2);
+            
+            node.exec(Count.newCounter(from3, nTicks3));
+            PollSamplesCmdResult result31 = client1.pollSamples();
+            PollSamplesCmdResult result32 = client2.pollSamples();
+            validate(result31, from3 + 1, nTicks3 - 1);
+            validate(result32, from3 + 1, nTicks3 - 1);
+
+            client1.close();
+            
+            node.exec(Count.newCounter(from4, nTicks4));
+            PollSamplesCmdResult result42 = client2.pollSamples();
+            validate(result42, from4, nTicks4);
+            
+            client2.close();
         } finally {
             node.shutdown();
         }
     }
 
-    private static boolean ping(Client client) throws Exception {
-        return clientOps.clearSamples(client, Collections.<Class<?>>emptySet(), OP_TIMEOUT_MS);
+    private static void validate(PollSamplesCmdResult result, int from, int nTicks) {
+        Assert.assertEquals(1, result.getData().size());
+        
+        List<ScalarSample> samples = result.getData().get(0).getSamples();
+        
+        Assert.assertEquals(nTicks, samples.size());
+        
+        for (int i = 0; i < nTicks; ++i) {
+            Assert.assertEquals(from + i, samples.get(i).getValue());
+        }
     }
     
     @Test
-    public void connect() throws Exception {
-        simple_connect(ThreadCountScript.class);
-    }
-    
-    @Test(expected = TimeoutException.class)
-    public void connect_incorrect_script() throws Exception {
-        simple_connect(IncorrectScript.class);
+    public void incorrect_script() throws Exception {
+        BTraceClientFactory factory = new BTraceClientFactory(newClientSettings());
+        
+        ViNode node = newNode("incorrect_script");
+        
+        NimbleClient client = null;
+        
+        try {
+            int pid = node.exec(new GetPid());
+                        
+            client = factory.newClient(pid, newScriptSettings(IncorrectScript.class));
+
+            Assert.assertFalse(client.submit());
+
+            Thread.sleep(1000);
+            
+            try {
+                client.configureSession();
+            } catch (Exception e) {
+                Assert.assertEquals(IllegalStateException.class, e.getClass());
+            }
+            
+            client.close();
+        } finally {
+            node.shutdown();
+        }
     }
     
     @Test
     public void busy_port_connect() throws Exception {
         ServerSocket ss = null;
 
-        ss = new ServerSocket(BTraceClientFactory.BTRACE_PORT);
+        ss = new ServerSocket(Server.BTRACE_DEFAULT_PORT);
         ss.setReuseAddress(true);
 
-        simple_connect(ThreadCountScript.class);
+        one_client();
         
         ss.close();
     }
-
-    @Test
-    public void two_clients() throws Exception {
-        BTraceClientFactory factory = new BTraceClientFactory();
-        
-        ViNode node = newNode("node");
-        
-        try {
-            int pid = node.exec(new GetPid());
-            
-            BTraceClientSettings settings = newSettings();
-    
-            Client client1 = factory.newClient(pid, settings);
-            Client client2 = factory.newClient(pid, settings);
-            
-            submit(client1, ThreadCountScript.class);
-            submit(client2, ThreadCountScript.class);
-    
-            Assert.assertTrue(ping(client1));
-            Assert.assertTrue(ping(client2));
-            
-            exit(client1);
-            exit(client2);
-        } finally {
-            node.shutdown();
-        }
-    }
     
     private ViNode newNode(String name) {
-        return cloud.node(name + "-" + counter.getAndIncrement());
+        ViNode node = cloud.node(name + "-" + counter.getAndIncrement());
+        
+        node.exec(Count.newCounter(1, 1));
+        
+        return node;
     }
     
-    private BTraceClientSettings newSettings() {
+    private BTraceClientSettings newClientSettings() {
         BTraceClientSettings settings = new BTraceClientSettings();
         
-        settings.setExtensionClasses(Nimble.class, Printer.class);
+        settings.setDebug(true);
         
         return settings;
     }
     
-    private static void exit(Client client) throws ExecutionException, InterruptedException {
-        try {
-            clientOps.exit(client, 0, OP_TIMEOUT_MS);
-        } catch (TimeoutException ignored) {
-        }
+    private BTraceScriptSettings newScriptSettings(Class<?> clazz) {
+        BTraceScriptSettings settings = new BTraceScriptSettings();
+        
+        settings.setScriptClass(clazz);
+        settings.setTimeoutMs(OP_TIMEOUT_MS);
+        
+        return settings;
     }
     
-    private static void submit(Client client, Class<?> clazz) throws TimeoutException, ExecutionException, InterruptedException  {
-        clientOps.submit(client, clazz, new String[] {}, OP_TIMEOUT_MS);
-    }
-
     @SuppressWarnings("serial")
     public static class GetPid implements Callable<Integer>, Serializable {
         @Override
@@ -163,14 +241,4 @@ public class BTraceClientFactoryTest {
             return SystemOps.getPid();
         }
     }
-    
-    @SuppressWarnings("serial")
-    public static class Exit implements VoidCallable, Serializable {
-        @Override
-        public void call() throws Exception {
-            Thread.sleep(1000);
-            
-            System.exit(1);
-        }
-    };
 }

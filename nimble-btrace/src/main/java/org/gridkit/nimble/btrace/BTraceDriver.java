@@ -5,17 +5,11 @@ import static org.gridkit.nimble.util.StringOps.F;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
 
-import net.java.btrace.client.Client;
-import net.java.btrace.ext.Printer;
-
-import org.gridkit.nimble.btrace.ext.Nimble;
 import org.gridkit.nimble.driver.MeteringSink;
 import org.gridkit.nimble.probe.PidProvider;
 import org.gridkit.nimble.probe.ProbeHandle;
@@ -44,9 +38,8 @@ public interface BTraceDriver {
         
         private transient ScheduledExecutorService executor;
         
-        private transient List<Client> clients;
+        private transient List<NimbleClient> clients;
         
-        private transient BTraceClientOps clientOps;
         private transient BTraceClientFactory clientFactory;
 
         public Impl(int corePoolSize, long pollDelayMs, long timeoutMs) {
@@ -54,8 +47,6 @@ public interface BTraceDriver {
             this.pollDelayMs = pollDelayMs;
             this.timeoutMs = timeoutMs;
             this.settings = new BTraceClientSettings();
-            
-            settings.setExtensionClasses(Nimble.class, Printer.class);
         }
 
         @Override
@@ -70,7 +61,6 @@ public interface BTraceDriver {
                 probe.setPid(pid);
                 probe.setSettings(settings);
                 
-                probe.setClientOps(clientOps);
                 probe.setClient(getClient(pid, settings));
                 
                 probe.setFactoryProvider(factoryProvider.getSink());
@@ -90,27 +80,29 @@ public interface BTraceDriver {
             return trace(pidProvider, settings, factoryProvider);
         }
         
-        public Client getClient(long pid, BTraceScriptSettings scriptSettings) {
-            Client client = null;
+        public NimbleClient getClient(long pid, BTraceScriptSettings scriptSettings) {            
+            NimbleClient client = null;
             
             try {
-                client = clientFactory.newClient((int)pid, settings);
+                client = clientFactory.newClient((int)pid, scriptSettings);
                 
-                // submit is first because it is the only method initializing command channel
-                clientOps.submit(
-                    client, scriptSettings.getScriptClass(), scriptSettings.getArgsArray(), timeoutMs
-                );
+                if (!client.submit()) {
+                    throw new Exception("Failed to submit BTrace script with settings " + scriptSettings);
+                }
                 
-                clientOps.clearSamples(
-                    client, Collections.<Class<?>>singleton(scriptSettings.getScriptClass()), timeoutMs
-                );
+                if (!client.configureSession()) {
+                    throw new Exception("Failed to configure BTrace session with settings " + scriptSettings);
+                }
+                
+                clients.add(client);
             } catch (Exception e) {
                 log.error(F("Failed to connect to client with pid %d", pid));
-                throw new RuntimeException(e);
-            } finally {
+                
                 if (client != null) {
-                    clients.add(client);
+                    client.close();
                 }
+                
+                throw new RuntimeException(e);
             }
             
             return client;
@@ -120,13 +112,8 @@ public interface BTraceDriver {
         public void stop() {
             getExecutor().shutdownNow();
 
-            for (Client client : clients) {
-                try {
-                    clientOps.exit(client, 0, timeoutMs);
-                } catch (TimeoutException ignored) { 
-                } catch (Exception e) {
-                    log.error("Failed to stop client " + client, e);
-                }
+            for (NimbleClient client : clients) {
+                client.close();
             }
         }
         
@@ -142,9 +129,8 @@ public interface BTraceDriver {
         
         private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
             stream.defaultReadObject();
-            this.clients = new CopyOnWriteArrayList<Client>();
-            this.clientOps = new BTraceClientOps();
-            this.clientFactory = new BTraceClientFactory();
+            this.clients = new CopyOnWriteArrayList<NimbleClient>();
+            this.clientFactory = new BTraceClientFactory(settings);
        }
     }
 }

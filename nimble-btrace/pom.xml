@@ -27,15 +27,15 @@
             <groupId>net.java.btrace</groupId>
             <artifactId>core-api</artifactId>
         </dependency>
-    
-        <dependency>
-            <groupId>net.java.btrace</groupId>
-            <artifactId>client</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>net.java.btrace</groupId>
             <artifactId>btrace-agent</artifactId>
+        </dependency>
+         
+        <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>client</artifactId>
         </dependency>
 
         <dependency>
@@ -48,6 +48,20 @@
             <artifactId>ext-default</artifactId>
         </dependency>
         
+        <dependency>
+            <groupId>net.java.btrace</groupId>
+            <artifactId>ext-collections</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun</groupId>
+            <artifactId>tools</artifactId>
+            <version>${tools-jar.version}</version>
+            <scope>system</scope>
+            <systemPath>${java.home}/../lib/tools.jar</systemPath>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

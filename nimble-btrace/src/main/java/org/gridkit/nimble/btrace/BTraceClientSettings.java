@@ -10,12 +10,18 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import net.java.btrace.ext.Printer;
+import net.java.btrace.ext.collections.Collections;
+
+import org.gridkit.nimble.btrace.ext.Nimble;
+
 @SuppressWarnings("serial")
 public class BTraceClientSettings implements Serializable {
-    private static Class<?> btraceAgentClass = net.java.btrace.agent.Main.class;
-    private static Class<?> btraceRuntimeClass = net.java.btrace.runtime.BTraceRuntime.class;
+    private List<Class<?>> extensionClasses = new ArrayList<Class<?>>(Arrays.<Class<?>>asList(
+        Nimble.class, Printer.class, Collections.class
+    ));
     
-    private List<Class<?>> extensionClasses = new ArrayList<Class<?>>();
+    private boolean debug = false;
     
     private boolean dumpClasses = false;
     private String dumpDir = null;
@@ -31,11 +37,11 @@ public class BTraceClientSettings implements Serializable {
     }
 
     public String getAgentPath() {
-        return path(jar(btraceAgentClass));
+        return path(jar(net.java.btrace.agent.Main.class));
     }
     
     public String getRuntimePath() {
-        return path(jar(btraceRuntimeClass));
+        return path(jar(net.java.btrace.runtime.BTraceRuntime.class));
     }
     
     public String getDumpDir() {
@@ -84,6 +90,14 @@ public class BTraceClientSettings implements Serializable {
 
     public void setProbeDescPath(String probeDescPath) {
         this.probeDescPath = probeDescPath;
+    }
+    
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     private static String jar(Class<?> clazz) {

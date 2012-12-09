@@ -2,34 +2,44 @@ package org.gridkit.nimble.btrace.ext;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import net.java.btrace.ext.Printer;
+import java.util.Map;
 
 public class ScriptStore {
     private final String scriptClass;
-    private final ConcurrentMap<String, SampleStore> sampleStores = new ConcurrentHashMap<String, SampleStore>();
+    private Map<String, SampleStore> sampleStores = new HashMap<String, SampleStore>();
     
     public ScriptStore(String scriptClass) {
         this.scriptClass = scriptClass;
     }
     
-    public SampleStore add(String name, int capacity) {
-        SampleStore result = new SampleStore(name, capacity);
-
-        if (sampleStores.put(name, result) != null) {
-            Printer.println("Replacing existing sample store with name '" + name + "' for script '" + scriptClass + "'");
+    public synchronized SampleStore addSampleStore(String name, int capacity) {
+        if (sampleStores != null) {
+            SampleStore result = new SampleStore(name, capacity);
+            sampleStores.put(name, result);
+            return result;
+        } else {
+            return null;
         }
-
-        return result;
     }
     
-    public Collection<SampleStore> getSampleStores() {
-        List<SampleStore> result = new ArrayList<SampleStore>(sampleStores.size());
-        result.addAll(sampleStores.values());
-        return result;
+    public synchronized Collection<SampleStore> getSampleStores() {
+        if (sampleStores != null) {
+            List<SampleStore> result = new ArrayList<SampleStore>(sampleStores.size());
+            result.addAll(sampleStores.values());
+            return result;
+        } else {
+            return Collections.emptyList();
+        }
+    }
+    
+    public synchronized void close() {
+        for (SampleStore sampleStore : sampleStores.values()) {
+            sampleStore.close();
+        }
+        sampleStores = null;
     }
 
     public String getScriptClass() {
