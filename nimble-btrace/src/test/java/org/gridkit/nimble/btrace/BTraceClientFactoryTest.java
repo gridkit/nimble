@@ -27,7 +27,7 @@ public class BTraceClientFactoryTest {
     
     private static AtomicInteger counter = new AtomicInteger(0);
         
-    private static long OP_TIMEOUT_MS = 1000;
+    private static long OP_TIMEOUT_MS = 3000;
     
     @BeforeClass
     public static void beforeClass() {
