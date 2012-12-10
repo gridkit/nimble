@@ -85,6 +85,10 @@ public class NimbleClient extends Client {
     public synchronized PollSamplesCmdResult pollSamples() throws Exception {
         ensureRunning();
         
+        if (traceSriptClass == null) {
+            throw new IllegalStateException("Session is not configured");
+        }
+        
         AbstractCommand.Initializer<PollSamplesCmd> initializer = new AbstractCommand.Initializer<PollSamplesCmd>() {
             @Override
             public void init(PollSamplesCmd cmd) {                
@@ -125,7 +129,7 @@ public class NimbleClient extends Client {
                 }
             });
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.warn("Error sending exit to BTrace server", e);
         }
     }
     
