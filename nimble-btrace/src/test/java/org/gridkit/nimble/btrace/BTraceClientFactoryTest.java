@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.java.btrace.agent.Server;
 
+import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.nimble.util.SystemOps;
@@ -31,7 +32,7 @@ public class BTraceClientFactoryTest {
     
     @BeforeClass
     public static void beforeClass() {
-        cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory()));
+        cloud = CloudFactory.createLocalCloud();
         
         JvmProps props = JvmProps.at(cloud.node("**"));
         

@@ -46,6 +46,9 @@ public class BTraceProbe implements Callable<Void> {
             }
             
             return null;
+        } catch (InterruptedException e) {
+            log.debug(F("BTrace probe for pid %d with settings %s was interrupted", pid, settings));
+            return null;
         } catch (Exception e) {
             log.error(F("Error while executing BTrace probe for pid %d with settings %s", pid, settings), e);
             throw e;
