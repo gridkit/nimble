@@ -6,16 +6,12 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.java.btrace.agent.Server;
-
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.nimble.util.SystemOps;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
-import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -202,7 +198,7 @@ public class BTraceClientFactoryTest {
     public void busy_port_connect() throws Exception {
         ServerSocket ss = null;
 
-        ss = new ServerSocket(Server.BTRACE_DEFAULT_PORT);
+        ss = new ServerSocket(BTraceClientFactory.getNextPort());
         ss.setReuseAddress(true);
 
         one_client();

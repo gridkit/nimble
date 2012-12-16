@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.java.btrace.agent.Server;
@@ -26,7 +24,6 @@ public class BTraceClientFactory {
     
     private static final CriticalSection connectSection = new CriticalSection();
     private static final AtomicInteger nextPort = new AtomicInteger(Server.BTRACE_DEFAULT_PORT);
-    private static final ConcurrentMap<Integer, Integer> portCache = new ConcurrentHashMap<Integer, Integer>();
     
     private final BTraceClientSettings clientSettings;
 
@@ -53,17 +50,8 @@ public class BTraceClientFactory {
                 @Override
                 public NimbleClient call() throws Exception {
                     NimbleClient client = newClient();
-                    
-                    int port;
-                    
-                    if (portCache.containsKey(pid)) {
-                        port = portCache.get(pid);
-                    } else {
-                        port = getPort();
-                        portCache.put(pid, port);
-                    }
-                    
-                    client.setPort(port);
+
+                    client.setPort(getAgentPort());
                     client.attach();
 
                     return client;
@@ -99,12 +87,12 @@ public class BTraceClientFactory {
             return client;
         }
         
-        private int getPort() throws Exception {
+        private int getAgentPort() throws Exception {
             Integer port = null;
 
             JavaProcessDetails vm = AttachManager.getDetails(pid);
             
-            String portPropery = vm.getSystemProperties().getProperty(Server.BTRACE_PORT_KEY);
+            String portPropery = vm.getAgentProperties().getProperty(Server.BTRACE_PORT_KEY);
             
             if (portPropery != null) {
                 port = Integer.valueOf(portPropery);
@@ -154,5 +142,9 @@ public class BTraceClientFactory {
         }
     
         return result;
+    }
+    
+    protected static int getNextPort() {
+        return nextPort.get();
     }
 }

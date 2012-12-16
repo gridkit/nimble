@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -14,6 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import net.java.btrace.agent.Server;
 import net.java.btrace.api.extensions.ExtensionsRepository;
 import net.java.btrace.api.wireio.AbstractCommand;
 import net.java.btrace.api.wireio.Channel;
@@ -24,6 +26,7 @@ import net.java.btrace.org.objectweb.asm.ClassReader;
 import net.java.btrace.org.objectweb.asm.ClassWriter;
 import net.java.btrace.wireio.commands.ExitCommand;
 
+import org.gridkit.lab.jvm.attach.AttachManager;
 import org.gridkit.nimble.btrace.ext.ConfigureSessionCmd;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmd;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
@@ -118,6 +121,25 @@ public class NimbleClient extends Client {
         } catch (Exception e) {
             log.warn("Exception while closing BTrace client", e);
         }
+    }
+    
+    @Override
+    protected void attach(int pid) throws Exception {
+        // do nothing
+    }
+    
+    @Override
+    protected int getServerPort() throws Exception {
+        Properties agentProps = AttachManager.getDetails(pid).getAgentProperties();
+        
+        return Integer.parseInt(
+            agentProps.getProperty(Server.BTRACE_PORT_KEY, "-1")
+        );
+    }
+    
+    @Override
+    protected void loadAgent(String agentPath, String agentArgs) throws Exception {
+        AttachManager.loadAgent(pid, agentPath, agentArgs, settings.getTimeoutMs());
     }
     
     @Override
