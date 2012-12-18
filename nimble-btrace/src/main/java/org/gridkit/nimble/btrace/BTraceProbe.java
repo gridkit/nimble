@@ -39,6 +39,7 @@ public class BTraceProbe implements Callable<Void> {
     @Override
     public Void call() throws Exception {
         try {
+            log.debug(F("Polling samples from pid %d with settings %s", pid, settings));
             PollSamplesCmdResult result = client.pollSamples();
             
             for (SampleStoreContents contents : result.getData()) {

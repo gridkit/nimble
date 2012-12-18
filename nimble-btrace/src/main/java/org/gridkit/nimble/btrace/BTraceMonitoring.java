@@ -130,7 +130,6 @@ public class BTraceMonitoring extends AbstractMonitoringBundle {
 		for(Class<?> script: scripts) {
 			sb.from(timeLine.getInitCheckpoint());
 			ProbeHandle probe = bTrace.trace(new PP(locator), script, sink);
-			sb.sleep(10000);
 			sb.join(timeLine.getStartCheckpoint());
 			
 			sb.fromStart();
