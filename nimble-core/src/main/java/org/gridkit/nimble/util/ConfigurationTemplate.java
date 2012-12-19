@@ -14,6 +14,7 @@ import java.util.Collection;
 import org.gridkit.nimble.pivot.display.DisplayBuilder;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 
+@Deprecated // use org.gridkit.nimble.util.PrinterConfigurer
 public class ConfigurationTemplate implements Serializable, Cloneable {
     private static final long serialVersionUID = -3251922539739961467L;
     
