@@ -58,6 +58,17 @@ public class Nimble {
         return result;
     }
     
+    /**
+     * @return if realFramesToSkip == 0 current class
+     */
+    @SuppressWarnings("restriction")
+    public static Class<?> getCallerClass(int realFramesToSkip) {
+        realFramesToSkip += 1; // skipping sun.reflect.Reflection
+        realFramesToSkip += 1; // skipping org.gridkit.nimble.btrace.ext.Nimble
+        realFramesToSkip += 1; // skipping BTrace generated method with probe code
+        return sun.reflect.Reflection.getCallerClass(realFramesToSkip);
+    }
+    
     public static void scalar(String key, SampleStore store, Number value) {
         if (store != null) {
             ScalarSample sample = new ScalarSample();
