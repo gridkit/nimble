@@ -12,7 +12,6 @@ import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.nimble.util.SystemOps;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -29,12 +28,6 @@ public class BTraceClientFactoryTest {
     @BeforeClass
     public static void beforeClass() {
         cloud = CloudFactory.createLocalCloud();
-        
-        JvmProps props = JvmProps.at(cloud.node("**"));
-        
-        props.addJvmArg("-XX:MaxPermSize=512m");
-        props.addJvmArg("-Xmx512m");
-        props.addJvmArg("-XX:MaxDirectMemorySize=512m");
     }
 
     @AfterClass
@@ -166,7 +159,7 @@ public class BTraceClientFactoryTest {
     }
     
     @Test
-    public void incorrect_script() throws Exception {
+    public void incorrect_script_false() throws Exception {
         BTraceClientFactory factory = new BTraceClientFactory(newClientSettings());
         
         ViNode node = newNode("incorrect_script");
@@ -187,6 +180,30 @@ public class BTraceClientFactoryTest {
             } catch (Exception e) {
                 Assert.assertEquals(IllegalStateException.class, e.getClass());
             }
+            
+            client.close();
+        } finally {
+            node.shutdown();
+        }
+    }
+    
+    @Test
+    public void incorrect_script_true() throws Exception {
+        BTraceClientSettings settings = newClientSettings();
+        settings.setUnsafe(true);
+        BTraceClientFactory factory = new BTraceClientFactory(settings);
+        
+        ViNode node = newNode("incorrect_script");
+        
+        NimbleClient client = null;
+        
+        try {
+            int pid = node.exec(new GetPid());
+                        
+            client = factory.newClient(pid, newScriptSettings(IncorrectScript.class));
+
+            Assert.assertTrue(client.submit());
+            Assert.assertTrue(client.configureSession());
             
             client.close();
         } finally {

@@ -14,7 +14,11 @@ public class BTrace {
     }
     
     public static BTraceDriver newDriver(int corePoolSize, long pollDelayMs, long timeoutMs) {
-        return new BTraceDriver.Impl(corePoolSize, pollDelayMs, timeoutMs);
+        return newDriver(corePoolSize, pollDelayMs, timeoutMs, new BTraceClientSettings());
+    }
+    
+    public static BTraceDriver newDriver(int corePoolSize, long pollDelayMs, long timeoutMs, BTraceClientSettings settings) {
+        return new BTraceDriver.Impl(corePoolSize, pollDelayMs, timeoutMs, settings);
     }
     
     public static MeteringAware<BTraceSamplerFactoryProvider> defaultReporter() {

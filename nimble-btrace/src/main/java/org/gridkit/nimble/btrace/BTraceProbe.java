@@ -63,10 +63,7 @@ public class BTraceProbe implements Callable<Void> {
         
         private PointSampler receivedSampler;
         private PointSampler missedSampler;
-        
-        private long missedSamples = 0;
-        private long receivedSamples = 0;
-        
+                
         private long lastSeqNum = RingBuffer.START_ID - 1;
         
         public SampleStoreProcessor(String sampleStore) {
@@ -76,8 +73,8 @@ public class BTraceProbe implements Callable<Void> {
             
             SamplerFactory probeSamplerFactory = factoryProvider.getProbeSamplerFactory(pid, settings.getScriptClass(), sampleStore);
 
-            this.receivedSampler = new RateSampler(probeSamplerFactory.getSpanSampler(BTraceMeasure.SAMPLE_TYPE_RECEIVED));
-            this.missedSampler = new RateSampler(probeSamplerFactory.getSpanSampler(BTraceMeasure.SAMPLE_TYPE_MISSED));
+            this.receivedSampler = probeSamplerFactory.getPointSampler(BTraceMeasure.SAMPLE_TYPE_RECEIVED);
+            this.missedSampler = probeSamplerFactory.getPointSampler(BTraceMeasure.SAMPLE_TYPE_MISSED);
         }
         
         public void process(SampleStoreContents contents) {
@@ -110,13 +107,10 @@ public class BTraceProbe implements Callable<Void> {
                 newLastSeqNum = Math.max(newLastSeqNum, sample.getSeqNumber());
             }
             
-            missedSamples += newLastSeqNum - lastSeqNum - contents.getSamples().size();
-            receivedSamples += contents.getSamples().size();
+            missedSampler.write(newLastSeqNum - lastSeqNum - contents.getSamples().size(), timestampS);
+            receivedSampler.write(contents.getSamples().size(), timestampS);
 
             lastSeqNum = newLastSeqNum;
-            
-            missedSampler.write(missedSamples, timestampS);
-            receivedSampler.write(receivedSamples, timestampS);
         }
         
         public void submitScalar(ScalarSample sample) {            

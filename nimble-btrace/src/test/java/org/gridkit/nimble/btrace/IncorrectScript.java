@@ -5,8 +5,8 @@ import net.java.btrace.annotations.OnTimer;
 
 @BTrace
 public class IncorrectScript {
-    @OnTimer(100)
+    @OnTimer(1)
     public static void printHello() {
-        System.out.println(IncorrectScript.class.getName());
+        System.err.println(IncorrectScript.class.getName());
     }
 }

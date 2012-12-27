@@ -2,6 +2,7 @@ package org.gridkit.nimble.probe.sigar;
 
 import static org.gridkit.nimble.util.StringOps.F;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,7 +17,8 @@ import org.slf4j.LoggerFactory;
 /**
  * http://support.hyperic.com/display/SIGAR/PTQL
  */
-public class PtqlPidProvider extends SigarHolder implements PidProvider {
+@SuppressWarnings("serial")
+public class PtqlPidProvider extends SigarHolder implements PidProvider, Serializable {
     private static final Logger log = LoggerFactory.getLogger(PtqlPidProvider.class);
     
     private final String query;

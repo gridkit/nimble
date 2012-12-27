@@ -42,13 +42,13 @@ public interface BTraceDriver {
         
         private transient BTraceClientFactory clientFactory;
 
-        public Impl(int corePoolSize, long pollDelayMs, long timeoutMs) {
+        public Impl(int corePoolSize, long pollDelayMs, long timeoutMs, BTraceClientSettings settings) {
             this.corePoolSize = corePoolSize;
             this.pollDelayMs = pollDelayMs;
             this.timeoutMs = timeoutMs;
-            this.settings = new BTraceClientSettings();
+            this.settings = settings;
         }
-
+        
         @Override
         public ProbeHandle trace(PidProvider pidProvider, BTraceScriptSettings settings, MeteringSink<BTraceSamplerFactoryProvider> factoryProvider) {
             List<Runnable> probes = new ArrayList<Runnable>();

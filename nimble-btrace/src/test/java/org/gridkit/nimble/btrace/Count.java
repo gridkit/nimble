@@ -3,11 +3,13 @@ package org.gridkit.nimble.btrace;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 
-public class Count {
+public class Count implements ICount {
     public static volatile int VALUE = 0;
     
-    public static void tick(int value) {
+    @Override
+    public Boolean tick(int value) {
         VALUE = value;
+        return false;
     }
     
     public static Callable<Void> newCounter(int from, int nTicks) {
@@ -26,8 +28,10 @@ public class Count {
 
         @Override
         public Void call() throws Exception {
+            ICount count = new Count();
+            
             for (int i = 0; i < nTicks; ++i) {
-                Count.tick(from + i);
+                count.tick(from + i);
             }
             
             return null;
