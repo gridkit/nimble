@@ -22,6 +22,7 @@ import org.gridkit.nimble.pivot.PivotReporter;
 import org.gridkit.nimble.pivot.display.PivotPrinter2;
 import org.gridkit.nimble.pivot.display.PrintConfig;
 import org.gridkit.nimble.print.CsvPrinter;
+import org.gridkit.nimble.print.HtmlPrinter;
 import org.gridkit.nimble.print.PrettyPrinter;
 
 public class MonitoringStack implements MonitoringBundle.ServiceProvider {
@@ -125,6 +126,15 @@ public class MonitoringStack implements MonitoringBundle.ServiceProvider {
 			new PrettyPrinter().print(ps, pp.print(reporter.getReader()));
 		}
 	}
+	
+    public void printSections(PrintStream ps, PivotReporter reporter, HtmlPrinter printer) {
+        for(Bundle b: bundles) {
+            PivotPrinter2 pp = new PivotPrinter2();
+            b.bundle.configurePrinter(pp);
+            printer.setCaption(b.caption);
+            printer.print(ps, pp.print(reporter.getReader()));
+        }
+    }
 
 	public void reportToCsv(String fileName, PivotReporter reporter) throws IOException {
 		reportToCsv(fileName, reporter, new PivotPrinter2());
