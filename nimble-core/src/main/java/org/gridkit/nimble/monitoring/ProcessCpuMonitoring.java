@@ -31,8 +31,8 @@ import org.gridkit.nimble.probe.probe.SamplerPrototype;
 import org.gridkit.nimble.probe.probe.SchemaConfigurer;
 import org.gridkit.nimble.util.Seconds;
 import org.hyperic.sigar.ProcCpu;
-import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarException;
+import org.hyperic.sigar.SigarProxy;
 
 public class ProcessCpuMonitoring extends AbstractMonitoringBundle {
 
@@ -250,9 +250,9 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle {
 
 		private static final long serialVersionUID = 20121116;
 		
-		private Sigar sigar;
+		private SigarProxy sigar;
 		
-		public Sigar getSigar() {
+		public SigarProxy getSigar() {
 			if (sigar == null) {
 				sigar = SigarFactory.newSigar();
 			}
@@ -282,11 +282,11 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle {
 		
 		private final long pid;
 		private final ProcCpuSampler sampler;
-		private final Sigar sigar;
+		private final SigarProxy sigar;
 		private long prevTimestamp = 0;
 		private ProcCpu prevInfo;
 	
-		private ProcCpuPollProbe(long pid, ProcCpuSampler s, Sigar sigar) {
+		private ProcCpuPollProbe(long pid, ProcCpuSampler s, SigarProxy sigar) {
 			this.sampler = s;
 			this.pid = pid;
 			this.sigar = sigar;

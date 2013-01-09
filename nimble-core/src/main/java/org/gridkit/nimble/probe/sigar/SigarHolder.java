@@ -1,12 +1,12 @@
 package org.gridkit.nimble.probe.sigar;
 
 import org.gridkit.lab.sigar.SigarFactory;
-import org.hyperic.sigar.Sigar;
+import org.hyperic.sigar.SigarProxy;
 
 public abstract class SigarHolder {
-    private transient Sigar sigar;
+    private transient SigarProxy sigar;
     
-    protected synchronized Sigar getSigar() {
+    protected synchronized SigarProxy getSigar() {
         if (sigar == null) {
             sigar = SigarFactory.newSigar();
         }

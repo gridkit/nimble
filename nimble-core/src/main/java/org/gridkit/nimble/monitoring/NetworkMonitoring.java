@@ -29,8 +29,8 @@ import org.gridkit.nimble.probe.probe.MonitoringDriver;
 import org.gridkit.nimble.probe.probe.SamplerPrototype;
 import org.gridkit.nimble.probe.probe.SchemaConfigurer;
 import org.hyperic.sigar.NetInterfaceStat;
-import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarException;
+import org.hyperic.sigar.SigarProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -276,9 +276,9 @@ public class NetworkMonitoring extends AbstractMonitoringBundle {
 
 		private static final long serialVersionUID = 20121116;
 		
-		private Sigar sigar;
+		private SigarProxy sigar;
 		
-		public Sigar getSigar() {
+		public SigarProxy getSigar() {
 			if (sigar == null) {
 				sigar = SigarFactory.newSigar();
 			}
@@ -303,12 +303,12 @@ public class NetworkMonitoring extends AbstractMonitoringBundle {
 		
 		private final String intf;
 		private final NetStatSampler sampler;
-		private final Sigar sigar;
+		private final SigarProxy sigar;
 		private long prevTimestamp = 0;
 		private NetInterfaceStat prevInfo;
 		private boolean showError = true;
 	
-		private NetStatPollProbe(String intf, NetStatSampler s, Sigar sigar) {
+		private NetStatPollProbe(String intf, NetStatSampler s, SigarProxy sigar) {
 			this.sampler = s;
 			this.intf = intf;
 			this.sigar = sigar;
@@ -352,7 +352,7 @@ public class NetworkMonitoring extends AbstractMonitoringBundle {
 		@Override
 		public Collection<String> findTargets() {
 			try {
-				Sigar s = SigarFactory.newSigar();
+			    SigarProxy s = SigarFactory.newSigar();
 				String[] netIfs = s.getNetInterfaceList();
 				LOGGER.info("Network interfaces found: " + Arrays.toString(netIfs));
 				for(int i = 0; i != netIfs.length; ++i) {
