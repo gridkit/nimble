@@ -1,6 +1,7 @@
 package org.gridkit.nimble.print;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -21,15 +22,17 @@ public class HtmlPrinter extends TablePrinter {
             stream.println(close("caption"));
         }
         
-        List<Object> header;
-        List<List<Object>> rows;
+        List<Object> header = Collections.emptyList();
+        List<List<Object>> rows = Collections.emptyList();
         
-        if (table.isEmpty()) {
-            header = Arrays.<Object>asList("-- empty table --");
-            rows = Collections.emptyList();
-        } else {
+        if (!table.isEmpty()) {
             header = table.get(0);
             rows = table.subList(1, table.size());
+        }
+        
+        if (rows.isEmpty()) {
+            rows = new ArrayList<List<Object>>();
+            rows.add(Arrays.<Object>asList("empty table"));
         }
         
         stream.println(open("thead"));
