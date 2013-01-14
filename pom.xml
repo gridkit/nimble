@@ -39,6 +39,7 @@
         <module>nimble-core</module>
         <module>jvm-attach-api</module>
         <module>probe-jmx</module>
+        <module>probe-sigar</module>
         <module>nimble-btrace</module>
         <module>nimble-btrace-test</module>
         <module>integration-tests</module>
@@ -92,6 +93,12 @@
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>probe-jmx</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>probe-sigar</artifactId>
                 <version>${project.version}</version>
             </dependency>
         
