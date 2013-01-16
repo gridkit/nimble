@@ -3,6 +3,8 @@ package org.gridkit.nimble.pivot;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.gridkit.nimble.metering.SampleReader;
 
@@ -10,6 +12,14 @@ public class Filters {
 
 	public static SampleFilter equals(Object key, Object value) {
 		return new EqualsFilter(Extractors.field(key), value);
+	}
+
+	public static SampleFilter eq(Object key, Object value) {
+		return new EqualsFilter(Extractors.field(key), value);
+	}
+
+	public static SampleFilter ne(Object key, Object value) {
+		return new NotEqualsFilter(Extractors.field(key), value);
 	}
 
 	public static SampleFilter notNull(Object key) {
@@ -46,6 +56,25 @@ public class Filters {
 		return and(levelFilters.toArray(new SampleFilter[0]));
 	}
 
+	public static SampleFilter dotGlob(Object key, String... patterns) {
+		return dotGlob(key, Arrays.asList(patterns));
+	}
+
+	public static SampleFilter dotGlob(Object key, Collection<String> patterns) {
+		if (patterns.isEmpty()) {
+			throw new IllegalArgumentException("Pattern list is empty");
+		}
+		StringBuilder pattern = new StringBuilder();
+		for(String p: patterns) {
+			Pattern g = GlobHelper.translate(p, ".");
+			pattern.append("(");
+			pattern.append(g.pattern());
+			pattern.append(")|");
+		}
+		pattern.setLength(pattern.length() - 1);
+		return new RegExMatcherFilter(Extractors.field(key), Pattern.compile(pattern.toString()));
+	}
+	
 	static abstract class ExtractorFilter implements SampleFilter {
 		
 		private static final long serialVersionUID = 20121014L;
@@ -87,6 +116,43 @@ public class Filters {
 			else {
 				return value.equals(extract);
 			}
+		}
+	}
+
+	public static class RegExMatcherFilter extends ExtractorFilter {
+		
+		private static final long serialVersionUID = 20121014L;
+		
+		protected Pattern pattern;
+		
+		public RegExMatcherFilter(SampleExtractor extractor, Pattern pattern) {
+			super(extractor);
+			this.pattern = pattern;
+		}
+		
+		@Override
+		protected boolean evaluate(Object extract) {
+			if (extract instanceof String) {
+				Matcher matcher = pattern.matcher((String)extract);
+				return matcher.matches();
+			}
+			else {
+				return false;
+			}
+		}
+	}
+
+	public static class NotEqualsFilter extends EqualsFilter {
+		
+		private static final long serialVersionUID = 20121014L;
+		
+		public NotEqualsFilter(SampleExtractor extractor, Object value) {
+			super(extractor, value);
+		}
+		
+		@Override
+		protected boolean evaluate(Object extract) {
+			return !super.evaluate(extract);
 		}
 	}
 

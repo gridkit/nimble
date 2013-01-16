@@ -19,6 +19,7 @@ public class CommonStats {
 	public static final StatAppraisal SUM = StatAppraisal.SUM;
 	public static final StatAppraisal DURATION = StatAppraisal.DURATION;
 	public static final StatAppraisal FREQUENCY = StatAppraisal.FREQUENCY;
+	public static final StatAppraisal EVENT_FREQUENCY = StatAppraisal.EVENT_FREQUENCY;
 	public static final StatAppraisal DISTINCT = StatAppraisal.DISTINCT;
 	
 	public static final StatAppraisal[] DISTRIBUTION_STATS = {MEAN, STD_DEV, MIN, MAX}; 
@@ -197,6 +198,27 @@ public class CommonStats {
 				return fs == null ? null : fs.getWeigthedFrequency();
 			}
 
+			@Override
+			public double transalte(UnitDeco deco) {
+				switch(deco.getType()) {
+				case NUMERATOR: return deco.getMultiplier();
+				case DENOMINATOR: return deco.getMultiplier();
+				default: throw new Error();
+				}
+			}
+			
+			@Override
+			public String toString() {
+				return "Freq.";
+			}															
+		},
+		EVENT_FREQUENCY() {
+			@Override
+			public Object extract(CombinedSummary summary) {
+				FrequencySummary fs = summary.getSummary(FrequencySummary.class);
+				return fs == null ? null : fs.getEventFrequency();
+			}
+			
 			@Override
 			public double transalte(UnitDeco deco) {
 				switch(deco.getType()) {

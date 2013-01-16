@@ -9,7 +9,7 @@ import java.util.List;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
-import org.gridkit.nimble.probe.common.TargetLocator;
+import org.gridkit.lab.monitoring.probe.TargetLocator;
 
 public class MBeanLocator implements TargetLocator<MBeanTarget>, Serializable {
 		

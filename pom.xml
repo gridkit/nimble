@@ -14,7 +14,7 @@
     <name>${project.groupId}::${project.artifactId}</name>
 
     <properties>
-        <nanocloud.version>0.7.9</nanocloud.version>
+        <nanocloud.version>0.7.10</nanocloud.version>
         <sigar-lib.version>0.2</sigar-lib.version>
         
         <tools-jar.version>1.6</tools-jar.version>
@@ -88,6 +88,12 @@
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>jvm-attach-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>probe-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
         

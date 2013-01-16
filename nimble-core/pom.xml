@@ -13,10 +13,6 @@
     <name>${project.groupId}::${project.artifactId}</name>
 
 	<dependencies>
-		<dependency>
-		    <groupId>org.gridkit.lab</groupId>
-		    <artifactId>sigar-lib</artifactId>
-		</dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -24,13 +20,32 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>probe-common</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>org.gridkit.lab</groupId>
             <artifactId>probe-jmx</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>probe-sigar</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>nimble-btrace</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>sigar-lib</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -71,26 +86,5 @@
 			<scope>test</scope>
 		</dependency>
 		
-        <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
-            <version>3.4.3</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>slf4j-log4j12</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>log4j</artifactId>
-                    <groupId>log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>junit</artifactId>
-                    <groupId>junit</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        		
 	</dependencies>
 </project>

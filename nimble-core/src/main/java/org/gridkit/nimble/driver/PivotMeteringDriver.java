@@ -39,7 +39,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	private final int bufferSize;
 	private final Map<String, RemoteSlave> slaves = new HashMap<String, RemoteSlave>();
 	
-	private boolean keepRawData = true;
+	private boolean keepRawData = false;
 	
 	public PivotMeteringDriver(Pivot pivot) {
 		this(pivot, 16 << 10);
@@ -171,7 +171,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 						}
 						else {
 							try {
-								Thread.sleep(50);
+								Thread.sleep(10);
 							} catch (InterruptedException e) {
 								// TODO logging
 								e.printStackTrace();

@@ -4,9 +4,9 @@ import java.io.Serializable;
 
 import javax.management.MBeanServerConnection;
 
-import org.gridkit.nimble.probe.common.PollProbe;
-import org.gridkit.nimble.probe.common.PollProbeDeployer;
-import org.gridkit.nimble.probe.common.SamplerProvider;
+import org.gridkit.lab.monitoring.probe.PollProbe;
+import org.gridkit.lab.monitoring.probe.PollProbeDeployer;
+import org.gridkit.lab.monitoring.probe.SamplerProvider;
 
 public class JavaThreadingProbe implements PollProbeDeployer<MBeanServerConnection, JavaThreadStatsSampler>, Serializable {
 

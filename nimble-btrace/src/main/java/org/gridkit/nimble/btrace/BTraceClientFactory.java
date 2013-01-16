@@ -13,7 +13,6 @@ import net.java.btrace.api.extensions.ExtensionsRepositoryFactory;
 
 import org.gridkit.lab.jvm.attach.AttachManager;
 import org.gridkit.lab.jvm.attach.JavaProcessDetails;
-import org.gridkit.nimble.util.CriticalSection;
 
 public class BTraceClientFactory {
     static {
@@ -46,6 +45,7 @@ public class BTraceClientFactory {
 
         @Override
         public NimbleClient call() throws Exception {
+        	AttachManager.ensureToolsJar();
             return NimbleClient.execute(new Callable<NimbleClient>() {
                 @Override
                 public NimbleClient call() throws Exception {
@@ -72,7 +72,8 @@ public class BTraceClientFactory {
             }
             
             client.setDebug(clientSettings.isDebug());
-            client.setBootstrapPath(clientSettings.getRuntimePath());
+//            client.setBootstrapPath(clientSettings.getRuntimePath());
+            client.setBootCp(clientSettings.getRuntimePath());
             client.setAgentPath(clientSettings.getAgentPath());
             client.setExtRepository(extRep);
             client.setTrackRetransforms(clientSettings.isTrackRetransform());

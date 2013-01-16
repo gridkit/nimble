@@ -32,8 +32,18 @@ public class BTraceClientSettings implements Serializable {
     
     private String probeDescPath = ".";
     
+    private List<String> additionalExtensions = new ArrayList<String>();
+    
     public String getExtensionsPath() {
-        return path(jars(extensionClasses));
+    	if (additionalExtensions.isEmpty()) {
+    		return path(jars(extensionClasses));
+    	}
+    	else {
+    		List<String> jars = new ArrayList<String>();
+    		jars.addAll(additionalExtensions);
+    		jars.addAll(jars(extensionClasses));
+    		return path(jars);
+    	}
     }
 
     public String getAgentPath() {
@@ -64,6 +74,10 @@ public class BTraceClientSettings implements Serializable {
         return probeDescPath;
     }
 
+    public void addExtension(String jarPath) {
+    	additionalExtensions.add(jarPath);
+    }
+    
     public void setExtensionClasses(Class<?>... extensionClasses) {
         setExtensionClasses(Arrays.asList(extensionClasses));
     }

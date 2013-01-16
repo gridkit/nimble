@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.gridkit.lab</groupId>
-            <artifactId>viconcurrent</artifactId>
+            <artifactId>probe-common</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

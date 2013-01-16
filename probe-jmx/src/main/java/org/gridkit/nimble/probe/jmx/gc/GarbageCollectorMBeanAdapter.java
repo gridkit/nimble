@@ -15,10 +15,10 @@ import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import org.gridkit.lab.monitoring.probe.SamplerProvider;
 import org.gridkit.lab.util.jmx.mxstruct.common.GarbageCollectorMXStruct;
 import org.gridkit.lab.util.jmx.mxstruct.common.GarbageCollectorMXStruct.LastGcInfo;
 import org.gridkit.lab.util.jmx.mxstruct.common.RuntimeMXStruct;
-import org.gridkit.nimble.probe.common.SamplerProvider;
 import org.gridkit.nimble.probe.jmx.MBeanSampler;
 import org.gridkit.nimble.probe.jmx.MBeanTarget;
 import org.gridkit.nimble.probe.jmx.gc.GarbageCollectionSampler.GcReport;

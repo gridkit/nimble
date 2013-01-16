@@ -1,6 +1,7 @@
 package org.gridkit.nimble.btrace;
 
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -9,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
-import org.gridkit.nimble.util.SystemOps;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.junit.After;
@@ -234,6 +234,10 @@ public class BTraceClientFactoryTest {
     private BTraceClientSettings newClientSettings() {
         BTraceClientSettings settings = new BTraceClientSettings();
         
+        if (BTTestHelper.isNimbleExpanded()) {
+        	settings.addExtension(BTTestHelper.getNimbleBTraceJar());
+        }
+        
         settings.setDebug(true);
         
         return settings;
@@ -252,7 +256,23 @@ public class BTraceClientFactoryTest {
     public static class GetPid implements Callable<Integer>, Serializable {
         @Override
         public Integer call() throws Exception {
-            return SystemOps.getPid();
+            return getPid();
+        }
+    }
+    
+    public static int getPid() {
+        String name = ManagementFactory.getRuntimeMXBean().getName();
+        
+        int dogIndex = name.indexOf('@');
+        
+        if (dogIndex != -1) {
+            try {
+                return Integer.valueOf(name.substring(0, dogIndex));
+            } catch (NumberFormatException e) {
+                return -1;
+            }
+        } else {
+            return -1;
         }
     }
 }

@@ -12,6 +12,12 @@ import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
 import org.gridkit.nimble.metering.DistributedMetering;
 import org.gridkit.nimble.metering.SampleReader;
+import org.gridkit.nimble.monitoring.coherence.CoherenceCpuMonitoring;
+import org.gridkit.nimble.monitoring.coherence.CoherenceExtendMonitoring;
+import org.gridkit.nimble.monitoring.coherence.CoherenceMetricsKey;
+import org.gridkit.nimble.monitoring.coherence.CoherenceNodeSchemaConfig;
+import org.gridkit.nimble.monitoring.sys.NetworkMonitoring;
+import org.gridkit.nimble.monitoring.sys.ProcessCpuMonitoring;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
 import org.gridkit.nimble.orchestration.TimeLine;
 import org.gridkit.nimble.pivot.Pivot;
@@ -27,7 +33,7 @@ import org.junit.Test;
 
 public class MonitoringBench {
 
-	private String clusterName = "data-fabric-cluster-dev1";
+	private String clusterName;
 
 	private SchemaConfigurer<MBeanServerConnection> sconfig = new CoherenceNodeSchemaConfig(new CommonJmxSchemaConfig());
 	private MonitoringStack mstack = new MonitoringStack();
@@ -67,6 +73,16 @@ public class MonitoringBench {
 		.attribute("Role", CoherenceMetricsKey.MEMBER_ROLE);
 
 		mstack.addBundle(cohCpuPerHost, "Coherence CPU usage (per host)");
+	}
+
+	public  void initCoherenceExtendMonitoring() {
+		
+		CoherenceExtendMonitoring cohConn;
+		cohConn = new CoherenceExtendMonitoring("coherence-extend");
+		cohConn.setSchemaConfig(sconfig);
+		cohConn.setLocator(new AttachMBeanConnector(getClusterMatcher()));
+		
+		mstack.addBundle(cohConn, "Coherence*Extend bandwidth usage");
 	}
 
 	public  void initProcCPUMonitoring() {
@@ -110,14 +126,29 @@ public class MonitoringBench {
 	}
 
 	@Test
-	public void watchJsmDev3_network() throws InterruptedException {
+	public void watchJsmDev3_network() throws InterruptedException {		
 		initNetworkMonitoring();
 		watchJsmDev3Cluster(true);
 	}
 
 	@Test
 	public void watchJsmDev3_proc_cpu() throws InterruptedException {
+		useJobStateCacheCredit();
 		initProcCPUMonitoring();
+		watchJsmDev3Cluster(true);
+	}
+
+	@Test
+	public void watchJsmDev3_coh_extend() throws InterruptedException {
+		useJobStateCacheCredit();
+		initCoherenceExtendMonitoring();
+		watchJsmDev3Cluster(true);
+	}
+
+	@Test
+	public void watchJsmDev3_coh_cpu() throws InterruptedException {
+		useJobStateCacheCredit();
+		initCoherenceMonitoring();
 		watchJsmDev3Cluster(true);
 	}
 
@@ -147,8 +178,11 @@ public class MonitoringBench {
 		watchCluster(cloud, dump);		
 	}
 
-	private void watchJsmDev3Cluster(boolean dump) throws InterruptedException {
+	private void useJobStateCacheCredit() {
 		clusterName = "JobStateCacheCredit";
+	}
+	
+	private void watchJsmDev3Cluster(boolean dump) throws InterruptedException {
 		ViManager cloud = CloudFactory.createSshCloud("~/devenv.viconf");
 		cloud.node("longmchcu2.MON");		
 		watchCluster(cloud, dump);		
@@ -205,19 +239,12 @@ public class MonitoringBench {
 	}
 
 	private JavaProcessMatcher getClusterMatcher() {
-    	PatternJvmMatcher storage = new PatternJvmMatcher();
+    	PatternJvmMatcher node = new PatternJvmMatcher();
     	
-        storage.matchVmName(".*WrapperStartStopApp.*");
-    	storage.matchPropExact("tangosol.coherence.cluster", clusterName);
-    	storage.matchProp("tangosol.coherence.member", "server.*");
-
-    	PatternJvmMatcher proxy = new PatternJvmMatcher();
+    	node.matchVmName(".*WrapperStartStopApp.*");
+    	node.matchPropExact("tangosol.coherence.cluster", clusterName);
     	
-    	proxy.matchVmName(".*WrapperStartStopApp.*");
-    	proxy.matchPropExact("tangosol.coherence.cluster", clusterName);
-    	proxy.matchProp("tangosol.coherence.member", "proxy.*");
-    	
-    	return new JavaProcessMatcher.Union(storage, proxy);
+    	return node;
 
 	}
 	

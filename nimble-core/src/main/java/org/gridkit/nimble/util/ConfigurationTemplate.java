@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.gridkit.nimble.pivot.display.DisplayBuilder;
-import org.gridkit.nimble.pivot.display.PivotPrinter2;
+import org.gridkit.nimble.pivot.display.PrintConfig;
 
 @Deprecated // use org.gridkit.nimble.util.PrinterConfigurer
 public class ConfigurationTemplate implements Serializable, Cloneable {
@@ -42,7 +42,7 @@ public class ConfigurationTemplate implements Serializable, Cloneable {
         }
     }
 
-    public void print(PivotPrinter2 printer) {
+    public void print(PrintConfig printer) {
         for (ParameterInfo param : parameters) { 
             DisplayBuilder.with(printer).constant(
                 param.getNameWithUnit(), param.getValue()

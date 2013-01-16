@@ -90,12 +90,12 @@ public class DistributedPivotReporter extends PivotReporter {
 		}
 
 		@Override
-		public void accumulate(SampleReader samples) {
+		public synchronized void accumulate(SampleReader samples) {
 			reporter.accumulate(samples);			
 		}
 
 		@Override
-		public void flush() {
+		public synchronized void flush() {
 			Map<LevelPath, Map<?, ?>> aggregate = new HashMap<LevelPath, Map<?,?>>();
 			for(LevelPath path : reporter.data.keySet()) {
 				Map<?, ?> rowData = reporter.getRowData(path);
@@ -107,7 +107,7 @@ public class DistributedPivotReporter extends PivotReporter {
 			resetStats();		
 		}
 
-		private void resetStats() {
+		private synchronized void resetStats() {
 			reporter = new PivotReporter(rootLevel);
 		}
 		

@@ -30,7 +30,6 @@ import org.gridkit.lab.jvm.attach.AttachManager;
 import org.gridkit.nimble.btrace.ext.ConfigureSessionCmd;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmd;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
-import org.gridkit.nimble.util.NamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

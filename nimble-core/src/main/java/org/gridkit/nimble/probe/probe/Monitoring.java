@@ -2,15 +2,15 @@ package org.gridkit.nimble.probe.probe;
 
 import java.io.Serializable;
 
+import org.gridkit.lab.monitoring.probe.GenericPollProbeManager;
+import org.gridkit.lab.monitoring.probe.PollProbeDeployer;
+import org.gridkit.lab.monitoring.probe.ProbeHandle;
+import org.gridkit.lab.monitoring.probe.SamplerProvider;
+import org.gridkit.lab.monitoring.probe.TargetLocator;
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.metering.SampleSchema;
 import org.gridkit.nimble.orchestration.ScenarioBuilder;
-import org.gridkit.nimble.probe.common.GenericPollProbeManager;
-import org.gridkit.nimble.probe.common.PollProbeDeployer;
-import org.gridkit.nimble.probe.common.ProbeHandle;
-import org.gridkit.nimble.probe.common.SamplerProvider;
-import org.gridkit.nimble.probe.common.TargetLocator;
 
 public class Monitoring {
 

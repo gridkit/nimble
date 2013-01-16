@@ -118,10 +118,10 @@ public class PivotTest {
 			.distributionStats().caption("%s (ms)").asMillis()
 			.frequency()
 			.duration()
-			.decorated("sub").calc().min().max().caption("min/max")
-			.decorated("sub").calc().max().min().caption("max/min")
-			.decorated("A=0").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("{A=0} %s")
-			.decorated("A=1").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("{A=1} %s")
+			.deco("sub").calc().min().max().caption("min/max")
+			.deco("sub").calc().max().min().caption("max/min")
+			.deco("A=0").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("{A=0} %s")
+			.deco("A=1").stats(Measure.MEASURE, CommonStats.MEAN, CommonStats.COUNT).caption("{A=1} %s")
 		;
 					
 		new PrettyPrinter().print(System.out, p2.print(reporter.getReader()));

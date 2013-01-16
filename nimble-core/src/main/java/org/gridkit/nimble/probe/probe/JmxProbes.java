@@ -14,10 +14,10 @@ import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
 import org.gridkit.lab.jvm.attach.AttachManager;
+import org.gridkit.lab.monitoring.probe.TargetLocator;
 import org.gridkit.nimble.driver.Activity;
 import org.gridkit.nimble.metering.SampleKey;
 import org.gridkit.nimble.metering.SampleSchema;
-import org.gridkit.nimble.probe.common.TargetLocator;
 import org.gridkit.nimble.probe.jmx.JmxLocator;
 import org.gridkit.nimble.probe.jmx.MBeanConnector;
 import org.gridkit.nimble.probe.jmx.MBeanLocator;

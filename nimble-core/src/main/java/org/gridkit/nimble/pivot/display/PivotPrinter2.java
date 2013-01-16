@@ -370,5 +370,9 @@ public class PivotPrinter2 implements PrintConfig {
 					|| filter.matcher("." + level).matches()
 					|| filter.matcher("." + level + ".").matches();
 		}
+		
+		public String toString() {
+			return "(" + filter.pattern() + ") " + unit; 
+		}
 	}
 }

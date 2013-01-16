@@ -135,9 +135,17 @@ public abstract class DisplayBuilder {
 	}
 
 	public WithCaptionAndUnitsDisplayBuilder frequency(Object key) {
-		return stats(key, CommonStats.FREQUENCY);
+		return stats(key, CommonStats.EVENT_FREQUENCY);
 	}
 
+	public WithCaptionAndUnitsDisplayBuilder eventFrequency() {
+		return stats(Measure.MEASURE, CommonStats.FREQUENCY);
+	}
+	
+	public WithCaptionAndUnitsDisplayBuilder eventFrequency(Object key) {
+		return stats(key, CommonStats.EVENT_FREQUENCY);
+	}
+	
 	public WithCaptionAndUnitsDisplayBuilder duration() {
 		return stats(Measure.MEASURE, CommonStats.DURATION);
 	}
@@ -177,6 +185,11 @@ public abstract class DisplayBuilder {
 			super(globalScope, pp);
 		}
 
+		public DisplayBuilder deco(String... deco) {
+			return decorated(deco);
+		}
+		
+		@Deprecated
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		public DisplayBuilder decorated(String... deco) {
 			this.deco = (List)Arrays.asList(deco);

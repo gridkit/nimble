@@ -103,50 +103,45 @@ public abstract class MXStruct implements Cloneable {
 		}
 	}
 
+	/**
+	 * @return value of {@link System#nanoTime()} at the moment of creation of MXStruct
+	 */
 	public long getMXStructTimestamp() {
 		return timestamp;
 	}
 	
 	@SuppressWarnings("unchecked")
 	public <V extends MXStruct> V read(MBeanServerConnection conn, ObjectName name) throws ReflectionException, IOException {
+		MXStruct that;
+		that = (MXStruct) clone();
+		that.meta = meta;
+		that.attrNames = attrNames;
+		that.data = new LinkedHashMap<String, Object>();
 		try {
-			MXStruct that;
-			that = (MXStruct) clone();
-			that.meta = meta;
-			that.attrNames = attrNames;
-			that.data = new LinkedHashMap<String, Object>();
-			try {
-				AttributeList al = conn.getAttributes(name, attrNames);
-				that.timestamp = System.nanoTime();
-				for (Attribute attr: al.asList()) {
-					that.data.put(attr.getName(), attr.getValue());
-				}
-				return (V) that;
+			AttributeList al = conn.getAttributes(name, attrNames);
+			that.timestamp = System.nanoTime();
+			for (Attribute attr: al.asList()) {
+				that.data.put(attr.getName(), attr.getValue());
 			}
-			catch(InstanceNotFoundException e) {
-				return null;
-			}			
-		} catch (CloneNotSupportedException e) {
-			throw new Error("It IS clonable");
+			return (V) that;
 		}
+		catch(InstanceNotFoundException e) {
+			return null;
+		}			
 	}
 	
 	@SuppressWarnings("unchecked")
 	public <V extends MXStruct> V read(CompositeData cdata) {
 		MXStruct that;
-		try {
-			that = (MXStruct) clone();
-			that.timestamp = System.nanoTime();
-			that.meta = meta;
-			that.attrNames = attrNames;
-			that.data = new LinkedHashMap<String, Object>();
-			for(String attr : attrNames) {
-				that.data.put(attr, cdata.get(attr));
-			}
-			return (V)that;
-		} catch (CloneNotSupportedException e) {
-			throw new Error("It IS clonable");
+		that = (MXStruct) clone();
+		that.timestamp = System.nanoTime();
+		that.meta = meta;
+		that.attrNames = attrNames;
+		that.data = new LinkedHashMap<String, Object>();
+		for(String attr : attrNames) {
+			that.data.put(attr, cdata.get(attr));
 		}
+		return (V)that;
 	}
 	
 	protected <V> V getMXAttr() {
@@ -189,7 +184,16 @@ public abstract class MXStruct implements Cloneable {
 			return (V) val;
 		}
 	}
-
+	
+	@Override
+	protected Object clone() {
+		try {
+			return super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new Error("It is cloneable");
+		}
+	}
+	
 	private class AttrInfo {
 		
 		private String methodName;

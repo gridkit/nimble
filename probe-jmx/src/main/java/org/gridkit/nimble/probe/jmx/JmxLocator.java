@@ -5,7 +5,7 @@ import java.util.Collection;
 
 import javax.management.MBeanServerConnection;
 
-import org.gridkit.nimble.probe.common.TargetLocator;
+import org.gridkit.lab.monitoring.probe.TargetLocator;
 
 public class JmxLocator implements TargetLocator<MBeanServerConnection>, Serializable {
 

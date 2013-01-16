@@ -1,8 +1,8 @@
 package org.gridkit.nimble.probe.probe;
 
+import org.gridkit.lab.monitoring.probe.PollProbeDeployer;
+import org.gridkit.lab.monitoring.probe.TargetLocator;
 import org.gridkit.nimble.driver.Activity;
-import org.gridkit.nimble.probe.common.PollProbeDeployer;
-import org.gridkit.nimble.probe.common.TargetLocator;
 
 public interface MonitoringDriver {
 
