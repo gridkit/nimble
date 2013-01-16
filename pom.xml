@@ -29,15 +29,16 @@
     </properties>
 
     <scm>
-        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/branches/nimble-0.1-checkpoint1</connection>
-        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/branches/nimble-0.1-checkpoint1</developerConnection>
-        <url>http://gridkit.googlecode.com/svn/grid-lab/branches/nimble-0.1-checkpoint1</url>
+        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</connection>
+        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</developerConnection>
+        <url>http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</url>
     </scm>
 
     <modules>
         <module>nimble-api</module>
         <module>nimble-core</module>
         <module>jvm-attach-api</module>
+        <module>probe-common</module>
         <module>probe-jmx</module>
         <module>probe-sigar</module>
         <module>nimble-btrace</module>
