@@ -86,11 +86,6 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 	public void dumpRawSamples(RawSampleSink sink, int batchSize) {
     	throw new UnsupportedOperationException("Should be called in node scope");
 	}
-
-	@Override
-	public <S, T extends MeteringAware<S>> MeteringSink<S> bind(T sink) {
-    	throw new UnsupportedOperationException("Should be called in node scope");
-    }
 	
 	@Override
 	public synchronized DeploymentArtifact createArtifact(ViNode target, DepolymentContext context) {
@@ -239,19 +234,7 @@ public class PivotMeteringDriver implements MeteringDriver, DeployableBean {
 					}
 				}
 			}				
-		}
-		
-		@Override
-		public <S, T extends MeteringAware<S>> MeteringSink<S> bind(final T sink) {
-	        final S attached = sink.attach(this);
-
-	        return new MeteringSink<S>() {
-				@Override
-	            public S getSink() {
-	                return attached;
-	            }
-	        };
-	    }
+		}		
 	}
 	
 	private static class Builder implements SamplerBuilder {

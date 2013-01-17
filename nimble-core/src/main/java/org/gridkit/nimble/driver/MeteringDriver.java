@@ -20,6 +20,4 @@ public interface MeteringDriver {
 
 	public void dumpRawSamples(RawSampleSink sink, int batchSize);
 	
-	public <S, T extends MeteringAware<S>> MeteringSink<S> bind(T sink);
-	
 }
