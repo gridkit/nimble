@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import net.java.btrace.ext.Printer;
 import net.java.btrace.ext.collections.Collections;
@@ -17,9 +18,11 @@ import org.gridkit.nimble.btrace.ext.Nimble;
 
 @SuppressWarnings("serial")
 public class BTraceClientSettings implements Serializable {
-    private List<Class<?>> extensionClasses = new ArrayList<Class<?>>(Arrays.<Class<?>>asList(
+    private Set<Class<?>> extensionClasses = new LinkedHashSet<Class<?>>(Arrays.<Class<?>>asList(
         Nimble.class, Printer.class, Collections.class
     ));
+    
+    private Set<String> extensionJars = new LinkedHashSet<String>();
     
     private boolean debug = false;
     
@@ -31,19 +34,12 @@ public class BTraceClientSettings implements Serializable {
     private boolean unsafe = false;
     
     private String probeDescPath = ".";
-    
-    private List<String> additionalExtensions = new ArrayList<String>();
-    
+        
     public String getExtensionsPath() {
-    	if (additionalExtensions.isEmpty()) {
-    		return path(jars(extensionClasses));
-    	}
-    	else {
-    		List<String> jars = new ArrayList<String>();
-    		jars.addAll(additionalExtensions);
-    		jars.addAll(jars(extensionClasses));
-    		return path(jars);
-    	}
+        Set<String> jars = new LinkedHashSet<String>();
+        jars.addAll(jars(extensionClasses));
+        jars.addAll(extensionJars);
+        return path(jars);
     }
 
     public String getAgentPath() {
@@ -75,15 +71,31 @@ public class BTraceClientSettings implements Serializable {
     }
 
     public void addExtension(String jarPath) {
-    	additionalExtensions.add(jarPath);
+        if (!extensionJars.contains(jarPath)) {
+            extensionJars.add(jarPath);
+        }
     }
     
-    public void setExtensionClasses(Class<?>... extensionClasses) {
-        setExtensionClasses(Arrays.asList(extensionClasses));
+    public void addExtension(Class<?> clazz) {
+        if (!extensionClasses.contains(clazz)) {
+            extensionClasses.add(clazz);
+        }
     }
     
-    public void setExtensionClasses(List<Class<?>> extensionClasses) {
-        this.extensionClasses = extensionClasses;
+    public Set<Class<?>> getExtensionClasses() {
+        return extensionClasses;
+    }
+
+    public void setExtensionClasses(Collection<? extends Class<?>> extensionClasses) {
+        this.extensionClasses = new LinkedHashSet<Class<?>>(extensionClasses);
+    }
+
+    public Set<String> getExtensionJars() {
+        return extensionJars;
+    }
+
+    public void setExtensionJars(Collection<? extends String> extensionJars) {
+        this.extensionJars = new LinkedHashSet<String>(extensionJars);
     }
 
     public void setDumpClasses(boolean dumpClasses) {
@@ -124,7 +136,7 @@ public class BTraceClientSettings implements Serializable {
         }
     }
     
-    private static List<String> jars(List<Class<?>> classes) {
+    private static List<String> jars(Collection<? extends Class<?>> classes) {
         List<String> result = new ArrayList<String>();
 
         for (Class<?> clazz : classes) {

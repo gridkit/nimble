@@ -72,8 +72,7 @@ public class BTraceClientFactory {
             }
             
             client.setDebug(clientSettings.isDebug());
-//            client.setBootstrapPath(clientSettings.getRuntimePath());
-            client.setBootCp(clientSettings.getRuntimePath());
+            client.setBootstrapPath(clientSettings.getRuntimePath());
             client.setAgentPath(clientSettings.getAgentPath());
             client.setExtRepository(extRep);
             client.setTrackRetransforms(clientSettings.isTrackRetransform());
