@@ -42,7 +42,6 @@
         <module>probe-jmx</module>
         <module>probe-sigar</module>
         <module>nimble-btrace</module>
-        <module>nimble-btrace-test</module>
         <module>integration-tests</module>
     </modules>
     
