@@ -57,7 +57,7 @@ public class MXStructTest {
 			bean.isValid();
 			
 			LastGcInfo lastGcInfo = bean.getLastGcInfo();
-			lastGcInfo.getGcThreadCount();
+			lastGcInfo.getId();
 			lastGcInfo.getStartTime();
 			lastGcInfo.getEndTime();
 			lastGcInfo.getDuration();

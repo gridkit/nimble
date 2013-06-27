@@ -52,9 +52,9 @@ public class GarbageCollectorMXStruct extends MXStruct {
 	
 	public static class LastGcInfo extends MXStruct {
 		
-		@AttrName("GcThreadCount")
-		public int getGcThreadCount() {
-			return (Integer)getMXAttr();
+		@AttrName("id")
+		public long getId() {
+			return (Long)getMXAttr();
 		}
 		
 		@AttrName("duration")

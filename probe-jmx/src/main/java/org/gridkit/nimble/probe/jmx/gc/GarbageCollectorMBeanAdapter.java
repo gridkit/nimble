@@ -63,7 +63,7 @@ public class GarbageCollectorMBeanAdapter implements SamplerProvider<MBeanTarget
 		
 		private final boolean isYoung;
 		
-		private int gcCount = -1;
+		private long gcCount = -1;
 		
 		
 		public GcAdapter(MBeanTarget target, GarbageCollectionSampler sampler) throws ReflectionException, IOException {
@@ -108,17 +108,17 @@ public class GarbageCollectorMBeanAdapter implements SamplerProvider<MBeanTarget
 			try {
 				GarbageCollectorMXStruct gc = getGcBean(connection, target);
 				LastGcInfo lastGc = gc.getLastGcInfo();
-				if (lastGc.getGcThreadCount() == gcCount) {
+				if (lastGc.getId() == gcCount) {
 					return;
 				}
 				else {
-					int missed = lastGc.getGcThreadCount() - 1 - gcCount;
+					long missed = lastGc.getId() - 1 - gcCount;
 					if (gcCount < 0) {
 						missed = 0;
 					}
-					gcCount = lastGc.getGcThreadCount();
+					gcCount = lastGc.getId();
 					
-					sampler.report(name, missed, processStartMs + lastGc.getStartTime(), processStartMs +lastGc.getEndTime(), lastGc.getDuration(), new Report(lastGc));
+					sampler.report(name, (int)missed, processStartMs + lastGc.getStartTime(), processStartMs +lastGc.getEndTime(), lastGc.getDuration(), new Report(lastGc));
 				}
 			} catch (Exception e) {
 				throw new RuntimeException(e);
