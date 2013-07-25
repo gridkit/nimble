@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class CsvPrinter extends TablePrinter {
-    private char separator = ';';
+    private char separator = ',';
     
     @Override
     protected void print(PrintStream stream, List<List<Object>> table) {

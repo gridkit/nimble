@@ -148,7 +148,7 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle implements Po
 		
 		DisplayBuilder.with(printer, namespace)
 			.constant("Metric", "CPU usage [100% = core]")
-			.frequency().caption("All, CPU (total) [%%]").asPercent()
+			.frequency().caption("All. CPU (total) [%%]").asPercent()
 			.deco("pid").calc().min().frequency().caption("Min. CPU per process [%%]").asPercent()
 			.deco("pid").calc().mean().frequency().caption("Avg. CPU per process [%%]").asPercent()
 			.deco("pid").calc().max().frequency().caption("Max. CPU per process [%%]").asPercent();
@@ -156,7 +156,7 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle implements Po
 		for(SigarCpuMetric m: metrics) {
 			if (m != CPU_TOTAL) {
 				DisplayBuilder.with(printer, namespace)
-					.frequency(m).caption("All, " + m.getCaption() + "[%%]").asPercent();
+					.frequency(m).caption("All. " + m.getCaption() + "[%%]").asPercent();
 			}
 		}
 		

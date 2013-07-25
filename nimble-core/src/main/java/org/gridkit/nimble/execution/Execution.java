@@ -46,10 +46,10 @@ public class Execution {
         return new VaryingSemaphore(nPermits);
     }
         
-    private static class CompositeActivity implements Activity {
-        private final Collection<Activity> delegates;
+    public static class CompositeActivity implements Activity {
+        private final Collection<? extends Activity> delegates;
         
-        public CompositeActivity(Collection<Activity> delegates) {
+        public CompositeActivity(Collection<? extends Activity> delegates) {
             this.delegates = delegates;
         }
 

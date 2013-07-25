@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.nimble.orchestration.DeployableBean.DeploymentArtifact;
 import org.gridkit.nimble.orchestration.DeployableBean.DepolymentContext;
 import org.gridkit.nimble.orchestration.DeployableBean.EnvironmentContext;
+import org.gridkit.nimble.util.ClassOps;
 import org.gridkit.util.concurrent.TimedFuture;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeSet;
@@ -69,7 +70,7 @@ public class ScenarioBuilder {
 			throw new IllegalArgumentException("Cannot deploy stub");
 		}
 		else {
-			Bean beanMeta = newBeanInfo(bean.getClass().getInterfaces(), scope);
+			Bean beanMeta = newBeanInfo(ClassOps.getInterfaces(bean.getClass()), scope);
 			beanMeta.reference = bean;
 			beanMeta.caption = beanMeta.reference.toString();
 			beans.put(bean, beanMeta);
