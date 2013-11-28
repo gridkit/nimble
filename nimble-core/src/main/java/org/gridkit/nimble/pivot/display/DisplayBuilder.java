@@ -135,11 +135,11 @@ public abstract class DisplayBuilder {
 	}
 
 	public WithCaptionAndUnitsDisplayBuilder frequency(Object key) {
-		return stats(key, CommonStats.EVENT_FREQUENCY);
+		return stats(key, CommonStats.FREQUENCY);
 	}
 
 	public WithCaptionAndUnitsDisplayBuilder eventFrequency() {
-		return stats(Measure.MEASURE, CommonStats.FREQUENCY);
+		return stats(Measure.MEASURE, CommonStats.EVENT_FREQUENCY);
 	}
 	
 	public WithCaptionAndUnitsDisplayBuilder eventFrequency(Object key) {

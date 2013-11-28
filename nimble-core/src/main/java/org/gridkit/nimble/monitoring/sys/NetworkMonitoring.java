@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -60,7 +61,7 @@ public class NetworkMonitoring extends AbstractMonitoringBundle implements Polli
 		TX_BYTES("TX") {
 			@Override
 			public double extract(NetInterfaceStat prev, NetInterfaceStat last) {
-				return last.getRxBytes() - prev.getRxBytes();
+				return last.getTxBytes() - prev.getTxBytes();
 			}
 		},
 		RX_PACKETS("RX Packets") {
@@ -153,12 +154,14 @@ public class NetworkMonitoring extends AbstractMonitoringBundle implements Polli
 		
 		Pivot.Level b = base.level("all");
 		b.calcDistinct(IfName.INTERFACE);
+		b.calcFrequency(Measure.MEASURE);
 		
 		for(SigarNetMetric m: metrics) {
 			b.calcFrequency(m);
 		}
 		
-		Pivot.Level p = base.level("if").group(IfName.INTERFACE).level("");
+		Pivot.Level p = base.level("if").group(IfName.INTERFACE);
+		p.calcFrequency(Measure.MEASURE);
 		
 		for(SigarNetMetric m: metrics) {
 			p.calcFrequency(m);
@@ -362,6 +365,8 @@ public class NetworkMonitoring extends AbstractMonitoringBundle implements Polli
 			try {
 			    SigarProxy s = SigarFactory.newSigar();
 				String[] netIfs = s.getNetInterfaceList();
+				netIfs = new HashSet<String>(Arrays.asList(netIfs)).toArray(new String[0]);
+
 				LOGGER.info("Network interfaces found: " + Arrays.toString(netIfs));
 				for(int i = 0; i != netIfs.length; ++i) {
 					int n = netIfs[i].indexOf(':');
