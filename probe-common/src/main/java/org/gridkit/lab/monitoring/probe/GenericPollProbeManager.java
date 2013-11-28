@@ -103,7 +103,7 @@ public class GenericPollProbeManager {
 		}
 
 		@Override
-		public void cancled() {
+		public void canceled() {
 			probe.stop();
 		}
 		

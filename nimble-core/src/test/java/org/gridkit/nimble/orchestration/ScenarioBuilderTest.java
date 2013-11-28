@@ -2,8 +2,8 @@ package org.gridkit.nimble.orchestration;
 
 import java.io.Serializable;
 
+import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViManager;
-import org.gridkit.vicluster.telecontrol.isolate.IsolateCloudFactory;
 import org.junit.Test;
 
 public class ScenarioBuilderTest {
@@ -49,7 +49,7 @@ public class ScenarioBuilderTest {
 		
 		sb.debug_simulate();
 		
-		ViManager cloud = IsolateCloudFactory.createCloud("org.gridkit");
+		ViManager cloud = CloudFactory.createIsolateCloud("org.gridkit");
 		
 		cloud.node("node1");
 		cloud.node("node2");

@@ -14,14 +14,14 @@
     <name>${project.groupId}::${project.artifactId}</name>
 
     <properties>
-        <nanocloud.version>0.7.10</nanocloud.version>
+        <nanocloud.version>0.7.22</nanocloud.version>
         <sigar-lib.version>0.2</sigar-lib.version>
+        <jvm-attach-api.version>1.0</jvm-attach-api.version>
         
         <tools-jar.version>1.6</tools-jar.version>
         <btrace.version>2.0-nimble-4</btrace.version>
         
         <commons-math.version>3.0</commons-math.version>
-        <guava.version>13.0.1</guava.version>
         <slf4j.version>1.6.6</slf4j.version>
         
         <logback.version>1.0.6</logback.version>
@@ -37,7 +37,6 @@
     <modules>
         <module>nimble-api</module>
         <module>nimble-core</module>
-        <module>jvm-attach-api</module>
         <module>probe-common</module>
         <module>probe-jmx</module>
         <module>probe-sigar</module>
@@ -87,7 +86,7 @@
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>jvm-attach-api</artifactId>
-                <version>${project.version}</version>
+                <version>${jvm-attach-api.version}</version>
             </dependency>
         
             <dependency>
@@ -130,12 +129,6 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
                 <version>${commons-math.version}</version>
-            </dependency>
-            
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
             </dependency>
             
             <dependency>
