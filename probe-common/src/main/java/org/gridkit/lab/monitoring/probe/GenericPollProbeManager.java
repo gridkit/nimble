@@ -101,7 +101,7 @@ public class GenericPollProbeManager {
 		public void interrupt(Thread taskThread) {
 			// do nothing
 		}
-
+		
 		@Override
 		public void canceled() {
 			probe.stop();

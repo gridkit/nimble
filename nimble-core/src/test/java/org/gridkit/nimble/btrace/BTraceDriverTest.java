@@ -46,7 +46,8 @@ public class BTraceDriverTest {
     
     @Test
     public void test() throws Exception {
-        ViNodeSet cloud = CloudFactory.createLocalCloud();
+        ViNodeSet cloud = CloudFactory.createCloud();
+        ViProps.at(cloud.node("**")).setLocalType();
 
         cloud.node(MONITOR);
         cloud.node(EXECUTOR);

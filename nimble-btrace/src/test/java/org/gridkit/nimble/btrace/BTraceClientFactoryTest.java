@@ -12,6 +12,7 @@ import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViProps;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -27,7 +28,8 @@ public class BTraceClientFactoryTest {
     
     @BeforeClass
     public static void beforeClass() {
-        cloud = CloudFactory.createLocalCloud();
+        cloud = CloudFactory.createCloud();
+        ViProps.at(cloud.node("**")).setLocalType();
     }
 
     @AfterClass
