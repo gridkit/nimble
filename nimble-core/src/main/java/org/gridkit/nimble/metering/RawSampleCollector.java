@@ -25,7 +25,7 @@ public class RawSampleCollector implements SampleBuffer.RemoteSampleSink, LinePr
 	}
 	
 	@Override
-	public void push(List<Map<Object, Object>> rows) {
+	public synchronized void push(List<Map<Object, Object>> rows) {
 		for(Map<Object, Object> row: rows) {
 			for(Object key: row.keySet()) {
 				header.add(key.toString());
@@ -35,7 +35,7 @@ public class RawSampleCollector implements SampleBuffer.RemoteSampleSink, LinePr
 	}
 
 	@Override
-	public void done() {
+	public synchronized void done() {
 		// do nothing
 	}
 
@@ -66,7 +66,7 @@ public class RawSampleCollector implements SampleBuffer.RemoteSampleSink, LinePr
 		}		
 	}
 	
-	public void writeCsv(final Writer writer) throws IOException {
+	public synchronized void writeCsv(final Writer writer) throws IOException {
 		for(String h: header) {
 			writer.append(h).append(';');
 		}

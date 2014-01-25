@@ -10,16 +10,21 @@ import java.io.ObjectOutputStream;
 import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.gridkit.nimble.pivot.SampleAccumulator;
 
 public class SampleBuffer implements SampleAccumulator {
 
+	private static final int BACK_REFS_LIMIT = 1 << 10;
+	
 	private File file;
 	private ObjectOutputStream writeStream;
 	private long sampleCount;
+	private Set<Object> objectBackRefs = new HashSet<Object>();
 	
 	public SampleBuffer() throws IOException {
 		this(File.createTempFile("nimble", ".buf"));
@@ -58,13 +63,15 @@ public class SampleBuffer implements SampleAccumulator {
 
 	protected synchronized void pushRow(Map<Object, Object> row) {
 		try {
-			writeStream.writeUnshared(row);
+			StreamSampleRow ssr = new StreamSampleRow(row);
+			StreamSampleRow.writeToStream(writeStream, ssr, objectBackRefs);
 			++sampleCount;
-			if ((sampleCount % 32 << 10) == 0) {
+			if (objectBackRefs.size() > BACK_REFS_LIMIT) {
 				// have to reset stream periodically
 				// otherwise it would be impossible 
 				// to read due to huge back reference table
 				writeStream.reset();
+				objectBackRefs.clear();
 			}
 		} catch (IOException e) {
 			// TODO logging
@@ -81,7 +88,6 @@ public class SampleBuffer implements SampleAccumulator {
 		}		
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void feed(RawSampleSink sink, int batchSize) throws IOException {
 		long limit;
 		synchronized(this) {
@@ -95,7 +101,8 @@ public class SampleBuffer implements SampleAccumulator {
 		List<Map<Object, Object>> rows = new ArrayList<Map<Object,Object>>(batchSize);
 		while(readCounter < limit) {
 			try {
-				((List)rows).add(ois.readUnshared());
+				StreamSampleRow row = (StreamSampleRow) ois.readUnshared();
+				rows.add(row.data);
 				++readCounter;
 			} catch (ClassNotFoundException e) {
 				throw new IOException(e);
@@ -127,7 +134,6 @@ public class SampleBuffer implements SampleAccumulator {
 			}
 		};
 	}
-	
 	
 	public interface RemoteSampleSink extends RawSampleSink, Remote {		
 	}	
