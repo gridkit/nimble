@@ -3,6 +3,8 @@ package org.gridkit.nimble.monitoring;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.management.MBeanServerConnection;
 
@@ -22,6 +24,10 @@ public class SysPropSchemaConfig implements Serializable {
 
 	public void readProp(String prop, Object attr) {
 		extractors.put(attr, new PropExtractor(prop));
+	}
+
+	public void readProp(String prop, Object attr, String transformationPattern) {
+		extractors.put(attr, new PropTransformerExtractor(prop, transformationPattern));
 	}
 	
 	protected void configure(SampleSchema schema, Map<String, String> props) {
@@ -101,4 +107,61 @@ public class SysPropSchemaConfig implements Serializable {
 			return props.get(name);
 		}
 	}
+
+	private static class PropTransformerExtractor implements Extractor, Serializable {
+		
+		private static final long serialVersionUID = 20121118L;
+		
+		private final String name;
+		private final String pattern;
+		
+		private PropTransformerExtractor(String name, String pattern) {
+			this.name = name;
+			this.pattern = pattern;
+		}
+		
+		@Override
+		public Object get(Map<String, String> props) {
+			String value = props.get(name);
+			if (value == null) {
+				return null;
+			}
+			else {
+				return transform(pattern, value);
+			}
+		}
+	}
+	
+	public static String transform(String pattern, String value) {
+		if (pattern == null || !pattern.startsWith("~")) {
+			return pattern;
+		}
+		int n = pattern.indexOf('!');
+		if (n < 0) {
+			throw new IllegalArgumentException("Invalid host extractor [" + pattern + "]");
+		}
+		String format = pattern.substring(1, n);
+		Matcher m = Pattern.compile(pattern.substring(n + 1)).matcher(value);
+		if (!m.matches()) {
+			throw new IllegalArgumentException("Transformer pattern [" + pattern + "] is not applicable to name '" + value + "'");
+		}
+		else {
+			Object[] groups = new Object[m.groupCount()];
+			for(int i = 0; i != groups.length; ++i) {
+				groups[i] = m.group(i + 1);
+				try {
+					groups[i] = new Long((String)groups[i]);
+				}
+				catch(NumberFormatException e) {
+					// ignore
+				}				
+			}
+			try {
+				return String.format(format, groups);
+			}
+			catch(IllegalArgumentException e) {
+				throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + value + "'");
+			}
+		}
+	}	
 }

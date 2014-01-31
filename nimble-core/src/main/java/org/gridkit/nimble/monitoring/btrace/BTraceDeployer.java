@@ -1,6 +1,7 @@
 package org.gridkit.nimble.monitoring.btrace;
 
 import java.io.Serializable;
+import java.net.InetAddress;
 
 import org.gridkit.lab.monitoring.probe.PollProbe;
 import org.gridkit.lab.monitoring.probe.PollProbeDeployer;
@@ -70,7 +71,14 @@ public class BTraceDeployer implements PollProbeDeployer<Long, BTraceScriptSampl
             if (client != null) {
                 client.close();
             }
-            throw new RuntimeException("Failed to connect to client with pid " + pid, e);
+            String localhost = "???";
+            try {
+            	localhost = InetAddress.getLocalHost().getHostName();
+            }
+            catch(Exception e2) {
+            	// ignore
+            }
+            throw new RuntimeException("Failed to connect to client with pid " + pid + " at " + localhost, e);
         }
         
         return client;

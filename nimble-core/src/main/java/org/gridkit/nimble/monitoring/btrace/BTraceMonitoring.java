@@ -142,7 +142,7 @@ public class BTraceMonitoring extends AbstractMonitoringBundle implements Pollin
 	public void configurePivot(Pivot pivot) {
 		Pivot.Level base = pivot.root();
 
-		base = base.filter(Measure.PRODUCER, getProducerId()).level(namespace);
+		base = base.level(namespace).filter(Measure.PRODUCER, getProducerId());
 		
 		for(Object group: groupping) {
 			base = base.group(group);
