@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import org.gridkit.vicluster.ViNodeSet;
+import org.gridkit.nanocloud.Cloud;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,25 +36,25 @@ public class AllocationManager {
     }
     
     public interface NodeFactory {
-        ViNodeSet newViNodeSet();
+        Cloud newViNodeSet();
     }
     
     public static interface HostSource {
         List<String> getHosts(int count);
     }
 
-    public static ViNodeSet allocate(ViNodeSet nodeSet, Executor executor) {
+    public static Cloud allocate(Cloud nodeSet, Executor executor) {
         executor.run(new ContextImpl(nodeSet));
         return nodeSet;
     }
     
-    public static ViNodeSet allocate(NodeFactory factory, int retries, Executor executor) {
+    public static Cloud allocate(NodeFactory factory, int retries, Executor executor) {
         if (retries < 0) {
             throw new IllegalArgumentException("retries < 0");
         }
         
         boolean success = false;
-        ViNodeSet nodeSet = null;
+        Cloud nodeSet = null;
         int triesLeft = retries + 1;
         
         while (triesLeft-- > 0 && !success) {
@@ -77,10 +77,10 @@ public class AllocationManager {
     }
     
     private static class ContextImpl implements Context{
-        private ViNodeSet nodeSet;
+        private Cloud nodeSet;
         private Map<Set<String>, Integer> indexes = new HashMap<Set<String>, Integer>();
         
-        public ContextImpl(ViNodeSet nodeSet) {
+        public ContextImpl(Cloud nodeSet) {
             this.nodeSet = nodeSet;
         }
 
@@ -128,7 +128,7 @@ public class AllocationManager {
         }
     }
 
-    private static boolean valid(ViNodeSet nodeSet) {
+    private static boolean valid(Cloud nodeSet) {
         Future<?> f  = nodeSet.node("**").submit(new Runnable() {
             @Override
             public void run() {}
@@ -143,7 +143,7 @@ public class AllocationManager {
         }
     }
     
-    private static void shutdown(ViNodeSet nodeSet) {
+    private static void shutdown(Cloud nodeSet) {
         try {
             nodeSet.shutdown();
         } catch(Exception e) {

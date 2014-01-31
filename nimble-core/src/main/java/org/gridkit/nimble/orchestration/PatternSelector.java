@@ -2,8 +2,8 @@ package org.gridkit.nimble.orchestration;
 
 import java.util.Collection;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeSet;
 
 class PatternSelector implements TargetSelector {
 	
@@ -14,7 +14,7 @@ class PatternSelector implements TargetSelector {
 	}
 
 	@Override
-	public Collection<ViNode> selectTargets(ViNodeSet nodes) {
+	public Collection<ViNode> selectTargets(Cloud nodes) {
 		return nodes.listNodes(pattern);
 	}
 

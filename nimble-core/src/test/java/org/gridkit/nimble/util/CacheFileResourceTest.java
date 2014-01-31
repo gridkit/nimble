@@ -2,8 +2,8 @@ package org.gridkit.nimble.util;
 
 import java.io.File;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.vicluster.ViNodeSet;
 import org.gridkit.vicluster.ViProps;
 import org.junit.After;
 import org.junit.Assert;
@@ -30,7 +30,7 @@ public class CacheFileResourceTest {
 		}
 	}
 
-	public ViNodeSet cloud = CloudFactory.createCloud();
+	public Cloud cloud = CloudFactory.createCloud();
 	
 	@Before
 	public void initCloud() {

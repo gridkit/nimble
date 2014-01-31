@@ -20,13 +20,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nimble.orchestration.DeployableBean.DeploymentArtifact;
 import org.gridkit.nimble.orchestration.DeployableBean.DepolymentContext;
 import org.gridkit.nimble.orchestration.DeployableBean.EnvironmentContext;
 import org.gridkit.nimble.util.ClassOps;
 import org.gridkit.util.concurrent.TimedFuture;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeSet;
 
 public class ScenarioBuilder {
 
@@ -683,7 +683,7 @@ public class ScenarioBuilder {
 		private List<Action> actionList = new ArrayList<ScenarioBuilder.Action>();
 		
 		@Override
-		public void play(ViNodeSet nodeSet) {
+		public void play(Cloud nodeSet) {
 			start();
 			while(!pending.isEmpty()) {
 				findActionable();
@@ -1046,7 +1046,7 @@ public class ScenarioBuilder {
 		}
 
 		@Override
-		public Collection<ViNode> selectTargets(ViNodeSet nodes) {
+		public Collection<ViNode> selectTargets(Cloud nodes) {
 			Set<ViNode> candidates = new LinkedHashSet<ViNode>();
 
 			resolver.collectRelatedNodes(new HashSet<ScopeResolver>(), candidates, nodes);
@@ -1069,9 +1069,9 @@ public class ScenarioBuilder {
 	
 	private static interface ScopeResolver {
 		
-		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes);
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, Cloud nodes);
 		
-		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, ViNodeSet nodes);
+		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, Cloud nodes);
 		
 	}
 	
@@ -1086,7 +1086,7 @@ public class ScenarioBuilder {
 		}
 		
 		@Override
-		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes) {
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, Cloud nodes) {
 			if (processed.add(this)) {
 				for(ScopeResolver sr: resolvers) {
 					sr.collectRelatedNodes(processed, collection, nodes);
@@ -1095,7 +1095,7 @@ public class ScenarioBuilder {
 		}
 
 		@Override
-		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, ViNodeSet nodes) {
+		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, Cloud nodes) {
 			if (processed.add(this)) {
 				for(ScopeResolver sr: resolvers) {
 					if (sr.isInScope(processed, node, nodes)) {
@@ -1140,7 +1140,7 @@ public class ScenarioBuilder {
 		}
 		
 		@Override
-		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes) {
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, Cloud nodes) {
 			if (processed.add(this)) {
 				for(ScopeResolver sr: resolvers) {
 					sr.collectRelatedNodes(processed, collection, nodes);
@@ -1149,7 +1149,7 @@ public class ScenarioBuilder {
 		}
 
 		@Override
-		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, ViNodeSet nodes) {
+		public boolean isInScope(Set<ScopeResolver> processed, ViNode node, Cloud nodes) {
 			if (processed.add(this)) {
 				for(ScopeResolver sr: resolvers) {
 					if (!sr.isInScope(processed, node, nodes)) {
@@ -1188,14 +1188,14 @@ public class ScenarioBuilder {
 		}
 
 		@Override
-		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, ViNodeSet nodes) {
+		public void collectRelatedNodes(Set<ScopeResolver> processed, Set<ViNode> collection, Cloud nodes) {
 			if (processed.add(this)) {
 				collection.addAll(nodes.listNodes(pattern));
 			}
 		}
 
 		@Override
-		public boolean isInScope(Set<ScopeResolver> precessed, ViNode node, ViNodeSet nodes) {
+		public boolean isInScope(Set<ScopeResolver> precessed, ViNode node, Cloud nodes) {
 			return nodes.listNodes(pattern).contains(node);
 		}
 

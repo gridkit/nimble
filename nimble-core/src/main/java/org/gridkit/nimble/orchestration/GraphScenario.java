@@ -14,8 +14,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ class GraphScenario implements Scenario {
 	}
 	
 	@Override
-	public void play(ViNodeSet nodeSet) {
+	public void play(Cloud nodeSet) {
 		new Run(nodeSet, actions).run();
 	}
 
@@ -56,12 +56,12 @@ class GraphScenario implements Scenario {
 
 	private static class Run {
 		
-		private ViNodeSet nodeSet;
+		private Cloud nodeSet;
 		private Map<ActionId, ActionInfo> actions = new LinkedHashMap<GraphScenario.ActionId, GraphScenario.ActionInfo>();
 		private Map<String, TargetContext> contexts = new LinkedHashMap<String, TargetContext>();
 		private Set<ActionId> pending;		
 
-		public Run(ViNodeSet nodeSet, List<Action> actions) {
+		public Run(Cloud nodeSet, List<Action> actions) {
 			this.nodeSet = nodeSet;
 			for(Action action: actions) {
 				

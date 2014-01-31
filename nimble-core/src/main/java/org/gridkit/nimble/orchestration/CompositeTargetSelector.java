@@ -6,8 +6,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeSet;
 
 class CompositeTargetSelector implements TargetSelector {
 
@@ -18,7 +18,7 @@ class CompositeTargetSelector implements TargetSelector {
 	}
 
 	@Override
-	public Collection<ViNode> selectTargets(ViNodeSet nodes) {
+	public Collection<ViNode> selectTargets(Cloud nodes) {
 		Map<String, ViNode> map = new HashMap<String, ViNode>();
 		for(TargetSelector selector: selectors) {
 			for(ViNode node: selector.selectTargets(nodes)) {

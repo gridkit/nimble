@@ -1,9 +1,9 @@
 package org.gridkit.nimble.orchestration;
 
-import org.gridkit.vicluster.ViNodeSet;
+import org.gridkit.nanocloud.Cloud;
 
 public interface Scenario {
 
-	public void play(ViNodeSet nodeSet);
+	public void play(Cloud nodeSet);
 	
 }

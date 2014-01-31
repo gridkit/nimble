@@ -5,6 +5,7 @@ import java.lang.management.ManagementFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.driver.MeteringDriver;
 import org.gridkit.nimble.driver.PivotMeteringDriver;
@@ -20,7 +21,6 @@ import org.gridkit.nimble.print.PrettyPrinter;
 import org.gridkit.nimble.probe.probe.Monitoring;
 import org.gridkit.nimble.probe.probe.MonitoringDriver;
 import org.gridkit.nimble.probe.sigar.PtqlPidProvider;
-import org.gridkit.vicluster.ViNodeSet;
 import org.gridkit.vicluster.ViProps;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -46,7 +46,7 @@ public class BTraceDriverTest {
     
     @Test
     public void test() throws Exception {
-        ViNodeSet cloud = CloudFactory.createCloud();
+        Cloud cloud = CloudFactory.createCloud();
         ViProps.at(cloud.node("**")).setLocalType();
 
         cloud.node(MONITOR);
@@ -121,7 +121,7 @@ public class BTraceDriverTest {
         return sb.getScenario();
     }
 
-    private void configureMonitoring(MonitoringStack mstack, ViNodeSet cloud) {
+    private void configureMonitoring(MonitoringStack mstack, Cloud cloud) {
         int pid = cloud.node(EXECUTOR).exec(new GetPid());
 
         BTraceMonitoring bTraceMon = new BTraceMonitoring("btrace-test");
