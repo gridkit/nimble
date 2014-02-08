@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>nimble-parent</artifactId>
-    <version>0.2.2</version>
+    <version>0.2.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>${project.groupId}::${project.artifactId}</name>
 
@@ -29,9 +29,9 @@
     </properties>
 
     <scm>
-        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/tags/nimble-parent-0.2.2</connection>
-        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/tags/nimble-parent-0.2.2</developerConnection>
-        <url>http://gridkit.googlecode.com/svn/grid-lab/tags/nimble-parent-0.2.2</url>
+        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</connection>
+        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</developerConnection>
+        <url>http://gridkit.googlecode.com/svn/grid-lab/trunk/nimble</url>
     </scm>
 
     <modules>
