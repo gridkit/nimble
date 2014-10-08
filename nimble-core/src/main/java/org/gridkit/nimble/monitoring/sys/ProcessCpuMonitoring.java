@@ -83,6 +83,7 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle implements Po
 	private SchemaConfigurer<Long> schemaConfigurer = new NoSchema<Long>();
 	private EnumSet<SigarCpuMetric> metrics = EnumSet.of(CPU_SYS);
 	private long pollPeriod = 1000;
+	private boolean displayCrossProcessAggregates = true;
 	
 	public ProcessCpuMonitoring(String namespace) {
 		super(namespace);
@@ -117,6 +118,10 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle implements Po
 	public void setPollPeriod(long periodMs) {
 		this.pollPeriod = periodMs;
 	}
+	
+	public void displayCrossProcessAggregates(boolean enable) {
+	    displayCrossProcessAggregates = enable;
+	}
 
 	@Override
 	public void configurePivot(Pivot pivot) {
@@ -148,10 +153,14 @@ public class ProcessCpuMonitoring extends AbstractMonitoringBundle implements Po
 		
 		DisplayBuilder.with(printer, namespace)
 			.constant("Metric", "CPU usage [100% = core]")
-			.frequency().caption("All. CPU (total) [%%]").asPercent()
+			.frequency().caption("All. CPU (total) [%%]").asPercent();
+		
+		if (displayCrossProcessAggregates) {
+		    DisplayBuilder.with(printer, namespace)
 			.deco("pid").calc().min().frequency().caption("Min. CPU per process [%%]").asPercent()
 			.deco("pid").calc().mean().frequency().caption("Avg. CPU per process [%%]").asPercent()
 			.deco("pid").calc().max().frequency().caption("Max. CPU per process [%%]").asPercent();
+		}
 
 		for(SigarCpuMetric m: metrics) {
 			if (m != CPU_TOTAL) {
