@@ -6,7 +6,7 @@ import java.net.ServerSocket;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.java.btrace.agent.Server;
+import net.java.btrace.api.server.Server;
 import net.java.btrace.api.core.BTraceLogger;
 import net.java.btrace.api.extensions.ExtensionsRepository;
 import net.java.btrace.api.extensions.ExtensionsRepositoryFactory;

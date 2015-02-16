@@ -12,13 +12,14 @@ import java.util.List;
 import net.java.btrace.api.core.ServiceLocator;
 import net.java.btrace.api.extensions.ExtensionsRepository;
 import net.java.btrace.api.wireio.Channel;
+import net.java.btrace.api.wireio.Command;
 import net.java.btrace.api.wireio.CommandFactory;
 import net.java.btrace.api.wireio.ObjectInputStreamEx;
 import net.java.btrace.client.ClientChannel;
 import net.java.btrace.spi.wireio.CommandImpl;
 
 public class NimbleClientChannel extends ClientChannel {
-    private static final String AGENT_EXCLUDE_PREFIX = net.java.btrace.agent.wireio.ExitCommandImpl.class.getPackage().getName();
+    private static final String AGENT_EXCLUDE_PREFIX = net.java.btrace.server.wireio.ExitCommandImpl.class.getPackage().getName();
     
     public static Channel open(Socket skt, ExtensionsRepository extRep) {
         try {
@@ -60,6 +61,6 @@ public class NimbleClientChannel extends ClientChannel {
             }
         }
 
-        return CommandFactory.getInstance(clientImpls);
+        return CommandFactory.getInstance(clientImpls, Command.Target.CLIENT);
     }
 }

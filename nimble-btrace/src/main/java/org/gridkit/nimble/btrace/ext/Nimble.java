@@ -42,7 +42,7 @@ public class Nimble {
         }
     }
     
-    @SuppressWarnings("restriction")
+    @SuppressWarnings({"restriction", "deprecation"})
     private static String getScriptClass() {
         String result = null;
         int i = 1;
@@ -61,7 +61,7 @@ public class Nimble {
     /**
      * @return if realFramesToSkip == 0 current class
      */
-    @SuppressWarnings("restriction")
+    @SuppressWarnings({"restriction", "deprecation"})
     public static Class<?> getCallerClass(int realFramesToSkip) {
         realFramesToSkip += 1; // skipping sun.reflect.Reflection
         realFramesToSkip += 1; // skipping org.gridkit.nimble.btrace.ext.Nimble

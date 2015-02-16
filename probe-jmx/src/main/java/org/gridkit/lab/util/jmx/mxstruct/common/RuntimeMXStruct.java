@@ -119,4 +119,9 @@ public class RuntimeMXStruct extends MXStruct implements RuntimeMXBean {
 	public Map<String, String> getSystemProperties() {
 		return super.getMXAttr();
 	}
+
+	// TODO artem.panasyuk: correct migration to 1.7
+    public ObjectName getObjectName() {
+        return null;
+    }
 }

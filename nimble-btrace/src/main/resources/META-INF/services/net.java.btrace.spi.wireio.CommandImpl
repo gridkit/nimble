@@ -1,2 +1,4 @@
 org.gridkit.nimble.btrace.ext.ConfigureSessionCmdImpl
 org.gridkit.nimble.btrace.ext.PollSamplesCmdImpl
+org.gridkit.nimble.btrace.ext.StringResponseImpl
+org.gridkit.nimble.btrace.ext.PollSamplesResponseImpl

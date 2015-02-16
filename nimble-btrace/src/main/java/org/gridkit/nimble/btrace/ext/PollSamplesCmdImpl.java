@@ -37,7 +37,7 @@ public class PollSamplesCmdImpl extends CommandImpl<PollSamplesCmd> {
         Channel channel = ctx.lookup(Channel.class);
         
         try {
-            channel.sendResponse(cmd, result);
+            channel.sendResponse(cmd, PollSamplesResponse.class, result);
         } catch (IOException e) {
             BTraceLogger.debugPrint(e);
         }

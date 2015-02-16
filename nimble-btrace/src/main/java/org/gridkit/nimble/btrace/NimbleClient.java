@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import net.java.btrace.agent.Server;
+import net.java.btrace.api.server.Server;
 import net.java.btrace.api.extensions.ExtensionsRepository;
 import net.java.btrace.api.wireio.AbstractCommand;
 import net.java.btrace.api.wireio.Channel;
@@ -128,7 +128,7 @@ public class NimbleClient extends Client {
     }
     
     @Override
-    protected int getServerPort() throws Exception {
+    protected int getServerPort() throws IOException {
         Properties agentProps = AttachManager.getDetails(pid).getAgentProperties();
         
         return Integer.parseInt(
@@ -137,8 +137,12 @@ public class NimbleClient extends Client {
     }
     
     @Override
-    protected void loadAgent(String agentPath, String agentArgs) throws Exception {
+    protected void loadAgent(String agentPath, String agentArgs) throws IOException {
+        try {
         AttachManager.loadAgent(pid, agentPath, agentArgs, settings.getTimeoutMs());
+        } catch (Exception e) {
+            throw new IOException(e);
+    }
     }
     
     @Override

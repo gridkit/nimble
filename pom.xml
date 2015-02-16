@@ -16,10 +16,10 @@
     <properties>
         <nanocloud.version>0.7.23</nanocloud.version>
         <sigar-lib.version>0.2</sigar-lib.version>
-        <jvm-attach-api.version>1.0</jvm-attach-api.version>
+        <jvm-attach-api.version>1.2</jvm-attach-api.version>
         
         <tools-jar.version>1.6</tools-jar.version>
-        <btrace.version>2.0-nimble-4</btrace.version>
+        <btrace.version>2.0-nimble-SNAPSHOT</btrace.version>
         
         <commons-math.version>3.0</commons-math.version>
         <slf4j.version>1.6.6</slf4j.version>
@@ -143,6 +143,12 @@
                 <version>${slf4j.version}</version>
             </dependency>
             
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>net.java.btrace</groupId>
                 <artifactId>core-api</artifactId>
