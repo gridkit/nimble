@@ -10,7 +10,7 @@
 
   <groupId>org.gridkit.lab</groupId>
   <artifactId>nimble-parent</artifactId>
-  <version>0.2.4-SNAPSHOT</version>
+  <version>0.2.4</version>
   <packaging>pom</packaging>
   <name>${project.groupId}::${project.artifactId}</name>
 
@@ -53,7 +53,7 @@
     <connection>scm:git:https://github.com/gridkit/nimble.git</connection>
     <developerConnection>scm:git:https://github.com/gridkit/nimble.git</developerConnection>
     <url>https://github.com/gridkit/nimble</url>
-    <tag>HEAD</tag>
+    <tag>nimble-parent-0.2.4</tag>
   </scm>
 
     <modules>
