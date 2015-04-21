@@ -20,32 +20,32 @@
         </dependency>
     
         <dependency>
-            <groupId>net.java.btrace</groupId>
+            <groupId>org.gridkit.3rd.btrace</groupId>
             <artifactId>core-api</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>net.java.btrace</groupId>
+            <groupId>org.gridkit.3rd.btrace</groupId>
             <artifactId>btrace-agent</artifactId>
         </dependency>
          
         <dependency>
-            <groupId>net.java.btrace</groupId>
+            <groupId>org.gridkit.3rd.btrace</groupId>
             <artifactId>client</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>net.java.btrace</groupId>
+            <groupId>org.gridkit.3rd.btrace</groupId>
             <artifactId>btrace-boot</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>net.java.btrace</groupId>
+            <groupId>org.gridkit.3rd.btrace</groupId>
             <artifactId>ext-default</artifactId>
         </dependency>
         
         <dependency>
-            <groupId>net.java.btrace</groupId>
+            <groupId>org.gridkit.3rd.btrace</groupId>
             <artifactId>ext-collections</artifactId>
         </dependency>
 
