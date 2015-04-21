@@ -119,12 +119,16 @@ public class MonitoringStack implements MonitoringBundle.ServiceProvider {
 	}
 
 	public void printSections(PrintStream ps, PivotReporter reporter) {
-		for(Bundle b: bundles) {
-			ps.println("\n" + b.caption + "\n");
-			PivotPrinter2 pp = new PivotPrinter2();
-			b.bundle.configurePrinter(pp);
-			new PrettyPrinter().print(ps, pp.print(reporter.getReader()));
-		}
+	   printSections(ps, reporter, new PrettyPrinter());
+	}
+
+	public void printSections(PrintStream ps, PivotReporter reporter, PrettyPrinter prettyPrinter) {
+	   for (Bundle b : bundles) {
+		  ps.println("\n" + b.caption + "\n");
+		  PivotPrinter2 pp = new PivotPrinter2();
+		  b.bundle.configurePrinter(pp);
+		  prettyPrinter.print(ps, pp.print(reporter.getReader()));
+	   }
 	}
 	
     public void printSections(PrintStream ps, PivotReporter reporter, HtmlPrinter printer) {
