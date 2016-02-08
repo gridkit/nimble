@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nimble.btrace.ext.PollSamplesCmdResult;
 import org.gridkit.nimble.btrace.ext.model.ScalarSample;
-import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.junit.After;
@@ -20,7 +20,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class BTraceClientFactoryTest {    
-    private static ViManager cloud;
+    private static Cloud cloud;
     
     private static AtomicInteger counter = new AtomicInteger(0);
         

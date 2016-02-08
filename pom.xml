@@ -8,7 +8,6 @@
     <version>2</version>
   </parent>
 
-  <groupId>org.gridkit.lab</groupId>
   <artifactId>nimble-parent</artifactId>
   <version>0.2.5-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -35,7 +34,7 @@
   </developers>
 
     <properties>
-        <nanocloud.version>0.7.23</nanocloud.version>
+        <nanocloud.version>0.8.10</nanocloud.version>
         <sigar-lib.version>1.6.4</sigar-lib.version>
         <jvm-attach-api.version>1.2</jvm-attach-api.version>
         
@@ -59,6 +58,7 @@
     <modules>
         <module>nimble-api</module>
         <module>nimble-core</module>
+        <!-- <module>nimble-runtime</module> -->
         <module>probe-common</module>
         <module>probe-jmx</module>
         <module>probe-sigar</module>
@@ -95,6 +95,12 @@
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>nimble-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>nimble-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

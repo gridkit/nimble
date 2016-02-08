@@ -25,7 +25,7 @@ import org.gridkit.vicluster.ViProps;
 import org.junit.AfterClass;
 import org.junit.Test;
 
-public class BTraceDriverTest {
+public class BTraceDriverCheck {
     public static final String MONITOR = "monitor";
     public static final String EXECUTOR = "executor";
     
@@ -53,7 +53,7 @@ public class BTraceDriverTest {
         cloud.node(EXECUTOR);
         
         // Allow debugging for MONITOR node
-        ViProps.at(cloud.node(MONITOR)).setInProcessType();
+        ViProps.at(cloud.node(MONITOR)).setIsolateType();
 
         MonitoringStack mstack = new MonitoringStack();
      
